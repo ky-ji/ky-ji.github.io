@@ -7,7 +7,7 @@ layout: homepage
 I am a final-year undergraduate student from School of Computer Science and Technology, Xidian Univeristy, supervised by Dr.Fei Cheng. My research interests include but not limited to Efficient AI and Machine Learning.
 
 ## Education 
-From Sep. 2021, BEng in Computer Science and Technology (Top-notch Talent Class), Xidian University  
+From Sep. 2021, B.E in Computer Science and Technology (Top-notch Talent Class), Xidian University  
 
 ## Research Interests
 
