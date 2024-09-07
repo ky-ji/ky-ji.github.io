@@ -14,7 +14,7 @@ main:
     authors: Zeqing Wang, Fei Cheng, <strong>Kangye Ji</strong>, Bohu Huang
     conference_short: ASP-DAC
     conference: Proceedings of the Asia and South Pacific Design Automation Conference <strong>(ASP-DAC)</strong>, 2025.
-    pdf: https://www.arxiv.org/abs/2407.10545
+    pdf: https://www.arxiv.org/pdf/2407.10545
     # code: https://github.com/yaoyao-liu/class-incremental-learning/tree/main/mnemonics-training
     # page: https://class-il.mpi-inf.mpg.de/mnemonics/
     bibtex: https://dblp.org/rec/journals/corr/abs-2407-10545.html?view=bibtex
