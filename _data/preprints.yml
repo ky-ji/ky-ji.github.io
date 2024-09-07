@@ -8,5 +8,5 @@ main:
     bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
     # data: https://github.com/wufeim/imagenet3d
     # page: https://imagenet3d.github.io/
-    image: https://img.yliu.me/teaser/imagenet3d.png
+    image: ./assets/img/jump-teaching.png
 
