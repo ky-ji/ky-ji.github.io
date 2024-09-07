@@ -23,5 +23,5 @@ I am a final-year undergraduate student from School of Computer Science and Tech
 - **[Nov. 2023]** Pacemaker to Merit Student, Xidian University (Top 1%)
 - **[Nov. 2023]** Excellent Student Cadre, Xidian University
 - **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in School of CS)
-- **[Nov. 2022]** Excellent College Students, Xidian University
+- **[Nov. 2022]** Excellent College Student, Xidian University
 - **[Nov. 2022]** Second Class Scholarship, Xidian University
