@@ -9,7 +9,7 @@ I am a final-year undergraduate student from School of Computer Science and Tech
 ## Research Interests
 
 - **Efficient AI:** model compression, inference optimization, generative models
-- **Machine Learning:** continual learning, self-supervised learning, learning with noisy label
+- **Machine Learning:** continual learning, learning with noisy label
 
 ## News
 
