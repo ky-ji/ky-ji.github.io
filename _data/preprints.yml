@@ -4,7 +4,7 @@ main:
     authors: <strong>Kangye Ji</strong>, Fei Cheng, Zeqing Wang, Bohu Huang
     conference_short: Preprint
     conference: Preprint.
-    pdf: https://arxiv.org/abs/2405.17137
+    pdf: https://arxiv.org/pdf/2405.17137
     bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
     # data: https://github.com/wufeim/imagenet3d
     # page: https://imagenet3d.github.io/
@@ -14,7 +14,7 @@ main:
     authors: Haojun Sun, Chen Tang, Zhi Wang, Yuan Meng, <strong>Kangye Ji</strong>, Jingyan jiang, Xinzhu Ma, Wenwu Zhu 
     conference_short: Preprint
     conference: Preprint.
-    pdf: https://arxiv.org/abs/2404.09532
+    pdf: https://arxiv.org/pdf/2404.09532
     bibtex: https://dblp.org/rec/journals/corr/abs-2404-09532.html?view=bibtex
     # data: https://github.com/wufeim/imagenet3d
     # page: https://imagenet3d.github.io/
