@@ -17,4 +17,11 @@ I am a final-year undergraduate student from School of Computer Science and Tech
 
 {% include_relative _includes/publications.md %}
 {% include_relative _includes/preprints.md %}
-{% include_relative _includes/services.md %}
+
+## Awards
+- **[Nov. 2023]** Pacemaker to Merit Student, Xidian University(Top 1%)
+- **[Nov. 2023]** Excellent Student Cadre, Xidian University
+- **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in School of CS)
+- **[Dec. 2023]** Xiaomi Scholarship (Only 20 students in Xidian University)
+- **[Nov. 2022]** Excellent College Students, Xidian University
+- **[Nov. 2022]** Second-Class Scholarship, Xidian University
