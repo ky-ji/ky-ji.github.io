@@ -22,7 +22,7 @@ github_link: https://github.com/ky-ji/
 # "favicon" and "favicon_dark" are used for the light and dark modes, respectively. 
 avatar: ./assets/img/avatar0907.png
 favicon: ./assets/img/xidian_red.png
-favicon_dark: ./assets/img/favicon-dark.png
+favicon_dark: ./assets/img/xidian_red.png
 
 # Footnote
 # You may use the option to disable the footnote, "Powered by Jekyll and Minimal Light theme."
