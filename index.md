@@ -11,7 +11,7 @@ From Sep. 2021, B.E in Computer Science and Technology (Top-notch Talent Class),
 
 ## Research Interests
 
-- **Efficient AI:** model compression, inference optimization, generative models
+- **Efficient AI:** model compression, inference optimization, sparse computing
 - **Machine Learning:** continual learning, learning with noisy label
 
 ## News
