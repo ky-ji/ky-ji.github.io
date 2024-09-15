@@ -28,3 +28,6 @@ From Sep. 2021, B.E in Computer Science and Technology (Top-notch Talent Class),
 - **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in School of CS)
 - **[Nov. 2022]** Merit Student, Xidian University
 - **[Nov. 2022]** The Second Prize Scholarship, Xidian University
+
+## Friends
+- [Mingshuo Cai](https://cfcys.github.io/) Incoming master sutdent at Nanjing University, researching 3Dvision.
