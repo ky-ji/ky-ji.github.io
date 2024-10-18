@@ -4,7 +4,7 @@ layout: homepage
 
 ## About Me
 
-I am a final-year undergraduate student from School of Computer Science and Technology, Xidian Univeristy, supervised by Dr.Fei Cheng. My research interests include but not limited to Efficient AI and Machine Learning.
+I am a final-year undergraduate student from the School of Computer Science and Technology, Xidian Univeristy, supervised by Dr.Fei Cheng. My research interests include but not limited to Efficient AI and Machine Learning.
 
 ## Education 
 From Sep. 2021, B.E in Computer Science and Technology (Top-notch Talent Class), Xidian University  
@@ -16,12 +16,14 @@ From Sep. 2021, B.E in Computer Science and Technology (Top-notch Talent Class),
 
 ## News
 
-- **[Sep. 2024]** Our paper about continual learning is accepted to ASP-DAC 2025.
+- **[Sep. 2024]** Our paper about continual learning has been accepted to ASP-DAC 2025.
 
 {% include_relative _includes/publications.md %}
 {% include_relative _includes/preprints.md %}
 
 ## Awards
+- **[Sep. 2024]** National Scholarship (Top 1%)
+- **[Sep. 2024]** Merit Student, Xidian University
 - **[Dec. 2023]** Xiaomi Scholarship (Only 20 students in Xidian University)
 - **[Nov. 2023]** Merit Student Pacesetter, Xidian University (Top 1%)
 - **[Nov. 2023]** Excellent Student Cadre, Xidian University
