@@ -7,7 +7,7 @@ layout: homepage
 I am a final-year undergraduate student from the School of Computer Science and Technology, Xidian Univeristy, supervised by [Dr.Fei Cheng](https://dblp.org/pid/06/5591.html). My research interests include but not limited to Efficient AI and Machine Learning.
 
 ## Education 
-From Sep. 2021, B.E in Computer Science and Technology (Top-notch Talent Class), Xidian University  
+From Sep. 2021, B.E in Computer Science and Technology, Xidian University  
 
 ## Research Interests
 
@@ -22,12 +22,13 @@ From Sep. 2021, B.E in Computer Science and Technology (Top-notch Talent Class),
 {% include_relative _includes/preprints.md %}
 
 ## Awards
-- **[Sep. 2024]** National Scholarship (Top 1%)
-- **[Sep. 2024]** Merit Student, Xidian University
+- **[Nov. 2024]** Xiaomi Top Grade Scholarship (Only 5 students in Xidian University)
+- **[Nov. 2024]** National Scholarship (Top 1%)
+- **[Nov. 2024]** Merit Student, Xidian University
 - **[Dec. 2023]** Xiaomi Scholarship (Only 20 students in Xidian University)
 - **[Nov. 2023]** Merit Student Pacesetter, Xidian University (Top 1%)
 - **[Nov. 2023]** Merit Student Cadre, Xidian University
-- **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in School of CS)
+- **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in the Department of C.S.)
 - **[Nov. 2022]** Merit Student of School, Xidian University
 - **[Nov. 2022]** The Second Prize Scholarship, Xidian University
 
