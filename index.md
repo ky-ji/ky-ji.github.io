@@ -4,7 +4,7 @@ layout: homepage
 
 ## About Me
 
-I am a final-year undergraduate student from the School of Computer Science and Technology, Xidian Univeristy, supervised by [Dr.Fei Cheng](https://dblp.org/pid/06/5591.html). My research interests include but not limited to Efficient AI and Machine Learning.
+I am a final-year undergraduate student from the School of Computer Science and Technology, Xidian Univeristy, supervised by [Dr.Fei Cheng](https://dblp.org/pid/06/5591.html). Currently, I am interested in building efficient AI adaptation systems at the edge. My research interests include but are not limited to Efficient AI and Machine Learning.
 
 ## Education 
 From Sep. 2021, B.E in Computer Science and Technology, Xidian University  
