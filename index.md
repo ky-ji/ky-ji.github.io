@@ -23,11 +23,11 @@ From Sep. 2021, B.E in Computer Science and Technology, Xidian University
 
 ## Selected Awards
 - **[Nov. 2024]** Xiaomi Top Grade Scholarship (Only 5 students in Xidian University)
-- **[Nov. 2024]** National Scholarship (Top 1%), China
+- **[Nov. 2024]** National Scholarship, China (Top 1%)
 - **[Nov. 2024]** Merit Student, Xidian University
 - **[Dec. 2023]** Xiaomi Scholarship (Only 20 students in Xidian University)
 - **[Nov. 2023]** Merit Student Pacesetter, Xidian University (Top 1%)
-- **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in the Department of C.S.)
+- **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in the School of C.S.)
 - **[Nov. 2022]** The Second Prize Scholarship, Xidian University
 
 ## Friends
