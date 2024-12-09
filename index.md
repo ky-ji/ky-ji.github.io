@@ -11,7 +11,7 @@ From Sep. 2021, B.E in Computer Science and Technology, Xidian University
 
 ## Research Interests
 
-- **Efficient AI:** memory-efficient, computation-efficient, and data-efficient algorithms for training, fine-tuning, and inference.
+- **Efficient AI:** memory-efficient, computation-efficient, and data-efficient algorithms for training, fine-tuning, and inference
 - **Model Adaptation:** continual learning, learning with noisy labels, online learning
 
 ## News
