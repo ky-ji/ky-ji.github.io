@@ -8,7 +8,7 @@ I am a final-year undergraduate student from the School of Computer Science and 
 
 ## Education 
 Sep. 2021 - Present, B.E in Computer Science and Technology, Xidian University  
-From Sep. 2025, Incoming Ph.D. in Computer Science and Technology, Tsinghua University
+From Sep. 2025, Incoming Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua University
 
 ## Research Interests
 
