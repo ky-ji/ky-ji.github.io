@@ -4,7 +4,7 @@ layout: homepage
 
 ## About Me
 
-I am a final-year undergraduate student from the School of Computer Science and Technology, Xidian Univeristy, supervised by [Dr.Fei Cheng](https://dblp.org/pid/06/5591.html). Currently, I am focused on building efficient AI adaptation systems in the edge. My research interests include but are not limited to Efficient AI and Model Adaptation.
+I am a final-year undergraduate student from the School of Computer Science and Technology, Xidian Univeristy, supervised by [Dr.Fei Cheng](https://dblp.org/pid/06/5591.html). Currently, I am focused on building efficient Embodied AI systems. My research interests include but are not limited to efficient diffusion models for robotic control.
 
 ## Education 
 Sep. 2021 - Present, B.E in Computer Science and Technology, Xidian University  
@@ -13,11 +13,11 @@ From Sep. 2025, Incoming Ph.D. in Computer Science and Technology, MMLab@SIGS, T
 ## Research Interests
 
 - **Efficient AI:** memory-efficient, computation-efficient, and data-efficient algorithms for training, fine-tuning, and inference
-- **Model Adaptation:** continual learning, learning with noisy labels, online learning
+- **Emodied AI:** vision-language-action models, diffusion polices.
 
 ## News
 
-- **[Sep. 2024]** Our paper about continual learning has been accepted to ASP-DAC 2025.
+- **[Sep. 2024]** Our paper about efficient continual learning on edge has been accepted to ASP-DAC 2025.
 
 {% include_relative _includes/publications.md %}
 {% include_relative _includes/preprints.md %}
