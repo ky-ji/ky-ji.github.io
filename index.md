@@ -35,11 +35,6 @@ From Sep. 2025, Incoming Ph.D. in Computer Science and Technology, MMLab@SIGS, T
 - [Mingshuo Cai](https://cfcys.github.io/) Incoming master sutdent at Nanjing University, researching 3DVision.
 
 ## Important Dates
-- ICLR Rebuttal End 11.27 20:00 CST
-- CVPR Paper Submission 11.15 16:00 CST
-- ICLR Decision 1.23 20:00 CST
-- IJCCAI Submission 1.24 20:00 CST
-- CVPR Rebuttal 1.24 22:00 - 2.1 22:00 CST
-- ICML Submission 1.31 20:00 CST
-- ACL Submission 2.16 20:00 CST
-- CVPR Decision 2.26 2:00 CST
+- AAAI 2025 Abstracts due at July 25, 11:59 PM UTC-12
+- AAAI 2025 August 1, Full papers due at 11:59 PM UTC-12
+- AAAI 2025 August 4, Supplementary material and code due by 11:59 PM UTC-12
