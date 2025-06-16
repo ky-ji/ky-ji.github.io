@@ -23,7 +23,8 @@ From Sep. 2025, Incoming Ph.D. in Computer Science and Technology, MMLab@SIGS, T
 {% include_relative _includes/preprints.md %}
 
 ## Selected Awards
-- **[Nov. 2024]** Xiaomi Top Grade Scholarship (Only 5 students in Xidian University)
+- **[Jun. 2025]** Outstanding Graduate, Xidian University
+- **[Feb. 2025]** Xiaomi Top Grade Scholarship (Only 5 students in Xidian University)
 - **[Nov. 2024]** National Scholarship, China (Top 1%)
 - **[Nov. 2024]** Merit Student, Xidian University
 - **[Dec. 2023]** Xiaomi Scholarship (Only 20 students in Xidian University)
