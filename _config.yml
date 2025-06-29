@@ -21,8 +21,8 @@ github_link: https://github.com/ky-ji/
 # Images (e.g., your profile picture and your website's favicon) 
 # "favicon" and "favicon_dark" are used for the light and dark modes, respectively. 
 avatar: ./assets/img/西电讲台.jpg
-favicon: ./assets/img/xidian_red.png
-favicon_dark: ./assets/img/xidian_red.png
+favicon: ./assets/img/Tsinghua_University_Logo.svg
+favicon_dark: ./assets/img/Tsinghua_University_Logo.svg
 
 # Footnote
 # You may use the option to disable the footnote, "Powered by Jekyll and Minimal Light theme."
