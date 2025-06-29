@@ -4,7 +4,7 @@ layout: homepage
 
 ## About Me
 
-I am a final-year undergraduate student from the School of Computer Science and Technology, Xidian Univeristy, supervised by [Dr.Fei Cheng](https://dblp.org/pid/06/5591.html). Currently, I am focused on building efficient Embodied AI systems. My research interests include but are not limited to efficient diffusion models for robotic control.
+I got my bachelor degree of Engineering majoring in Computer Science and Technology from the School of Computer Science and Technology, Xidian University. I am also an imcoming Ph.D. student in SIGS, Tsinghua University, supervised by [Prof.Wangzhi](http://pages.mmlab.top/). Currently, I am focused on building efficient Embodied AI systems. My research interests include but are not limited to efficient diffusion models for robotic control.
 
 ## Education 
 Sep. 2021 - Present, B.E in Computer Science and Technology, Xidian University  
