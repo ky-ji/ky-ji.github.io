@@ -4,7 +4,7 @@ layout: homepage
 
 ## About Me
 
-I got my bachelor degree of Engineering majoring in Computer Science and Technology from the School of Computer Science and Technology, Xidian University. I am also an imcoming Ph.D. student in SIGS, Tsinghua University, supervised by [Prof.Wangzhi](http://pages.mmlab.top/). Currently, I am focused on building efficient Embodied AI systems. My research interests include but are not limited to efficient diffusion models for robotic control.
+I received my Bachelor's degree in Engineering at Xidian University, majoring in Computer Science and Technology. I am an incoming Ph.D. student at Tsinghua University, supervised by [Prof. Wang zhi](http://pages.mmlab.top/). Currently, I am focused on building efficient Embodied AI systems. My research interests include but are not limited to efficient diffusion models for robotic control.
 
 ## Education 
 Sep. 2021 - Present, B.E in Computer Science and Technology, Xidian University  
