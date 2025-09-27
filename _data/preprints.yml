@@ -1,5 +1,32 @@
 main:
 
+
+
+
+
+  - title: "Sparse ActionGen: Accelerating Diffusion Policy with Real-time Pruning"
+    authors: <strong>Kangye Ji</strong>, Yuan Meng, Jianbo Zhou, Ye Li, Hanyun Cui, Zhi Wang
+    conference_short: Preprint
+    conference: Preprint.
+    pdf: https://openreview.net/forum?id=mCoJN10RV5&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DICLR.cc%2F2026%2FConference%2FAuthors%23your-submissions)
+    # bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
+    # data: https://github.com/wufeim/imagenet3d
+    # page: https://imagenet3d.github.io/
+    image: ./assets/img/SAG.png
+
+
+  - title: "Block-wise Adaptive Caching for Accelerating Diffusion Policy"
+    authors: <strong>Kangye Ji</strong>, Yuan Meng, Hanyun Cui, Ye Li, Jianbo Zhou, Shengjia Hua, Lei Chen, Zhi Wang
+    conference_short: Preprint
+    conference: Preprint.
+    pdf: https://arxiv.org/pdf/2506.13456
+    bibtex: https://scholar.googleusercontent.com/scholar.bib?q=info:iVDrmMHaBLEJ:scholar.google.com/&output=citation&scisdr=CgLftV0UEO32xm_cTaY:AAZF9b8AAAAAaNfaVaZhFpD-s21sYwEpgeci6JM&scisig=AAZF9b8AAAAAaNfaVahz8_7IX2ZGU-3gJonlibA&scisf=4&ct=citation&cd=0&hl=zh-CN
+    # data: https://github.com/wufeim/imagenet3d
+    # page: https://imagenet3d.github.io/
+    image: ./assets/img/BAC.png
+
+
+
   - title: "Jump-teaching: Ultra Efficient and Robust Learning with Noisy Label"
     authors: <strong>Kangye Ji</strong>, Fei Cheng, Zeqing Wang, Bohu Huang
     conference_short: Preprint
