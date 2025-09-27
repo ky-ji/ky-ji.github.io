@@ -18,5 +18,5 @@ main:
     # code: https://github.com/yaoyao-liu/class-incremental-learning/tree/main/mnemonics-training
     # page: https://class-il.mpi-inf.mpg.de/mnemonics/
     bibtex: https://dblp.org/rec/journals/corr/abs-2407-10545.html?view=bibtex
-    notes: Early Accept
+    # notes: Early Accept
     image: ./assets/img/lightcl.png
