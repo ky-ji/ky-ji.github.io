@@ -15,9 +15,6 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 - **Efficient AI:** memory-efficient, computation-efficient, and data-efficient algorithms for training, fine-tuning, and inference
 - **Emodied AI:** vision-language-action models, diffusion polices.
 
-## News
-
-- **[Sep. 2024]** Our paper about efficient continual learning on edge has been accepted to ASP-DAC 2025.
 
 {% include_relative _includes/publications.md %}
 {% include_relative _includes/preprints.md %}
@@ -35,7 +32,7 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 ## Friends
 - [Mingshuo Cai](https://cfcys.github.io/) Incoming master sutdent at Nanjing University, researching 3DVision.
 
-## Important Dates
-- AAAI 2025 Abstracts due at July 25, 11:59 PM UTC-12
-- AAAI 2025 August 1, Full papers due at 11:59 PM UTC-12
-- AAAI 2025 August 4, Supplementary material and code due by 11:59 PM UTC-12
+%## Important Dates
+%- AAAI 2025 Abstracts due at July 25, 11:59 PM UTC-12
+%- AAAI 2025 August 1, Full papers due at 11:59 PM UTC-12
+%- AAAI 2025 August 4, Supplementary material and code due by 11:59 PM UTC-12
