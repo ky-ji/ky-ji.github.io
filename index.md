@@ -4,8 +4,7 @@ layout: homepage
 
 ## About Me
 
-I received my Bachelor's degree in Engineering at Xidian University, majoring in Computer Science and Technology. I am currently a Ph.D. student at Tsinghua University, supervised by [Prof. Wang zhi](http://pages.mmlab.top/). Currently, I am focused on building efficient Embodied AI systems. My research interests include building efficient AI systems for robotic control.
-
+I received my Bachelor's degree in Engineering at Xidian University, majoring in Computer Science and Technology. I am currently a Ph.D. student at Tsinghua University, supervised by [Prof. Wang zhi](http://pages.mmlab.top/). Currently, I am focused on building efficient Embodied AI systems.
 ## Education 
 Sep. 2021 - June. 2025, B.E in Computer Science and Technology, Xidian University  
 From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua University
@@ -26,8 +25,8 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 - **[Nov. 2024]** Merit Student, Xidian University
 - **[Dec. 2023]** Xiaomi Scholarship (Only 20 students in Xidian University)
 - **[Nov. 2023]** Merit Student Pacesetter, Xidian University (Top 1%)
-- **[Nov. 2023]** Top Grade Scholarship, Xidian University (Only 4 students in the School of C.S.)
-- **[Nov. 2022]** The Second Prize Scholarship, Xidian University
+- **[Nov. 2023]** Top Grade Scholarship, Xidian University (Top 1%)
+
 
 ## Friends
 - [Mingshuo Cai](https://cfcys.github.io/) Master sutdent at Nanjing University, researching 3DVision.
