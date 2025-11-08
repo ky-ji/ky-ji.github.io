@@ -30,5 +30,6 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 
 ## Friends
 - [Mingshuo Cai](https://cfcys.github.io/) Master sutdent at Nanjing University, researching 3DVision.
+- [Zeqing Wang](https://inv-wzq.github.io/) Master sutdent at National University of Singapore, researching Efficient AI.
 
 
