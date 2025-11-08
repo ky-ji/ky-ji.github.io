@@ -10,26 +10,26 @@ main:
   #   image: ./assets/img/teaser_example_2.png
   #   notes: Early Accept
 
-   - title: "Jump-teaching: Combating Sample Selection Bias with Temporal Disagreement"
-     authors: <strong>Kangye Ji</strong>, Fei Cheng, Zeqing Wang, Qichang Zhang, Bohu Huang
-     conference_short: AAAI
-     conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
-     pdf: https://arxiv.org/pdf/2405.17137
-     bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
-     # data: https://github.com/wufeim/imagenet3d
-     # page: https://imagenet3d.github.io/
-     image: ./assets/img/jump-teaching.png
+  - title: "Jump-teaching: Combating Sample Selection Bias with Temporal Disagreement"
+    authors: <strong>Kangye Ji</strong>, Fei Cheng, Zeqing Wang, Qichang Zhang, Bohu Huang
+    conference_short: AAAI
+    conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2405.17137
+    bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
+    # data: https://github.com/wufeim/imagenet3d
+    # page: https://imagenet3d.github.io/
+    image: ./assets/img/jump-teaching.png
   
-   - title: "SAMCL: Empowering SAM to Continually Learn from Dynamic Domains with Extreme Storage Efficiency"
-     authors: Zeqing Wang, <strong>Kangye Ji</strong>, Di Wang, Haibin Zhang, Fei Cheng
-     conference_short: AAAI
-     conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
-     pdf: https://arxiv.org/pdf/2412.05012
-     bibtex: https://dblp.org/rec/journals/corr/abs-2412-05012.bib
-     notes: Oral
-     # data: https://github.com/wufeim/imagenet3d
-     # page: https://imagenet3d.github.io/
-     image: ./assets/img/samcl.png
+  - title: "SAMCL: Empowering SAM to Continually Learn from Dynamic Domains with Extreme Storage Efficiency"
+    authors: Zeqing Wang, <strong>Kangye Ji</strong>, Di Wang, Haibin Zhang, Fei Cheng
+    conference_short: AAAI
+    conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2412.05012
+    bibtex: https://dblp.org/rec/journals/corr/abs-2412-05012.bib
+    notes: Oral
+    # data: https://github.com/wufeim/imagenet3d
+    # page: https://imagenet3d.github.io/
+    image: ./assets/img/samcl.png
   
   - title: "Efficient Continual Learning with Low Memory Footprint For Edge Device"
     authors: Zeqing Wang, Fei Cheng, <strong>Kangye Ji</strong>, Bohu Huang
