@@ -27,15 +27,6 @@ main:
 
 
 
-  - title: "Jump-teaching: Ultra Efficient and Robust Learning with Noisy Label"
-    authors: <strong>Kangye Ji</strong>, Fei Cheng, Zeqing Wang, Bohu Huang
-    conference_short: Preprint
-    conference: Preprint.
-    pdf: https://arxiv.org/pdf/2405.17137
-    bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
-    # data: https://github.com/wufeim/imagenet3d
-    # page: https://imagenet3d.github.io/
-    image: ./assets/img/jump-teaching.png
 
   # - title: "TMPQ-DM: Joint Timestep Reduction and Quantization Precision Selection for Efficient Diffusion Models"
   #   authors: Haojun Sun, Chen Tang, Zhi Wang, Yuan Meng, <strong>Kangye Ji</strong>, Jingyan Jiang, Xinzhu Ma, Wenwu Zhu 
