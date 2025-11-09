@@ -4,7 +4,7 @@ layout: homepage
 
 ## About Me
 
-I received my Bachelor's degree in Engineering at Xidian University, majoring in Computer Science and Technology. I am currently a Ph.D. student at Tsinghua University, supervised by [Prof. Wang zhi](http://pages.mmlab.top/). Currently, I am focused on building efficient Embodied AI systems.
+I am a Ph.D. student at Tsinghua University, supervised by [Prof. Wang Zhi](http://pages.mmlab.top/). Previously, I received my bachelor's degree in Engineering at Xidian University, majoring in Computer Science and Technology. Currently, I am focused on building efficient Embodied AI systems.
 ## Education 
 Sep. 2021 - June. 2025, B.E in Computer Science and Technology, Xidian University  
 From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua University
