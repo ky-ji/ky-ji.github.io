@@ -1,7 +1,7 @@
 main:
 
   - title: "Test-time Sparsity for Extreme Fast Action Diffusion"
-    authors: <strong>Kangye Ji</strong>, Yuan Meng, Jianbo Zhou, Ye Li, Chen Tang, Zhi Wang
+    authors: <strong>Kangye Ji</strong>, Jianbo Zhou, Yuan Meng, Ye Li, Chen Tang, Zhi Wang
     conference_short: Preprint
     conference: Preprint.
     pdf: https://openreview.net/pdf?id=e2rXzov882
