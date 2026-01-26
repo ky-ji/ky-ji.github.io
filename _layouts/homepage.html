@@ -34,6 +34,38 @@
     <link rel="stylesheet" href="./assets/css/publications-no-dark-mode.css">
     {% endif %}
 
+    <!-- Hidden Stats (busuanzi) -->
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <style>
+      .hidden-stats-panel {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 16px 20px;
+        color: #fff;
+        font-family: 'SF Mono', Monaco, monospace;
+        font-size: 13px;
+        z-index: 9999;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .hidden-stats-panel.show { display: block; animation: fadeIn 0.3s ease; }
+      .hidden-stats-panel .stat-row { display: flex; justify-content: space-between; gap: 24px; margin: 4px 0; }
+      .hidden-stats-panel .stat-label { color: rgba(255, 255, 255, 0.6); }
+      .hidden-stats-panel .stat-value { color: #4ade80; font-weight: 600; }
+      .hidden-stats-panel .close-btn { 
+        position: absolute; top: 8px; right: 10px; 
+        cursor: pointer; color: rgba(255,255,255,0.4); 
+        font-size: 16px; line-height: 1;
+      }
+      .hidden-stats-panel .close-btn:hover { color: #fff; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+
   </head>
   <body>
     <div class="wrapper">
@@ -108,7 +140,41 @@
         
       </footer>
     </div>
+    <!-- Hidden Stats Panel -->
+    <div class="hidden-stats-panel" id="statsPanel">
+      <span class="close-btn" onclick="document.getElementById('statsPanel').classList.remove('show')">&times;</span>
+      <div class="stat-row">
+        <span class="stat-label">Page Views</span>
+        <span class="stat-value" id="busuanzi_value_site_pv">-</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Visitors</span>
+        <span class="stat-value" id="busuanzi_value_site_uv">-</span>
+      </div>
+    </div>
+
     <script src="{{ "/assets/js/scale.fix.js" | relative_url }}"></script>
+    <script>
+      // Secret: Press 'K' 3 times to show stats, or add ?k=1 to URL
+      (function() {
+        var kCount = 0, kTimer;
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'k' || e.key === 'K') {
+            kCount++;
+            clearTimeout(kTimer);
+            kTimer = setTimeout(function() { kCount = 0; }, 1000);
+            if (kCount >= 3) {
+              document.getElementById('statsPanel').classList.toggle('show');
+              kCount = 0;
+            }
+          }
+        });
+        // URL param check
+        if (new URLSearchParams(window.location.search).get('k') === '1') {
+          document.getElementById('statsPanel').classList.add('show');
+        }
+      })();
+    </script>
     {% if site.google_analytics %}
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
