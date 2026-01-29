@@ -34,35 +34,47 @@
     <link rel="stylesheet" href="./assets/css/publications-no-dark-mode.css">
     {% endif %}
 
-    <!-- Hidden Stats (busuanzi) -->
-    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <!-- Hidden ClustrMaps Stats -->
     <style>
       .hidden-stats-panel {
         display: none;
         position: fixed;
         bottom: 20px;
         right: 20px;
-        background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(10px);
-        border-radius: 12px;
-        padding: 16px 20px;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(12px);
+        border-radius: 16px;
+        padding: 20px;
         color: #fff;
-        font-family: 'SF Mono', Monaco, monospace;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         font-size: 13px;
         z-index: 9999;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
       .hidden-stats-panel.show { display: block; animation: fadeIn 0.3s ease; }
-      .hidden-stats-panel .stat-row { display: flex; justify-content: space-between; gap: 24px; margin: 4px 0; }
-      .hidden-stats-panel .stat-label { color: rgba(255, 255, 255, 0.6); }
-      .hidden-stats-panel .stat-value { color: #4ade80; font-weight: 600; }
+      .hidden-stats-panel .panel-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+      }
       .hidden-stats-panel .close-btn { 
-        position: absolute; top: 8px; right: 10px; 
-        cursor: pointer; color: rgba(255,255,255,0.4); 
-        font-size: 16px; line-height: 1;
+        position: absolute; top: 12px; right: 14px; 
+        cursor: pointer; color: rgba(255,255,255,0.3); 
+        font-size: 18px; line-height: 1;
+        transition: color 0.2s;
       }
       .hidden-stats-panel .close-btn:hover { color: #fff; }
+      .hidden-stats-panel .clustrmaps-container {
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.05);
+      }
+      /* Hidden tracker for stats collection (invisible) */
+      .clustrmaps-hidden { position: absolute; left: -9999px; top: -9999px; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 
@@ -140,16 +152,12 @@
         
       </footer>
     </div>
-    <!-- Hidden Stats Panel -->
+    <!-- Hidden Stats Panel (Press K 3 times or ?k=1 to show) -->
     <div class="hidden-stats-panel" id="statsPanel">
       <span class="close-btn" onclick="document.getElementById('statsPanel').classList.remove('show')">&times;</span>
-      <div class="stat-row">
-        <span class="stat-label">Page Views</span>
-        <span class="stat-value" id="busuanzi_value_site_pv">-</span>
-      </div>
-      <div class="stat-row">
-        <span class="stat-label">Visitors</span>
-        <span class="stat-value" id="busuanzi_value_site_uv">-</span>
+      <div class="panel-title">Visitor Map</div>
+      <div class="clustrmaps-container">
+        <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=Ue1K6B9nQpEEKF8EoTmpiPNy4f78eE5CxrhS14z1d_I&cl=ffffff&w=300&t=tt"></script>
       </div>
     </div>
 
