@@ -10,6 +10,16 @@ main:
   #   image: ./assets/img/teaser_example_2.png
   #   notes: Early Accept
 
+  - title: "Test-time Sparsity for Extreme Fast Action Diffusion"
+    authors: <strong>Kangye Ji</strong>, Jianbo Zhou, Yuan Meng, Ye Li, Chen Tang, Zhi Wang
+    conference_short: CVPR
+    conference: IEEE/CVF Conference on Computer Vision and Pattern Recognition <strong>(CVPR)</strong>, 2026. 
+    pdf: https://openreview.net/pdf?id=e2rXzov882
+    # bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
+    # data: https://github.com/wufeim/imagenet3d
+    # page: https://imagenet3d.github.io/
+    image: ./assets/img/SAG2.png
+
   - title: "Block-wise Adaptive Caching for Accelerating Diffusion Policy"
     authors: <strong>Kangye Ji</strong>, Yuan Meng, Hanyun Cui, Ye Li, Jianbo Zhou, Shengjia Hua, Lei Chen, Zhi Wang
     conference_short: ICLR
