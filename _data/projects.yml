@@ -1,0 +1,6 @@
+main:
+
+  - title: "VLA-Lab"
+    description: "A toolkit for tracking and visualizing the real-world deployment process of VLA models. Debug, visualize, and analyze your VLA deployments with unified logging and interactive visualization."
+    github: https://github.com/ky-ji/VLA-Lab
+    image: ./assets/img/vlalab-preview.png

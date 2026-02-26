@@ -18,6 +18,8 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 {% include_relative _includes/publications.md %}
 {% include_relative _includes/preprints.md %}
 
+{% include_relative _includes/projects.md %}
+
 ## Selected Awards
 - **[Jun. 2025]** Merit Graduate, Xidian University
 - **[Feb. 2025]** Xiaomi Top Grade Scholarship (Only 5 students in Xidian University)
