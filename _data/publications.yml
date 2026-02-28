@@ -11,7 +11,7 @@ main:
   #   notes: Early Accept
 
   - title: "Test-time Sparsity for Extreme Fast Action Diffusion"
-    authors: <strong>Kangye Ji</strong>, Jianbo Zhou, Yuan Meng, Ye Li, Chen Tang, Zhi Wang
+    authors: <strong>Kangye Ji</strong>, Yuan Meng, Jianbo Zhou, Ye Li, Chen Tang, Zhi Wang
     conference_short: CVPR
     conference: IEEE/CVF Conference on Computer Vision and Pattern Recognition <strong>(CVPR)</strong>, 2026. 
     pdf: https://openreview.net/pdf?id=e2rXzov882
