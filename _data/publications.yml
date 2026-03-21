@@ -37,9 +37,10 @@ main:
     conference_short: ICLR
     conference: International Conference on Learning Representations <strong>(ICLR)</strong>, 2026.
     pdf: https://arxiv.org/pdf/2506.12723
-    bibtex: https://scholar.googleusercontent.com/scholar.bib?q=info:V0OoRJawHJwJ:scholar.google.com/&output=citation&scisdr=Cn3UjSg3EP_t776DnuM:AHkA5jQAAAAAaXeFhuOUiALIOmXKtrGJ2_3rq9g&scisig=AHkA5jQAAAAAaXeFhmNf9Cu1lMT4AYu1qGkVWm8&scisf=4&ct=citation&cd=-1&hl=zh-CN
     # data: https://github.com/wufeim/imagenet3d
     # page: https://block-wise-adaptive-caching.github.io/
+    code: https://github.com/ChildTang/SP-VLA
+    bibtex: https://scholar.googleusercontent.com/scholar.bib?q=info:V0OoRJawHJwJ:scholar.google.com/&output=citation&scisdr=Cn3UjSg3EP_t776DnuM:AHkA5jQAAAAAaXeFhuOUiALIOmXKtrGJ2_3rq9g&scisig=AHkA5jQAAAAAaXeFhmNf9Cu1lMT4AYu1qGkVWm8&scisf=4&ct=citation&cd=-1&hl=zh-CN
     image: ./assets/img/SP-VLA.png
 
 
@@ -48,9 +49,9 @@ main:
     conference_short: AAAI
     conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
     pdf: https://arxiv.org/pdf/2405.17137
+    code: https://github.com/ky-ji/Jump-teaching
     bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
     # data: https://github.com/wufeim/imagenet3d
-    code: https://github.com/ky-ji/Jump-teaching
     image: ./assets/img/jump-teaching.png
   
   - title: "SAMCL: Empowering SAM to Continually Learn from Dynamic Domains with Extreme Storage Efficiency"
@@ -58,9 +59,9 @@ main:
     conference_short: AAAI
     conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
     pdf: https://arxiv.org/pdf/2412.05012
-    bibtex: https://dblp.org/rec/journals/corr/abs-2412-05012.bib
     notes: Oral
     code: https://github.com/INV-WZQ/SAMCL
+    bibtex: https://dblp.org/rec/journals/corr/abs-2412-05012.bib
     # data: https://github.com/wufeim/imagenet3d
     # page: https://imagenet3d.github.io/
     image: ./assets/img/samcl.png
