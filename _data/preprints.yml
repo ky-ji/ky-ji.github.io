@@ -2,22 +2,6 @@ main:
 
 
 
-  - title: "Sparse ActionGen: Accelerating Diffusion Policy with Real-time Pruning"
-    authors: <strong>Kangye Ji</strong>, Yuan Meng, Jianbo Zhou, Ye Li, Hanyun Cui, Zhi Wang
-    conference_short: Preprint
-    conference: Preprint.
-    pdf: https://arxiv.org/pdf/2601.12894
-    # bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
-    # data: https://github.com/wufeim/imagenet3d
-    page: https://sparse-actiongen.github.io/
-    image: ./assets/img/SAG.png
-
-
-
-
-
-
-
   # - title: "TMPQ-DM: Joint Timestep Reduction and Quantization Precision Selection for Efficient Diffusion Models"
   #   authors: Haojun Sun, Chen Tang, Zhi Wang, Yuan Meng, <strong>Kangye Ji</strong>, Jingyan Jiang, Xinzhu Ma, Wenwu Zhu 
   #   conference_short: Preprint
@@ -29,4 +13,3 @@ main:
   #   image: ./assets/img/tmpq-dm.png
 
     
-

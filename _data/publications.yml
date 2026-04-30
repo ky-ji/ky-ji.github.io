@@ -10,6 +10,16 @@ main:
   #   image: ./assets/img/teaser_example_2.png
   #   notes: Early Accept
 
+  - title: "Sparse ActionGen: Accelerating Diffusion Policy with Real-time Pruning"
+    authors: <strong>Kangye Ji</strong>, Yuan Meng, Jianbo Zhou, Ye Li, Hanyun Cui, Zhi Wang
+    conference_short: ICML
+    conference: International Conference on Machine Learning <strong>(ICML)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2601.12894
+    # bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
+    # data: https://github.com/wufeim/imagenet3d
+    page: https://sparse-actiongen.github.io/
+    image: ./assets/img/SAG.png
+
   - title: "Test-time Sparsity for Extreme Fast Action Diffusion"
     authors: <strong>Kangye Ji</strong>, Yuan Meng, Jianbo Zhou, Ye Li, Chen Tang, Zhi Wang
     conference_short: CVPR

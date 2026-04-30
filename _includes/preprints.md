@@ -1,3 +1,4 @@
+{% if site.data.preprints.main and site.data.preprints.main.size > 0 %}
 <h1 id="preprints"></h1>
 
 <h2 style="margin: 60px 0px -15px;">Preprints</h2>
@@ -49,5 +50,5 @@
 
 </ol>
 </div>
-
+{% endif %}
 
