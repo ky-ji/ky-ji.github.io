@@ -42,6 +42,17 @@ main:
     image: ./assets/img/BAC.png
 
 
+  - title: "Jump-teaching: Combating Sample Selection Bias via Temporal Disagreement"
+    authors: <strong>Kangye Ji</strong>, Fei Cheng, Zeqing Wang, Qichang Zhang, Bohu Huang
+    conference_short: AAAI
+    conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2405.17137
+    code: https://github.com/ky-ji/Jump-teaching
+    bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
+    # data: https://github.com/wufeim/imagenet3d
+    image: ./assets/img/jump-teaching.png
+
+
   - title: "SP-VLA: A Joint Model Scheduling and Token Pruning Approach for VLA Model Acceleration"
     authors: Ye Li, Yuan Meng, Zewen Sun, <strong>Kangye Ji</strong>, Chen Tang, Jiajun Fan, Xinzhu Ma, Shutao Xia, Zhi Wang, Wenwu Zhu
     conference_short: ICLR
@@ -52,17 +63,6 @@ main:
     code: https://github.com/ChildTang/SP-VLA
     bibtex: https://scholar.googleusercontent.com/scholar.bib?q=info:V0OoRJawHJwJ:scholar.google.com/&output=citation&scisdr=Cn3UjSg3EP_t776DnuM:AHkA5jQAAAAAaXeFhuOUiALIOmXKtrGJ2_3rq9g&scisig=AHkA5jQAAAAAaXeFhmNf9Cu1lMT4AYu1qGkVWm8&scisf=4&ct=citation&cd=-1&hl=zh-CN
     image: ./assets/img/SP-VLA.png
-
-
-  - title: "Jump-teaching: Combating Sample Selection Bias via Temporal Disagreement"
-    authors: <strong>Kangye Ji</strong>, Fei Cheng, Zeqing Wang, Qichang Zhang, Bohu Huang
-    conference_short: AAAI
-    conference: The Association for the Advancement of Artificial Intelligence  <strong>(AAAI)</strong>, 2026.
-    pdf: https://arxiv.org/pdf/2405.17137
-    code: https://github.com/ky-ji/Jump-teaching
-    bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
-    # data: https://github.com/wufeim/imagenet3d
-    image: ./assets/img/jump-teaching.png
   
   - title: "SAMCL: Empowering SAM to Continually Learn from Dynamic Domains with Extreme Storage Efficiency"
     authors: Zeqing Wang, <strong>Kangye Ji</strong>, Di Wang, Haibin Zhang, Fei Cheng
