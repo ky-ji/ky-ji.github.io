@@ -12,7 +12,7 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 ## Research Interests
 
 - **Efficient AI:** memory-efficient, computation-efficient, and data-efficient algorithms for training, fine-tuning, and inference
-- **Emodied AI:** vision-language-action models, diffusion polices.
+- **Embodied AI:** vision-language-action models, diffusion policies.
 
 
 {% include_relative _includes/publications.md %}
@@ -31,7 +31,5 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 
 
 ## Friends
-- [Mingshuo Cai](https://cfcys.github.io/) Master sutdent at Nanjing University, researching 3DVision.
-- [Zeqing Wang](https://inv-wzq.github.io/) Master sutdent at National University of Singapore, researching Efficient AI.
-
-
+- [Mingshuo Cai](https://cfcys.github.io/) Master's student at Nanjing University, researching 3D Vision.
+- [Zeqing Wang](https://inv-wzq.github.io/) Master's student at National University of Singapore, researching Efficient AI.
