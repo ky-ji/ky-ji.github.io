@@ -15,7 +15,7 @@ main:
     conference_short: ICML
     conference: International Conference on Machine Learning <strong>(ICML)</strong>, 2026.
     pdf: https://arxiv.org/pdf/2601.12894
-    # bibtex: https://dblp.org/rec/journals/corr/abs-2405-17137.html?view=bibtex
+    bibtex: https://arxiv.org/bibtex/2601.12894
     # data: https://github.com/wufeim/imagenet3d
     code: https://github.com/ky-ji/SAG
     page: https://sparse-actiongen.github.io/
