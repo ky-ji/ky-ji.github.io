@@ -11,7 +11,7 @@ main:
   #   notes: Early Accept
 
   - title: "Sparse ActionGen: Accelerating Diffusion Policy with Real-time Pruning"
-    authors: <strong>Kangye Ji</strong>, Yuan Meng, Jianbo Zhou, Ye Li, Hanyun Cui, Zhi Wang
+    authors: <strong>Kangye Ji</strong>, Jianbo Zhou, Yuan Meng, Ye Li, Hanyun Cui, Zhi Wang
     conference_short: ICML
     conference: International Conference on Machine Learning <strong>(ICML)</strong>, 2026.
     pdf: https://arxiv.org/pdf/2601.12894
