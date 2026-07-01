@@ -34,7 +34,7 @@
     <link rel="stylesheet" href="./assets/css/publications-no-dark-mode.css">
     {% endif %}
 
-    <!-- Hidden ClustrMaps Stats -->
+    <!-- Hidden Visitor Map -->
     <style>
       .hidden-stats-panel {
         display: none;
@@ -68,14 +68,32 @@
         transition: color 0.2s;
       }
       .hidden-stats-panel .close-btn:hover { color: #fff; }
-      .hidden-stats-panel .clustrmaps-container {
+      .hidden-stats-panel .visitor-map-container {
         border-radius: 8px;
         overflow: hidden;
         background: rgba(255,255,255,0.05);
+        min-width: 308px;
+        min-height: 334px;
+        text-align: center;
       }
-      /* Hidden tracker for stats collection (invisible) */
-      .clustrmaps-hidden { position: absolute; left: -9999px; top: -9999px; }
+      .hidden-stats-panel .visitor-map-container [data-fp-globe] {
+        margin: 0 auto;
+      }
+      .hidden-stats-panel .visitor-map-container canvas {
+        margin: 0 auto;
+      }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      @media (max-width: 420px) {
+        .hidden-stats-panel {
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          padding: 16px;
+        }
+        .hidden-stats-panel .visitor-map-container {
+          min-width: 0;
+        }
+      }
     </style>
 
   </head>
@@ -156,8 +174,8 @@
     <div class="hidden-stats-panel" id="statsPanel">
       <span class="close-btn" onclick="document.getElementById('statsPanel').classList.remove('show')">&times;</span>
       <div class="panel-title">Visitor Map</div>
-      <div class="clustrmaps-container">
-        <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=Ue1K6B9nQpEEKF8EoTmpiPNy4f78eE5CxrhS14z1d_I&cl=ffffff&w=300&t=tt"></script>
+      <div class="visitor-map-container">
+        <script async type="text/javascript" src="https://feed-pulse.com/api/embed/visitor-globe.js?site_id=d7f505f1-3f99-4e7c-b6ce-13299cea2ab1&map=globe&theme=sky&sz=sm&speed=normal"></script>
       </div>
     </div>
 
@@ -166,20 +184,32 @@
       // Secret: Press 'K' 3 times to show stats, or add ?k=1 to URL
       (function() {
         var kCount = 0, kTimer;
+        function isShortcutKey(e) {
+          var key = (e.key || '').toLowerCase();
+          return key === 'k' || e.code === 'KeyK' || e.keyCode === 75 || e.which === 75;
+        }
+        function isEditableTarget(target) {
+          var tag = (target && target.tagName || '').toLowerCase();
+          return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
+        }
+        function toggleStatsPanel() {
+          var panel = document.getElementById('statsPanel');
+          if (panel) panel.classList.toggle('show');
+        }
         document.addEventListener('keydown', function(e) {
-          if (e.key === 'k' || e.key === 'K') {
-            kCount++;
-            clearTimeout(kTimer);
-            kTimer = setTimeout(function() { kCount = 0; }, 1000);
-            if (kCount >= 3) {
-              document.getElementById('statsPanel').classList.toggle('show');
-              kCount = 0;
-            }
+          if (isEditableTarget(e.target) || !isShortcutKey(e)) return;
+          kCount++;
+          clearTimeout(kTimer);
+          kTimer = setTimeout(function() { kCount = 0; }, 4000);
+          if (kCount >= 3) {
+            toggleStatsPanel();
+            kCount = 0;
           }
-        });
+        }, true);
         // URL param check
         if (new URLSearchParams(window.location.search).get('k') === '1') {
-          document.getElementById('statsPanel').classList.add('show');
+          var panel = document.getElementById('statsPanel');
+          if (panel) panel.classList.add('show');
         }
       })();
     </script>
