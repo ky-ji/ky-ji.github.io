@@ -52,6 +52,30 @@ class PagesWorkflowTest < Minitest::Test
     refute_includes condition, "refs/heads/main"
   end
 
+  def assert_fragments_in_order(source, fragments)
+    offset = 0
+    fragments.each do |fragment|
+      found = source.index(fragment, offset)
+      refute_nil found, "expected #{fragment.inspect} after offset #{offset}"
+      offset = found + fragment.length
+    end
+  end
+
+  def expected_concurrency_bucket(
+    event_name:,
+    deploy: nil,
+    default_ref: true,
+    pr_number: nil,
+    run_id: 9001
+  )
+    return "pr-#{pr_number}" if event_name == "pull_request"
+    if event_name == "workflow_dispatch" && (deploy != true || !default_ref)
+      return "manual-#{run_id}"
+    end
+
+    "production"
+  end
+
   def test_has_all_required_triggers
     refute_empty WORKFLOW, "expected .github/workflows/pages.yml to exist"
     assert_equal ["main"], triggers.dig("push", "branches")
@@ -193,16 +217,44 @@ class PagesWorkflowTest < Minitest::Test
     refute_includes WORKFLOW, "/tmp"
   end
 
-  def test_non_deploying_runs_do_not_share_deployment_concurrency
-    refute workflow.key?("concurrency")
+  def test_workflow_concurrency_keeps_non_deploying_runs_outside_production
+    concurrency = workflow.fetch("concurrency", {})
+    group = concurrency["group"]
+
+    refute_nil group
+    assert_fragments_in_order(group, [
+      "format('{0}-{1}', github.workflow",
+      "github.event_name == 'pull_request'",
+      "format('pr-{0}', github.event.pull_request.number)",
+      "github.event_name == 'workflow_dispatch' && inputs.deploy != true",
+      "format('manual-{0}', github.run_id)",
+      "github.event_name == 'workflow_dispatch' && github.ref != format('refs/heads/{0}', github.event.repository.default_branch)",
+      "format('manual-{0}', github.run_id)",
+      "'production'"
+    ])
+    assert_equal 2, group.scan("format('manual-{0}', github.run_id)").length
+    refute_includes group, "refs/heads/main"
+    assert_equal false, concurrency["cancel-in-progress"]
   end
 
-  def test_deploy_job_serializes_production_deployments
-    concurrency = deploy_job.fetch("concurrency", {})
+  def test_deploy_job_does_not_own_separate_concurrency
+    refute deploy_job.key?("concurrency")
+  end
 
-    assert_equal "${{ format('{0}-production', github.workflow) }}",
-      concurrency["group"]
-    assert_equal false, concurrency["cancel-in-progress"]
+  def test_concurrency_bucket_outcomes_are_unambiguous
+    cases = [
+      ["push main", {event_name: "push"}, "production"],
+      ["schedule", {event_name: "schedule"}, "production"],
+      ["pull request", {event_name: "pull_request", pr_number: 42}, "pr-42"],
+      ["default manual deploy", {event_name: "workflow_dispatch", deploy: true}, "production"],
+      ["default manual no deploy", {event_name: "workflow_dispatch", deploy: false}, "manual-9001"],
+      ["nondefault manual deploy", {event_name: "workflow_dispatch", deploy: true, default_ref: false}, "manual-9001"],
+      ["nondefault manual no deploy", {event_name: "workflow_dispatch", deploy: false, default_ref: false}, "manual-9001"]
+    ]
+
+    cases.each do |label, inputs, expected|
+      assert_equal expected, expected_concurrency_bucket(**inputs), label
+    end
   end
 
   def test_ignores_only_the_generated_visitor_snapshot
