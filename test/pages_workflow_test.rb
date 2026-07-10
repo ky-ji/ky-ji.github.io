@@ -19,8 +19,12 @@ class PagesWorkflowTest < Minitest::Test
     workflow.fetch("jobs", {})
   end
 
+  def build_job
+    jobs.fetch("build", {})
+  end
+
   def build_steps
-    jobs.dig("build", "steps") || []
+    build_job["steps"] || []
   end
 
   def deploy_job
@@ -29,6 +33,10 @@ class PagesWorkflowTest < Minitest::Test
 
   def named_step(name)
     build_steps.find { |step| step["name"] == name } || {}
+  end
+
+  def build_step_using(action)
+    build_steps.find { |step| step["uses"] == action } || {}
   end
 
   def all_build_commands
@@ -66,6 +74,16 @@ class PagesWorkflowTest < Minitest::Test
       actions/upload-pages-artifact@v5
       actions/deploy-pages@v5
     ].each { |action| assert_includes uses, action }
+  end
+
+  def test_build_job_uses_pinned_runtime_configuration
+    ruby_setup = build_step_using("ruby/setup-ruby@v1")
+    node_setup = build_step_using("actions/setup-node@v6")
+
+    assert_equal "ubuntu-latest", build_job["runs-on"]
+    assert_equal "2.6", ruby_setup.dig("with", "ruby-version")
+    assert_equal true, ruby_setup.dig("with", "bundler-cache")
+    assert_equal "22", node_setup.dig("with", "node-version")
   end
 
   def test_runs_all_tests_before_snapshot_generation
