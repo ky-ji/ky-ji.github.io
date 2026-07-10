@@ -30,16 +30,60 @@
     return value !== null && typeof value === 'object' && !Array.isArray(value);
   }
 
-  function exactOwnKeys(value, expectedKeys) {
+  function noOwnSymbols(value) {
+    return typeof Object.getOwnPropertySymbols !== 'function' ||
+      Object.getOwnPropertySymbols(value).length === 0;
+  }
+
+  function dataDescriptor(value, key, enumerable) {
+    var descriptor = Object.getOwnPropertyDescriptor(value, key);
+
+    return descriptor && descriptor.enumerable === enumerable &&
+      hasOwn.call(descriptor, 'value') &&
+      !hasOwn.call(descriptor, 'get') && !hasOwn.call(descriptor, 'set');
+  }
+
+  function exactOwnDataProperties(value, expectedKeys) {
     var actualKeys;
     var index;
 
-    if (!objectValue(value)) return false;
+    if (!objectValue(value) || Object.getPrototypeOf(value) !== Object.prototype ||
+        !noOwnSymbols(value)) {
+      return false;
+    }
     actualKeys = Object.getOwnPropertyNames(value);
     if (actualKeys.length !== expectedKeys.length) return false;
 
     for (index = 0; index < expectedKeys.length; index += 1) {
-      if (!hasOwn.call(value, expectedKeys[index])) return false;
+      if (!dataDescriptor(value, expectedKeys[index], true)) return false;
+    }
+    return true;
+  }
+
+  function denseOrdinaryArray(value) {
+    var lengthDescriptor;
+    var length;
+    var actualKeys;
+    var index;
+
+    if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype ||
+        !noOwnSymbols(value)) {
+      return false;
+    }
+
+    lengthDescriptor = Object.getOwnPropertyDescriptor(value, 'length');
+    if (!lengthDescriptor || lengthDescriptor.enumerable ||
+        !hasOwn.call(lengthDescriptor, 'value') ||
+        hasOwn.call(lengthDescriptor, 'get') || hasOwn.call(lengthDescriptor, 'set')) {
+      return false;
+    }
+
+    length = lengthDescriptor.value;
+    actualKeys = Object.getOwnPropertyNames(value);
+    if (actualKeys.length !== length + 1) return false;
+
+    for (index = 0; index < length; index += 1) {
+      if (!dataDescriptor(value, String(index), true)) return false;
     }
     return true;
   }
@@ -103,7 +147,7 @@
   }
 
   function validCountry(entry) {
-    return exactOwnKeys(entry, COUNTRY_KEYS) &&
+    return exactOwnDataProperties(entry, COUNTRY_KEYS) &&
       typeof entry.code === 'string' &&
       /^[A-Z]{2}$/.test(entry.code) &&
       safeInteger(entry.visitors) &&
@@ -117,11 +161,11 @@
     var index;
     var entry;
 
-    if (!exactOwnKeys(period, PERIOD_VALUE_KEYS)) return false;
+    if (!exactOwnDataProperties(period, PERIOD_VALUE_KEYS)) return false;
     if (!nonnegativeCount(period.pageviews) || !nonnegativeCount(period.visitors)) {
       return false;
     }
-    if (period.visitors > period.pageviews || !Array.isArray(period.countries)) {
+    if (period.visitors > period.pageviews || !denseOrdinaryArray(period.countries)) {
       return false;
     }
 
@@ -150,7 +194,7 @@
     var previous;
     var current;
 
-    if (!exactOwnKeys(snapshot, SNAPSHOT_KEYS)) return false;
+    if (!exactOwnDataProperties(snapshot, SNAPSHOT_KEYS)) return false;
     if (snapshot.schema_version !== 1 || snapshot.site !== 'ky-ji.github.io' ||
         snapshot.timezone !== 'Asia/Seoul') {
       return false;
@@ -163,7 +207,7 @@
     }
 
     periods = snapshot.periods;
-    if (!exactOwnKeys(periods, PERIOD_KEYS)) return false;
+    if (!exactOwnDataProperties(periods, PERIOD_KEYS)) return false;
     for (index = 0; index < PERIOD_KEYS.length; index += 1) {
       if (!validPeriod(periods[PERIOD_KEYS[index]])) return false;
     }
@@ -207,7 +251,7 @@
       pageviews: period.pageviews,
       visitors: period.visitors,
       viewsPerVisitor: period.visitors ?
-        Math.round((period.pageviews / period.visitors) * 10) / 10 : 0,
+        Number((period.pageviews / period.visitors).toFixed(1)) : 0,
       countryCount: countries.length,
       countries: countries
     };

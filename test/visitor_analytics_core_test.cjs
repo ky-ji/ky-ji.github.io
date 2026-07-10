@@ -24,6 +24,27 @@ function assertInvalid(change, message) {
   assert.equal(core.validateSnapshot(changed(change)), false, message);
 }
 
+function accessorBacked(select, key) {
+  const candidate = copy(snapshot);
+  const target = select(candidate);
+  const original = target[key];
+  let reads = 0;
+
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: true,
+    get: function () {
+      reads += 1;
+      return original;
+    }
+  });
+
+  return {
+    candidate: candidate,
+    reads: function () { return reads; }
+  };
+}
+
 function shortcutHarness(initialTime) {
   let currentTime = initialTime;
   let toggleCount = 0;
@@ -89,6 +110,22 @@ test('rounds views per visitor to one decimal place', function () {
   assert.equal(core.viewModel(candidate, 'all').viewsPerVisitor, 3.3);
 });
 
+test('rounds views per visitor without overflowing safe integers', function () {
+  const maximum = 9007199254740991;
+  const candidate = changed(function (value) {
+    ['7d', '30d', 'all'].forEach(function (periodKey) {
+      value.periods[periodKey] = {
+        pageviews: maximum,
+        visitors: 1,
+        countries: [{ code: 'KR', visitors: 1 }]
+      };
+    });
+  });
+
+  assert.equal(core.validateSnapshot(candidate), true);
+  assert.equal(core.viewModel(candidate, 'all').viewsPerVisitor, maximum);
+});
+
 test('uses a zero ratio when there are no visitors', function () {
   const candidate = changed(function (value) {
     value.periods['7d'] = { pageviews: 0, visitors: 0, countries: [] };
@@ -133,6 +170,141 @@ test('requires the exact own top-level snapshot keys', function () {
   });
   Object.setPrototypeOf(inheritedSite, { site: 'ky-ji.github.io' });
   assert.equal(core.validateSnapshot(inheritedSite), false);
+});
+
+test('rejects a top-level accessor without invoking its getter', function () {
+  const wrapped = accessorBacked(function (value) { return value; }, 'periods');
+
+  assert.throws(function () { core.viewModel(wrapped.candidate, '7d'); }, TypeError);
+  assert.equal(wrapped.reads(), 0);
+});
+
+test('rejects nested object accessors without invoking their getters', function () {
+  const cases = [
+    [function (value) { return value.periods; }, '7d'],
+    [function (value) { return value.periods['7d']; }, 'pageviews']
+  ];
+
+  cases.forEach(function (entry) {
+    const wrapped = accessorBacked(entry[0], entry[1]);
+    assert.equal(core.validateSnapshot(wrapped.candidate), false, entry[1]);
+    assert.equal(wrapped.reads(), 0, entry[1] + ' getter reads');
+  });
+});
+
+test('rejects country accessors without invoking their getters', function () {
+  const wrapped = accessorBacked(function (value) {
+    return value.periods['7d'].countries[0];
+  }, 'visitors');
+
+  assert.equal(core.validateSnapshot(wrapped.candidate), false);
+  assert.equal(wrapped.reads(), 0);
+});
+
+test('rejects accessor-backed array indices without invoking their getters', function () {
+  const wrapped = accessorBacked(function (value) {
+    return value.periods['7d'].countries;
+  }, '0');
+
+  assert.equal(core.validateSnapshot(wrapped.candidate), false);
+  assert.equal(wrapped.reads(), 0);
+});
+
+test('requires expected properties to be enumerable at every schema level', function () {
+  const cases = [
+    [function (value) { return value; }, 'site'],
+    [function (value) { return value.periods; }, '7d'],
+    [function (value) { return value.periods['7d']; }, 'pageviews'],
+    [function (value) { return value.periods['7d'].countries[0]; }, 'code'],
+    [function (value) { return value.periods['7d'].countries; }, '0']
+  ];
+
+  cases.forEach(function (entry) {
+    assertInvalid(function (value) {
+      const target = entry[0](value);
+      const descriptor = Object.getOwnPropertyDescriptor(target, entry[1]);
+      descriptor.enumerable = false;
+      Object.defineProperty(target, entry[1], descriptor);
+    }, entry[1]);
+  });
+});
+
+test('rejects extra non-enumerable properties at every structured level', function () {
+  const selectors = [
+    function (value) { return value; },
+    function (value) { return value.periods; },
+    function (value) { return value.periods['7d']; },
+    function (value) { return value.periods['7d'].countries[0]; },
+    function (value) { return value.periods['7d'].countries; }
+  ];
+
+  selectors.forEach(function (select, index) {
+    assertInvalid(function (value) {
+      Object.defineProperty(select(value), 'private_data', {
+        configurable: true,
+        enumerable: false,
+        value: index
+      });
+    }, 'level ' + index);
+  });
+});
+
+test('rejects symbol properties at every structured level', function () {
+  const selectors = [
+    function (value) { return value; },
+    function (value) { return value.periods; },
+    function (value) { return value.periods['7d']; },
+    function (value) { return value.periods['7d'].countries[0]; },
+    function (value) { return value.periods['7d'].countries; }
+  ];
+
+  selectors.forEach(function (select, index) {
+    assertInvalid(function (value) {
+      select(value)[Symbol('private-' + index)] = true;
+    }, 'level ' + index);
+  });
+});
+
+test('rejects non-plain record prototypes at every object level', function () {
+  const selectors = [
+    function (value) { return value; },
+    function (value) { return value.periods; },
+    function (value) { return value.periods['7d']; },
+    function (value) { return value.periods['7d'].countries[0]; }
+  ];
+
+  selectors.forEach(function (select, index) {
+    assertInvalid(function (value) {
+      Object.setPrototypeOf(select(value), { private_data: index });
+    }, 'level ' + index);
+  });
+});
+
+test('requires countries to be dense ordinary arrays with only own indices', function () {
+  assertInvalid(function (value) {
+    value.periods['7d'].countries.private_data = true;
+  }, 'extra named property');
+  assertInvalid(function (value) {
+    Object.setPrototypeOf(
+      value.periods['7d'].countries,
+      Object.create(Array.prototype)
+    );
+  }, 'custom array prototype');
+  assertInvalid(function (value) {
+    const countries = value.periods['7d'].countries;
+    const inheritedEntry = countries[0];
+    const prototype = Object.create(Array.prototype);
+    delete countries[0];
+    Object.defineProperty(prototype, '0', {
+      configurable: true,
+      enumerable: true,
+      value: inheritedEntry
+    });
+    Object.setPrototypeOf(countries, prototype);
+  }, 'inherited array index');
+  assertInvalid(function (value) {
+    delete value.periods['7d'].countries[0];
+  }, 'sparse array');
 });
 
 test('rejects extra public-data keys at every nesting level', function () {
