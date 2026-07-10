@@ -193,17 +193,16 @@ class PagesWorkflowTest < Minitest::Test
     refute_includes WORKFLOW, "/tmp"
   end
 
-  def test_uses_stable_pages_concurrency
-    group = workflow.dig("concurrency", "group")
+  def test_non_deploying_runs_do_not_share_deployment_concurrency
+    refute workflow.key?("concurrency")
+  end
 
-    assert_equal "Deploy GitHub Pages", workflow["name"]
-    assert_includes group, "github.workflow"
-    assert_includes group, "github.event_name == 'pull_request'"
-    assert_includes group, "format('pr-{0}', github.event.pull_request.number)"
-    assert_includes group, "'production'"
-    assert_includes group, "&&"
-    assert_includes group, "||"
-    assert_equal false, workflow.dig("concurrency", "cancel-in-progress")
+  def test_deploy_job_serializes_production_deployments
+    concurrency = deploy_job.fetch("concurrency", {})
+
+    assert_equal "${{ format('{0}-production', github.workflow) }}",
+      concurrency["group"]
+    assert_equal false, concurrency["cancel-in-progress"]
   end
 
   def test_ignores_only_the_generated_visitor_snapshot
