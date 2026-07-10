@@ -3,7 +3,18 @@ require "time"
 
 module VisitorAnalytics
   PERIOD_KEYS = %w[7d 30d all].freeze
+  SNAPSHOT_KEYS = %w[schema_version site timezone data_since generated_at periods].freeze
+  PERIOD_VALUE_KEYS = %w[pageviews visitors countries].freeze
+  COUNTRY_KEYS = %w[code visitors].freeze
+  PAGEVIEW_EVENT_VALUES = %w[false 0].freeze
+  EXPORT_HEADERS = [
+    "2Path", "Title", "Event", "UserAgent", "Browser", "System", "Session",
+    "Bot", "Referrer", "Referrer scheme", "Screen size", "Location",
+    "FirstVisit", "Date"
+  ].freeze
   Hit = Struct.new(:at, :session, :country)
+
+  class InvalidExportError < StandardError; end
 
   class SnapshotBuilder
     def initialize(site:, data_since:, now: Time.now)
@@ -32,8 +43,8 @@ module VisitorAnalytics
 
     def parse_hits(csv_text)
       hits = []
-      CSV.parse(csv_text, headers: true).each do |row|
-        next if truthy?(row["Event"]) || bot?(row["Bot"])
+      parse_export(csv_text).each do |row|
+        next unless pageview?(row["Event"], row["Bot"])
 
         begin
           at = Time.iso8601(row["Date"].to_s)
@@ -45,6 +56,16 @@ module VisitorAnalytics
         hits << Hit.new(at, row["Session"].to_s.strip, country(row["Location"]))
       end
       hits.sort_by(&:at)
+    end
+
+    def parse_export(csv_text)
+      export = CSV.parse(csv_text, headers: true)
+      unless export.headers == EXPORT_HEADERS
+        raise InvalidExportError, "unsupported GoatCounter v2 CSV export headers"
+      end
+      export
+    rescue CSV::MalformedCSVError => error
+      raise InvalidExportError, "malformed GoatCounter CSV export: " + error.message
     end
 
     def summarize(hits, start_at)
@@ -72,57 +93,92 @@ module VisitorAnalytics
       }
     end
 
-    def truthy?(value)
-      %w[1 true yes].include?(value.to_s.downcase)
-    end
-
-    def bot?(value)
-      text = value.to_s.strip
-      !text.empty? && text != "0"
+    def pageview?(event, bot)
+      PAGEVIEW_EVENT_VALUES.include?(event.to_s.strip.downcase) && bot.to_s == "0"
     end
 
     def country(value)
-      code = value.to_s.upcase[/\A[A-Z]{2}/]
-      code unless code.to_s.empty?
+      match = value.to_s.upcase.match(/\A([A-Z]{2})(?:-[A-Z0-9]{1,3})?\z/)
+      match && match[1]
     end
   end
 
   def self.valid_snapshot?(value)
-    return false unless value.is_a?(Hash)
+    return false unless exact_keys?(value, SNAPSHOT_KEYS)
     return false unless value["schema_version"] == 1
     return false unless value["site"].is_a?(String)
     return false unless value["timezone"] == "Asia/Seoul"
-    return false unless time_string?(value["data_since"])
-    return false unless time_string?(value["generated_at"])
+
+    data_since = parse_time(value["data_since"])
+    generated_at = parse_time(value["generated_at"])
+    return false unless data_since && generated_at && data_since <= generated_at
 
     periods = value["periods"]
-    return false unless periods.is_a?(Hash) && PERIOD_KEYS.all? { |key| periods.key?(key) }
+    return false unless exact_keys?(periods, PERIOD_KEYS)
+    return false unless PERIOD_KEYS.all? { |key| valid_period?(periods[key]) }
 
-    PERIOD_KEYS.all? do |key|
-      period = periods[key]
-      next false unless period.is_a?(Hash)
-      next false unless nonnegative_integer?(period["pageviews"])
-      next false unless nonnegative_integer?(period["visitors"])
-      countries = period["countries"]
-      countries.is_a?(Array) && countries.all? do |entry|
-        entry.is_a?(Hash) &&
-          entry["code"].to_s.match?(/\A[A-Z]{2}\z/) &&
-          nonnegative_integer?(entry["visitors"]) &&
-          entry["visitors"] > 0
-      end
-    end
+    nondecreasing?(PERIOD_KEYS.map { |key| periods[key]["pageviews"] }) &&
+      nondecreasing?(PERIOD_KEYS.map { |key| periods[key]["visitors"] })
   end
+
+  def self.exact_keys?(value, keys)
+    value.is_a?(Hash) &&
+      value.length == keys.length &&
+      keys.all? { |key| value.key?(key) }
+  end
+  private_class_method :exact_keys?
+
+  def self.valid_period?(period)
+    return false unless exact_keys?(period, PERIOD_VALUE_KEYS)
+
+    pageviews = period["pageviews"]
+    visitors = period["visitors"]
+    return false unless nonnegative_integer?(pageviews)
+    return false unless nonnegative_integer?(visitors) && visitors <= pageviews
+
+    countries = period["countries"]
+    return false unless countries.is_a?(Array) && countries.all? { |entry| valid_country?(entry) }
+
+    codes = countries.map { |entry| entry["code"] }
+    return false unless codes.uniq.length == codes.length
+
+    sorted_countries = countries.sort_by do |entry|
+      [-entry["visitors"], entry["code"]]
+    end
+    return false unless countries == sorted_countries
+
+    countries.inject(0) { |total, entry| total + entry["visitors"] } <= visitors
+  end
+  private_class_method :valid_period?
+
+  def self.valid_country?(entry)
+    return false unless exact_keys?(entry, COUNTRY_KEYS)
+
+    code = entry["code"]
+    visitors = entry["visitors"]
+    code.is_a?(String) &&
+      code.match?(/\A[A-Z]{2}\z/) &&
+      nonnegative_integer?(visitors) &&
+      visitors > 0
+  end
+  private_class_method :valid_country?
+
+  def self.nondecreasing?(values)
+    values.each_cons(2).all? { |left, right| left <= right }
+  end
+  private_class_method :nondecreasing?
+
+  def self.parse_time(value)
+    return unless value.is_a?(String)
+
+    Time.iso8601(value)
+  rescue ArgumentError
+    nil
+  end
+  private_class_method :parse_time
 
   def self.nonnegative_integer?(value)
     value.is_a?(Integer) && value >= 0
   end
   private_class_method :nonnegative_integer?
-
-  def self.time_string?(value)
-    Time.iso8601(value.to_s)
-    true
-  rescue ArgumentError
-    false
-  end
-  private_class_method :time_string?
 end
