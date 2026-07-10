@@ -655,6 +655,18 @@ test('toggles after three human-paced K presses', () => {
   assert.equal(toggles, 1);
 });
 
+test('requires all three K presses inside one four-second window', () => {
+  let toggles = 0;
+  let now = 0;
+  const handler = core.createShortcutHandler(() => { toggles += 1; }, () => now);
+  handler({ key: 'k', target: {} });
+  now = 3500;
+  handler({ key: 'k', target: {} });
+  now = 7000;
+  handler({ key: 'k', target: {} });
+  assert.equal(toggles, 0);
+});
+
 test('ignores editable targets', () => {
   let toggles = 0;
   const handler = core.createShortcutHandler(() => { toggles += 1; }, () => 0);
@@ -791,16 +803,20 @@ Return country rows sorted exactly as supplied by the validated snapshot.
 
   function createShortcutHandler(toggle, clock) {
     var count = 0;
-    var lastAt = null;
+    var firstAt = null;
     var now = clock || Date.now;
     return function (event) {
       if (isEditable(event.target) || !isK(event)) return false;
       var at = now();
-      count = lastAt !== null && at - lastAt <= 4000 ? count + 1 : 1;
-      lastAt = at;
+      if (firstAt === null || at - firstAt > 4000) {
+        count = 1;
+        firstAt = at;
+      } else {
+        count += 1;
+      }
       if (count < 3) return false;
       count = 0;
-      lastAt = null;
+      firstAt = null;
       toggle();
       return true;
     };
