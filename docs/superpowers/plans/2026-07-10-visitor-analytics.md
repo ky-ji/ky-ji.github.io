@@ -61,7 +61,7 @@
 Use this exact fixture. It produces four accepted pageviews, two anonymous sessions, two countries, one excluded bot, one excluded event, one pageview without a session, and one invalid-date row.
 
 ~~~csv
-"2,Path",Title,Event,User-Agent,Browser,System,Session,Bot,Referrer,Referrer scheme,Screen size,Location,FirstVisit,Date
+2Path,Title,Event,UserAgent,Browser,System,Session,Bot,Referrer,Referrer scheme,Screen size,Location,FirstVisit,Date
 /,Home,false,,Chrome,Mac OS,session-a,0,,,1440x900,KR-11,true,2026-07-09T01:00:00Z
 /projects,Projects,false,,Chrome,Mac OS,session-a,0,Google,g,1440x900,KR-11,false,2026-07-09T01:05:00Z
 /,Home,false,,Firefox,Linux,session-b,0,,,1920x1080,US-CA,true,2026-07-02T00:00:00Z
