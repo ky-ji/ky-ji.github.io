@@ -21,7 +21,7 @@ module VisitorStatsBuild
   class InvalidSnapshotError < StandardError; end
   class FallbackError < StandardError; end
 
-  def self.run(arguments, environment)
+  def self.run(arguments, environment, export_timeout: 120)
     options = parse_options(arguments)
     site_code = environment.fetch("GOATCOUNTER_SITE_CODE")
     token = environment.fetch("GOATCOUNTER_API_KEY")
@@ -34,7 +34,8 @@ module VisitorStatsBuild
         base_url: environment["GOATCOUNTER_BASE_URL"],
         allow_insecure_loopback:
           environment["GOATCOUNTER_ALLOW_INSECURE_LOOPBACK"] == "1",
-        data_since: data_since
+        data_since: data_since,
+        export_timeout: export_timeout
       )
     rescue StandardError => error
       warn "Fresh visitor snapshot unavailable: " + error.class.name
@@ -74,7 +75,8 @@ module VisitorStatsBuild
     token:,
     base_url:,
     allow_insecure_loopback:,
-    data_since:
+    data_since:,
+    export_timeout:
   )
     client = GoatCounterClient.new(
       site_code: site_code,
@@ -83,16 +85,19 @@ module VisitorStatsBuild
       allow_insecure_loopback: allow_insecure_loopback
     )
     snapshot_now = nil
+    zero_confirmed = false
     csv = begin
-      client.export_csv
-    rescue StandardError => export_error
+      client.export_csv(timeout: export_timeout)
+    rescue GoatCounterClient::ExportUnavailableError => export_error
       snapshot_now = Time.now
-      confirmed_zero_csv(
+      confirmed = confirmed_zero_csv(
         client: client,
         data_since: data_since,
         now: snapshot_now,
         failure: export_error
       )
+      zero_confirmed = true
+      confirmed
     end
     if csv == ""
       snapshot_now = Time.now
@@ -104,6 +109,7 @@ module VisitorStatsBuild
           "empty GoatCounter CSV export"
         )
       )
+      zero_confirmed = true
     end
     snapshot_now ||= Time.now
     snapshot = VisitorAnalytics::SnapshotBuilder.new(
@@ -111,21 +117,41 @@ module VisitorStatsBuild
       data_since: data_since,
       now: snapshot_now
     ).build(csv)
-    validate_snapshot(snapshot, data_since: data_since)
+    snapshot = validate_snapshot(snapshot, data_since: data_since)
+    if snapshot.dig("periods", "all", "pageviews") == 0 && !zero_confirmed
+      confirm_zero!(
+        client: client,
+        data_since: data_since,
+        now: snapshot_now,
+        failure: InvalidSnapshotError.new(
+          "zero visitor snapshot was not confirmed"
+        )
+      )
+    end
+    snapshot
   end
   private_class_method :fresh_snapshot
 
   def self.confirmed_zero_csv(client:, data_since:, now:, failure:)
+    confirm_zero!(
+      client: client,
+      data_since: data_since,
+      now: now,
+      failure: failure
+    )
+    CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS)
+  end
+  private_class_method :confirmed_zero_csv
+
+  def self.confirm_zero!(client:, data_since:, now:, failure:)
     zero_pageviews = begin
       client.zero_pageviews?(start_at: data_since, end_at: now)
     rescue StandardError
       raise failure
     end
     raise failure unless zero_pageviews
-
-    CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS)
   end
-  private_class_method :confirmed_zero_csv
+  private_class_method :confirm_zero!
 
   def self.fallback_snapshot(url, data_since:)
     uri = URI(url)

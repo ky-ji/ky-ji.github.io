@@ -12,6 +12,7 @@ class GoatCounterClient
   TIMEOUT_MESSAGE = "GoatCounter export operation reached its timeout".freeze
 
   class ResponseError < StandardError; end
+  class ExportUnavailableError < ResponseError; end
   class TimeoutError < StandardError; end
 
   def initialize(
@@ -221,7 +222,11 @@ class GoatCounterClient
       http.read_timeout = [30, remaining].min
       http.start { |session| session.request(http_request) }
     end
-    unless expected_statuses.include?(response.code.to_i)
+    status = response.code.to_i
+    if method == :post && path == "/api/v0/export" && status == 404
+      raise ExportUnavailableError, "GoatCounter returned HTTP 404 for export creation"
+    end
+    unless expected_statuses.include?(status)
       raise ResponseError, "GoatCounter returned HTTP " + response.code
     end
     response

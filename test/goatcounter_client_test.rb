@@ -172,7 +172,19 @@ class GoatCounterClientTest < Minitest::Test
     @create_status = 503
     @create_body = "private create response"
 
-    assert_response_error_without_secrets { client.export_csv }
+    error = assert_response_error_without_secrets { client.export_csv }
+    refute_instance_of GoatCounterClient::ExportUnavailableError, error
+    assert_equal ["/api/v0/export"], @requests.map { |request| request[:path] }
+  end
+
+  def test_raises_specific_export_unavailable_error_for_create_404
+    @create_status = 404
+    @create_body = "private empty-account response"
+
+    error = assert_response_error_without_secrets { client.export_csv }
+
+    assert_instance_of GoatCounterClient::ExportUnavailableError, error
+    refute_match(/private empty-account response|secret-token/, error.message)
     assert_equal ["/api/v0/export"], @requests.map { |request| request[:path] }
   end
 
@@ -181,6 +193,18 @@ class GoatCounterClientTest < Minitest::Test
     @status_body = proc { |_poll| "private status response" }
 
     assert_response_error_without_secrets { client.export_csv }
+    assert_equal ["/api/v0/export", "/api/v0/export/42"],
+      @requests.map { |request| request[:path] }
+  end
+
+  def test_status_404_remains_a_generic_response_error
+    @status_status = 404
+    @status_body = proc { |_poll| "private status not found" }
+
+    error = assert_response_error_without_secrets { client.export_csv }
+
+    assert_instance_of GoatCounterClient::ResponseError, error
+    refute_match(/private status not found|secret-token/, error.message)
     assert_equal ["/api/v0/export", "/api/v0/export/42"],
       @requests.map { |request| request[:path] }
   end
@@ -782,6 +806,7 @@ class GoatCounterClientTest < Minitest::Test
     error = assert_raises(GoatCounterClient::ResponseError) { yield }
     assert_match(/HTTP/i, error.message)
     refute_match(/private .* response|secret-token/, error.message)
+    error
   end
 
   def assert_configuration_rejected(options = {})

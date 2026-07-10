@@ -9,6 +9,7 @@ require "uri"
 require "webrick"
 require "zlib"
 require_relative "../lib/visitor_analytics"
+require_relative "../scripts/build_visitor_stats"
 
 class BuildVisitorStatsTest < Minitest::Test
   ROOT = File.expand_path("..", __dir__)
@@ -24,6 +25,7 @@ class BuildVisitorStatsTest < Minitest::Test
     @requests = []
     @create_status = 202
     @create_body = JSON.generate("id" => 42)
+    @create_stream = nil
     @status_status = 200
     @status_body = JSON.generate(
       "id" => 42,
@@ -134,6 +136,131 @@ class BuildVisitorStatsTest < Minitest::Test
       refute requested?("/api/v0/stats/total")
       refute requested?("/fallback.json")
       assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_header_only_export_requires_zero_totals_before_acceptance
+    @download_body = gzip(CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS))
+    @total_body = JSON.generate(
+      "total" => 0,
+      "total_events" => 0,
+      "stats" => []
+    )
+    @fallback_status = 503
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_empty stderr
+      snapshot = JSON.parse(File.read(output))
+      assert VisitorAnalytics.valid_snapshot?(snapshot)
+      assert_equal 0, snapshot.dig("periods", "all", "pageviews")
+      assert_equal [
+        "/api/v0/export",
+        "/api/v0/export/42",
+        "/api/v0/export/42/download",
+        "/api/v0/stats/total"
+      ], api_requests.map { |request| request[:path] }
+      refute requested?("/fallback.json")
+
+      stats_params = URI.decode_www_form(api_requests.last[:query]).to_h
+      assert_equal START, stats_params["start"]
+      assert_equal Time.iso8601(snapshot["generated_at"]),
+        Time.iso8601(stats_params["end"])
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_header_only_export_with_nonzero_totals_uses_fallback
+    @download_body = gzip(CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS))
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: VisitorStatsBuild::InvalidSnapshotError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_header_only_export_preserves_output_when_totals_and_fallback_fail
+    @download_body = gzip(CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS))
+    @total_body = JSON.generate("total" => "private-stats-total")
+    @fallback_status = 404
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+      original = "pre-existing-output\nwith exact bytes\n"
+      File.binwrite(output, original)
+
+      stdout, stderr, status = run_script(output: output)
+
+      refute status.success?
+      assert_empty stdout
+      assert_equal original, File.binread(output)
+      assert_match(/No valid visitor snapshot source/, stderr)
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_corrupt_gzip_with_zero_totals_skips_stats_and_uses_fallback
+    @download_body = "private-corrupt-gzip"
+    @total_body = JSON.generate("total" => 0, "total_events" => 0)
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ResponseError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      refute requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_export_timeout_with_zero_totals_skips_stats_and_uses_fallback
+    @create_stream = trickled_body(JSON.generate("id" => 42))
+    @total_body = JSON.generate("total" => 0, "total_events" => 0)
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+      result = nil
+      stdout, stderr = capture_io do
+        result = VisitorStatsBuild.run(
+          ["--output", output, "--fallback-url", base_url + "/fallback.json"],
+          build_environment,
+          export_timeout: 0.12
+        )
+      end
+
+      assert_equal 0, result
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::TimeoutError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      refute requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
       assert_no_secret_or_private_data(stdout, stderr)
     end
   end
@@ -434,7 +561,7 @@ class BuildVisitorStatsTest < Minitest::Test
       assert_empty stdout
       assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ResponseError\n", stderr
       assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
-      assert requested?("/api/v0/stats/total")
+      refute requested?("/api/v0/stats/total")
       assert requested?("/fallback.json")
       assert_equal ["visitor-stats.json"], Dir.children(directory)
       assert_no_secret_or_private_data(stdout, stderr)
@@ -453,7 +580,8 @@ class BuildVisitorStatsTest < Minitest::Test
 
       assert status.success?, stderr
       assert_empty stdout
-      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ResponseError\n", stderr
+      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ExportUnavailableError\n",
+        stderr
       assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
       assert requested?("/api/v0/stats/total")
       assert requested?("/fallback.json")
@@ -474,7 +602,8 @@ class BuildVisitorStatsTest < Minitest::Test
 
       assert status.success?, stderr
       assert_empty stdout
-      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ResponseError\n", stderr
+      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ExportUnavailableError\n",
+        stderr
       assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
       assert requested?("/api/v0/stats/total")
       assert requested?("/fallback.json")
@@ -527,6 +656,7 @@ class BuildVisitorStatsTest < Minitest::Test
       assert_empty stdout
       assert_match(/Fresh visitor snapshot unavailable: \S+\n\z/, stderr)
       assert_equal fallback, JSON.parse(File.read(output))
+      refute requested?("/api/v0/stats/total")
       assert requested?("/fallback.json")
       assert_no_secret_or_private_data(stdout, stderr)
     end
@@ -665,6 +795,28 @@ class BuildVisitorStatsTest < Minitest::Test
     omitted_env: nil,
     allow_insecure_loopback: true
   )
+    environment = build_environment(
+      start: start,
+      omitted_env: omitted_env,
+      allow_insecure_loopback: allow_insecure_loopback
+    )
+
+    capture_subprocess(
+      environment,
+      RbConfig.ruby,
+      SCRIPT,
+      "--output", output,
+      "--fallback-url", base_url + "/fallback.json",
+      timeout: SUBPROCESS_TIMEOUT,
+      chdir: ROOT
+    )
+  end
+
+  def build_environment(
+    start: START,
+    omitted_env: nil,
+    allow_insecure_loopback: true
+  )
     environment = {
       "GOATCOUNTER_SITE_CODE" => "ky-ji",
       "GOATCOUNTER_API_KEY" => SECRET,
@@ -678,16 +830,7 @@ class BuildVisitorStatsTest < Minitest::Test
       "NO_PROXY" => "127.0.0.1"
     }
     environment[omitted_env] = nil if omitted_env
-
-    capture_subprocess(
-      environment,
-      RbConfig.ruby,
-      SCRIPT,
-      "--output", output,
-      "--fallback-url", base_url + "/fallback.json",
-      timeout: SUBPROCESS_TIMEOUT,
-      chdir: ROOT
-    )
+    environment
   end
 
   def capture_subprocess(environment, *command, timeout:, chdir:)
@@ -776,7 +919,7 @@ class BuildVisitorStatsTest < Minitest::Test
       record(request)
       response.status = @create_status
       response["Content-Type"] = "application/json"
-      response.body = @create_body
+      assign_body(response, @create_stream || @create_body)
     end
     @server.mount_proc("/fallback.json") do |request, response|
       record(request)
@@ -813,10 +956,26 @@ class BuildVisitorStatsTest < Minitest::Test
     buffer.string
   end
 
+  def assign_body(response, body)
+    response.chunked = true if body.respond_to?(:call)
+    response.body = body
+  end
+
+  def trickled_body(value, delay: 0.04, pieces: 6)
+    slice_size = [(value.bytesize.to_f / pieces).ceil, 1].max
+    chunks = value.bytes.each_slice(slice_size).map { |bytes| bytes.pack("C*") }
+    proc do |output|
+      chunks.each_with_index do |chunk, index|
+        output.write(chunk)
+        sleep(delay) unless index == chunks.length - 1
+      end
+    end
+  end
+
   def assert_no_secret_or_private_data(stdout, stderr)
     output = stdout + stderr
     refute_includes output, SECRET
-    refute_match(/private-(?:fresh|invalid|unavailable|stats)/, output)
+    refute_match(/private-(?:fresh|invalid|unavailable|stats|corrupt)/, output)
     refute_includes output, "2Path,Title,Event"
     refute_includes output, '"schema_version"'
   end
