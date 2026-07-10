@@ -5,3 +5,5 @@ Gemfile.lock
 .DS_Store
 .jekyll-cache
 git-update.sh
+.worktrees/
+assets/data/visitor-stats.json

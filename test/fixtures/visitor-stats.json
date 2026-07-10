@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "site": "ky-ji.github.io",
+  "timezone": "Asia/Seoul",
+  "data_since": "2026-07-01T00:00:00+09:00",
+  "generated_at": "2026-07-10T03:00:00Z",
+  "periods": {
+    "7d": {
+      "pageviews": 3,
+      "visitors": 1,
+      "countries": [
+        {
+          "code": "KR",
+          "visitors": 1
+        }
+      ]
+    },
+    "30d": {
+      "pageviews": 4,
+      "visitors": 2,
+      "countries": [
+        {
+          "code": "KR",
+          "visitors": 1
+        },
+        {
+          "code": "US",
+          "visitors": 1
+        }
+      ]
+    },
+    "all": {
+      "pageviews": 4,
+      "visitors": 2,
+      "countries": [
+        {
+          "code": "KR",
+          "visitors": 1
+        },
+        {
+          "code": "US",
+          "visitors": 1
+        }
+      ]
+    }
+  }
+}

@@ -33,68 +33,7 @@
     <link rel="stylesheet" href="./assets/css/style-no-dark-mode.css">
     <link rel="stylesheet" href="./assets/css/publications-no-dark-mode.css">
     {% endif %}
-
-    <!-- Hidden Visitor Map -->
-    <style>
-      .hidden-stats-panel {
-        display: none;
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: rgba(0, 0, 0, 0.9);
-        backdrop-filter: blur(12px);
-        border-radius: 16px;
-        padding: 20px;
-        color: #fff;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 13px;
-        z-index: 9999;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-      }
-      .hidden-stats-panel.show { display: block; animation: fadeIn 0.3s ease; }
-      .hidden-stats-panel .panel-title {
-        font-size: 11px;
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.5);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-      }
-      .hidden-stats-panel .close-btn { 
-        position: absolute; top: 12px; right: 14px; 
-        cursor: pointer; color: rgba(255,255,255,0.3); 
-        font-size: 18px; line-height: 1;
-        transition: color 0.2s;
-      }
-      .hidden-stats-panel .close-btn:hover { color: #fff; }
-      .hidden-stats-panel .visitor-map-container {
-        border-radius: 8px;
-        overflow: hidden;
-        background: rgba(255,255,255,0.05);
-        min-width: 308px;
-        min-height: 334px;
-        text-align: center;
-      }
-      .hidden-stats-panel .visitor-map-container [data-fp-globe] {
-        margin: 0 auto;
-      }
-      .hidden-stats-panel .visitor-map-container canvas {
-        margin: 0 auto;
-      }
-      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      @media (max-width: 420px) {
-        .hidden-stats-panel {
-          left: 12px;
-          right: 12px;
-          bottom: 12px;
-          padding: 16px;
-        }
-        .hidden-stats-panel .visitor-map-container {
-          min-width: 0;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="{{ '/assets/css/visitor-analytics.css' | relative_url }}">
 
   </head>
   <body>
@@ -170,49 +109,8 @@
         
       </footer>
     </div>
-    <!-- Hidden Stats Panel (Press K 3 times or ?k=1 to show) -->
-    <div class="hidden-stats-panel" id="statsPanel">
-      <span class="close-btn" onclick="document.getElementById('statsPanel').classList.remove('show')">&times;</span>
-      <div class="panel-title">Visitor Map</div>
-      <div class="visitor-map-container">
-        <script async type="text/javascript" src="https://feed-pulse.com/api/embed/visitor-globe.js?site_id=d7f505f1-3f99-4e7c-b6ce-13299cea2ab1&map=globe&theme=sky&sz=sm&speed=normal"></script>
-      </div>
-    </div>
-
+    {% include visitor-analytics.html %}
     <script src="{{ "/assets/js/scale.fix.js" | relative_url }}"></script>
-    <script>
-      // Secret: Press 'K' 3 times to show stats, or add ?k=1 to URL
-      (function() {
-        var kCount = 0, kTimer;
-        function isShortcutKey(e) {
-          var key = (e.key || '').toLowerCase();
-          return key === 'k' || e.code === 'KeyK' || e.keyCode === 75 || e.which === 75;
-        }
-        function isEditableTarget(target) {
-          var tag = (target && target.tagName || '').toLowerCase();
-          return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable;
-        }
-        function toggleStatsPanel() {
-          var panel = document.getElementById('statsPanel');
-          if (panel) panel.classList.toggle('show');
-        }
-        document.addEventListener('keydown', function(e) {
-          if (isEditableTarget(e.target) || !isShortcutKey(e)) return;
-          kCount++;
-          clearTimeout(kTimer);
-          kTimer = setTimeout(function() { kCount = 0; }, 4000);
-          if (kCount >= 3) {
-            toggleStatsPanel();
-            kCount = 0;
-          }
-        }, true);
-        // URL param check
-        if (new URLSearchParams(window.location.search).get('k') === '1') {
-          var panel = document.getElementById('statsPanel');
-          if (panel) panel.classList.add('show');
-        }
-      })();
-    </script>
     {% if site.google_analytics %}
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

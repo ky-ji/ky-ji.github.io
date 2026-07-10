@@ -40,6 +40,10 @@ font: "Sans Serif" # or "Sans Serif"
 # Please remove this if you don't use Google Analytics
 # google_analytics: UA-111540567-4
 
+# Visitor analytics
+goatcounter_code: ky-ji
+visitor_analytics_start: "2026-07-10T00:00:00+09:00"
+
 # Use this project as a remote theme for GitHub Pages
 # See the guide here: https://docs.github.com/en/pages/setting-up-a-github-pages-site-with-jekyll/adding-a-theme-to-your-github-pages-site-using-jekyll
 remote_theme: yaoyao-liu/minimal-light
@@ -55,3 +59,8 @@ exclude:
   - LICENSE
   - minimal-light.gemspec
   - html_source_file/
+  - docs/
+  - lib/
+  - scripts/
+  - test/
+  - vendor/

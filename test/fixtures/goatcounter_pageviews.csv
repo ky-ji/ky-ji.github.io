@@ -1,0 +1,8 @@
+2Path,Title,Event,UserAgent,Browser,System,Session,Bot,Referrer,Referrer scheme,Screen size,Location,FirstVisit,Date
+/,Home,false,,Chrome,Mac OS,session-a,0,,,1440x900,KR-11,true,2026-07-09T01:00:00Z
+/projects,Projects,false,,Chrome,Mac OS,session-a,0,Google,g,1440x900,KR-11,false,2026-07-09T01:05:00Z
+/,Home,false,,Firefox,Linux,session-b,0,,,1920x1080,US-CA,true,2026-07-02T00:00:00Z
+/,Home,false,,Chrome,Linux,session-c,1,,,1280x720,DE,true,2026-07-09T02:00:00Z
+download-cv,Download CV,true,,Chrome,Mac OS,session-d,0,,,1440x900,KR-11,true,2026-07-09T03:00:00Z
+/,Home,false,,Safari,iOS,,0,,,390x844,JP,true,2026-07-09T04:00:00Z
+/,Home,false,,Safari,iOS,session-e,0,,,390x844,JP,true,not-a-date
