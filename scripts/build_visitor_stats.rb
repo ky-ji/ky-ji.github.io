@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "csv"
 require "fileutils"
 require "json"
 require "net/http"
@@ -75,15 +76,31 @@ module VisitorStatsBuild
     allow_insecure_loopback:,
     data_since:
   )
-    csv = GoatCounterClient.new(
+    client = GoatCounterClient.new(
       site_code: site_code,
       token: token,
       base_url: base_url,
       allow_insecure_loopback: allow_insecure_loopback
-    ).export_csv
+    )
+    snapshot_now = nil
+    csv = begin
+      client.export_csv
+    rescue StandardError => export_error
+      snapshot_now = Time.now
+      zero_pageviews = begin
+        client.zero_pageviews?(start_at: data_since, end_at: snapshot_now)
+      rescue StandardError
+        raise export_error
+      end
+      raise export_error unless zero_pageviews
+
+      CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS)
+    end
+    snapshot_now ||= Time.now
     snapshot = VisitorAnalytics::SnapshotBuilder.new(
       site: SITE,
-      data_since: data_since
+      data_since: data_since,
+      now: snapshot_now
     ).build(csv)
     validate_snapshot(snapshot, data_since: data_since)
   end

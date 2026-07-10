@@ -63,7 +63,44 @@ class GoatCounterClient
     end
   end
 
+  def zero_pageviews?(start_at:, end_at:, timeout: 30)
+    validate_stats_range!(start_at, end_at)
+    deadline = monotonic_time + timeout
+    query = URI.encode_www_form(
+      "start" => start_at.iso8601,
+      "end" => end_at.iso8601
+    )
+    totals = json_request(
+      :get,
+      "/api/v0/stats/total?" + query,
+      expected_status: 200,
+      deadline: deadline
+    )
+
+    total = totals["total"]
+    validate_nonnegative_integer!(total, "total pageview count")
+    if totals.key?("total_events")
+      validate_nonnegative_integer!(totals["total_events"], "total event count")
+    end
+    total == 0
+  end
+
   private
+
+  def validate_stats_range!(start_at, end_at)
+    unless start_at.is_a?(Time) && end_at.is_a?(Time)
+      raise ArgumentError, "invalid GoatCounter stats range"
+    end
+    if start_at > end_at
+      raise ArgumentError, "invalid GoatCounter stats range"
+    end
+  end
+
+  def validate_nonnegative_integer!(value, label)
+    unless value.is_a?(Integer) && value >= 0
+      raise ResponseError, "GoatCounter returned an invalid " + label
+    end
+  end
 
   def validate_site_code!(site_code)
     unless site_code.is_a?(String) && SITE_CODE_PATTERN.match?(site_code)

@@ -26,6 +26,13 @@ class GoatCounterClientTest < Minitest::Test
     @download_status = 200
     @download_body = gzip(@csv)
     @download_stream = nil
+    @total_status = 200
+    @total_body = JSON.generate(
+      "total" => 4,
+      "total_events" => 4,
+      "stats" => []
+    )
+    @total_stream = nil
 
     @server = WEBrick::HTTPServer.new(
       Port: 0,
@@ -406,6 +413,136 @@ class GoatCounterClientTest < Minitest::Test
     refute_match(/secret-token|2Path,Title,Event/, error.message)
   end
 
+  def test_zero_pageviews_returns_true_for_strict_zero_total
+    @total_body = JSON.generate(
+      "total" => 0,
+      "total_events" => 7,
+      "stats" => [{"name" => "private-stat"}]
+    )
+    start_at = Time.iso8601("2026-07-01T00:00:00+09:00")
+    end_at = Time.iso8601("2026-07-10T03:04:05Z")
+
+    assert client.zero_pageviews?(start_at: start_at, end_at: end_at)
+
+    assert_equal 1, @requests.length
+    request = @requests.first
+    assert_equal "GET", request[:method]
+    assert_equal "/api/v0/stats/total", request[:path]
+    assert_equal "start=2026-07-01T00%3A00%3A00%2B09%3A00&end=2026-07-10T03%3A04%3A05Z",
+      request[:query]
+    assert_equal "Bearer secret-token", request[:authorization]
+    assert_nil request[:body]
+  end
+
+  def test_zero_pageviews_returns_false_for_nonzero_total
+    @total_body = JSON.generate("total" => 3, "total_events" => 0)
+
+    refute client.zero_pageviews?(**stats_range)
+  end
+
+  def test_zero_pageviews_rejects_malformed_pageview_totals_without_echoing_them
+    invalid_payloads = [
+      {"total_events" => 0},
+      {"total" => nil},
+      {"total" => -1},
+      {"total" => 1.5},
+      {"total" => true},
+      {"total" => false},
+      {"total" => "private-total"},
+      []
+    ]
+
+    invalid_payloads.each do |payload|
+      @total_body = JSON.generate(payload)
+
+      error = assert_raises(GoatCounterClient::ResponseError) do
+        client.zero_pageviews?(**stats_range)
+      end
+
+      assert_match(/total|response shape/i, error.message)
+      refute_match(/private-total|secret-token/, error.message)
+    end
+  end
+
+  def test_zero_pageviews_validates_total_events_when_present
+    [nil, -1, 1.5, true, false, "private-events"].each do |total_events|
+      @total_body = JSON.generate("total" => 0, "total_events" => total_events)
+
+      error = assert_raises(GoatCounterClient::ResponseError) do
+        client.zero_pageviews?(**stats_range)
+      end
+
+      assert_match(/event/i, error.message)
+      refute_match(/private-events|secret-token/, error.message)
+    end
+  end
+
+  def test_zero_pageviews_rejects_malformed_json_without_echoing_it
+    @total_body = "private-malformed-stats"
+
+    error = assert_raises(GoatCounterClient::ResponseError) do
+      client.zero_pageviews?(**stats_range)
+    end
+
+    assert_match(/JSON/i, error.message)
+    refute_match(/private-malformed-stats|secret-token/, error.message)
+  end
+
+  def test_zero_pageviews_requires_exact_success_status_without_echoing_body
+    [201, 401].each do |status|
+      @total_status = status
+      @total_body = "private-stats-response"
+
+      error = assert_raises(GoatCounterClient::ResponseError) do
+        client.zero_pageviews?(**stats_range)
+      end
+
+      assert_match(/HTTP #{status}/i, error.message)
+      refute_match(/private-stats-response|secret-token/, error.message)
+    end
+  end
+
+  def test_zero_pageviews_uses_one_total_deadline_for_response_body
+    @total_stream = trickled_body(JSON.generate("total" => 0))
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    error = assert_raises(GoatCounterClient::TimeoutError) do
+      client.zero_pageviews?(**stats_range, timeout: 0.12)
+    end
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+
+    assert_operator elapsed, :<, 0.8
+    assert_match(/timeout/i, error.message)
+    refute_match(/secret-token/, error.message)
+    assert_equal ["/api/v0/stats/total"], @requests.map { |request| request[:path] }
+  end
+
+  def test_zero_pageviews_rejects_expired_deadline_before_request
+    clock = clock_returning(0.0, 1.0)
+
+    assert_raises(GoatCounterClient::TimeoutError) do
+      client(monotonic_clock: clock).zero_pageviews?(**stats_range, timeout: 1)
+    end
+
+    assert_empty @requests
+  end
+
+  def test_zero_pageviews_rejects_invalid_or_reversed_ranges_before_request
+    valid_start = Time.iso8601("2026-07-01T00:00:00Z")
+    valid_end = Time.iso8601("2026-07-10T00:00:00Z")
+    invalid_ranges = [
+      {start_at: "2026-07-01T00:00:00Z", end_at: valid_end},
+      {start_at: valid_start, end_at: nil},
+      {start_at: valid_end, end_at: valid_start}
+    ]
+
+    invalid_ranges.each do |range|
+      assert_raises(ArgumentError) { client.zero_pageviews?(**range) }
+    end
+
+    assert_empty @requests
+  end
+
   def test_defaults_to_site_specific_goatcounter_url
     default_client = GoatCounterClient.new(site_code: "example", token: "token")
 
@@ -502,6 +639,12 @@ class GoatCounterClientTest < Minitest::Test
   end
 
   def mount_fake_api
+    @server.mount_proc("/api/v0/stats/total") do |request, response|
+      record(request)
+      response.status = @total_status
+      response["Content-Type"] = "application/json"
+      assign_body(response, @total_stream || @total_body)
+    end
     @server.mount_proc("/api/v0/export/42/download") do |request, response|
       record(request)
       @downloads += 1
@@ -530,6 +673,7 @@ class GoatCounterClientTest < Minitest::Test
     @requests << {
       method: request.request_method,
       path: request.path,
+      query: request.query_string,
       authorization: request["Authorization"],
       content_type: request["Content-Type"],
       body: request.body
@@ -567,6 +711,13 @@ class GoatCounterClientTest < Minitest::Test
         sleep(delay) unless index == chunks.length - 1
       end
     end
+  end
+
+  def stats_range
+    {
+      start_at: Time.iso8601("2026-07-01T00:00:00+09:00"),
+      end_at: Time.iso8601("2026-07-10T03:04:05Z")
+    }
   end
 
   def assert_invalid_finished_at(value)

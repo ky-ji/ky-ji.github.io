@@ -5,6 +5,7 @@ require "rbconfig"
 require "stringio"
 require "timeout"
 require "tmpdir"
+require "uri"
 require "webrick"
 require "zlib"
 require_relative "../lib/visitor_analytics"
@@ -30,6 +31,12 @@ class BuildVisitorStatsTest < Minitest::Test
     )
     @download_status = 200
     @download_body = gzip(@csv)
+    @total_status = 200
+    @total_body = JSON.generate(
+      "total" => 4,
+      "total_events" => 4,
+      "stats" => []
+    )
     @fallback_status = 200
     @fallback_body = @fallback_fixture
 
@@ -124,7 +131,58 @@ class BuildVisitorStatsTest < Minitest::Test
         {"code" => "US", "visitors" => 1}
       ], snapshot.dig("periods", "all", "countries")
       assert_equal ["Bearer " + SECRET] * 3, api_requests.map { |request| request[:authorization] }
+      refute requested?("/api/v0/stats/total")
       refute requested?("/fallback.json")
+      assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_empty_account_bootstraps_a_strict_zero_snapshot
+    @create_status = 404
+    @create_body = "private-fresh-api-response"
+    @total_body = JSON.generate(
+      "total" => 0,
+      "total_events" => 0,
+      "stats" => [{"name" => "private-stats-bucket"}]
+    )
+    @fallback_status = 503
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_empty stderr
+      snapshot = JSON.parse(File.read(output))
+      assert VisitorAnalytics.valid_snapshot?(snapshot)
+      assert_equal "ky-ji.github.io", snapshot["site"]
+      assert_equal START, snapshot["data_since"]
+      %w[7d 30d all].each do |period|
+        assert_equal({
+          "pageviews" => 0,
+          "visitors" => 0,
+          "countries" => []
+        }, snapshot.dig("periods", period))
+      end
+      assert_equal ["/api/v0/export", "/api/v0/stats/total"],
+        api_requests.map { |request| request[:path] }
+      assert_equal ["Bearer " + SECRET] * 2,
+        api_requests.map { |request| request[:authorization] }
+      refute requested?("/fallback.json")
+
+      stats_request = api_requests.last
+      stats_params = URI.decode_www_form(stats_request[:query]).to_h
+      assert_equal START, stats_params["start"]
+      assert_equal Time.iso8601(snapshot["generated_at"]),
+        Time.iso8601(stats_params["end"])
+      assert_equal URI.encode_www_form(
+        "start" => START,
+        "end" => stats_params["end"]
+      ), stats_request[:query]
       assert_equal ["visitor-stats.json"], Dir.children(directory)
       assert_no_secret_or_private_data(stdout, stderr)
     end
@@ -143,6 +201,73 @@ class BuildVisitorStatsTest < Minitest::Test
       assert_empty stdout
       assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ResponseError\n", stderr
       assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_malformed_zero_check_reuses_valid_fallback_fixture
+    @create_status = 404
+    @create_body = "private-fresh-api-response"
+    @total_body = JSON.generate("total" => "private-stats-total")
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ResponseError\n", stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_failed_zero_check_reuses_valid_fallback_fixture
+    @create_status = 404
+    @create_body = "private-fresh-api-response"
+    @total_status = 401
+    @total_body = "private-stats-response"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: GoatCounterClient::ResponseError\n", stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_malformed_zero_check_with_unavailable_fallback_preserves_output
+    @create_status = 404
+    @create_body = "private-fresh-api-response"
+    @total_body = JSON.generate("total" => "private-stats-total")
+    @fallback_status = 404
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+      original = "pre-existing-output\nwith exact bytes\n"
+      File.binwrite(output, original)
+
+      stdout, stderr, status = run_script(output: output)
+
+      refute status.success?
+      assert_empty stdout
+      assert_equal original, File.binread(output)
+      assert_match(/No valid visitor snapshot source/, stderr)
+      assert requested?("/api/v0/stats/total")
       assert requested?("/fallback.json")
       assert_equal ["visitor-stats.json"], Dir.children(directory)
       assert_no_secret_or_private_data(stdout, stderr)
@@ -396,6 +521,12 @@ class BuildVisitorStatsTest < Minitest::Test
   end
 
   def mount_fake_endpoints
+    @server.mount_proc("/api/v0/stats/total") do |request, response|
+      record(request)
+      response.status = @total_status
+      response["Content-Type"] = "application/json"
+      response.body = @total_body
+    end
     @server.mount_proc("/api/v0/export/42/download") do |request, response|
       record(request)
       response.status = @download_status
@@ -424,6 +555,7 @@ class BuildVisitorStatsTest < Minitest::Test
   def record(request)
     @requests << {
       path: request.path,
+      query: request.query_string,
       authorization: request["Authorization"]
     }
   end
@@ -450,7 +582,7 @@ class BuildVisitorStatsTest < Minitest::Test
   def assert_no_secret_or_private_data(stdout, stderr)
     output = stdout + stderr
     refute_includes output, SECRET
-    refute_match(/private-(?:fresh|invalid|unavailable)/, output)
+    refute_match(/private-(?:fresh|invalid|unavailable|stats)/, output)
     refute_includes output, "2Path,Title,Event"
     refute_includes output, '"schema_version"'
   end
