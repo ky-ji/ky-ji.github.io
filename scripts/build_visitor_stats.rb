@@ -87,14 +87,23 @@ module VisitorStatsBuild
       client.export_csv
     rescue StandardError => export_error
       snapshot_now = Time.now
-      zero_pageviews = begin
-        client.zero_pageviews?(start_at: data_since, end_at: snapshot_now)
-      rescue StandardError
-        raise export_error
-      end
-      raise export_error unless zero_pageviews
-
-      CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS)
+      confirmed_zero_csv(
+        client: client,
+        data_since: data_since,
+        now: snapshot_now,
+        failure: export_error
+      )
+    end
+    if csv == ""
+      snapshot_now = Time.now
+      csv = confirmed_zero_csv(
+        client: client,
+        data_since: data_since,
+        now: snapshot_now,
+        failure: VisitorAnalytics::InvalidExportError.new(
+          "empty GoatCounter CSV export"
+        )
+      )
     end
     snapshot_now ||= Time.now
     snapshot = VisitorAnalytics::SnapshotBuilder.new(
@@ -105,6 +114,18 @@ module VisitorStatsBuild
     validate_snapshot(snapshot, data_since: data_since)
   end
   private_class_method :fresh_snapshot
+
+  def self.confirmed_zero_csv(client:, data_since:, now:, failure:)
+    zero_pageviews = begin
+      client.zero_pageviews?(start_at: data_since, end_at: now)
+    rescue StandardError
+      raise failure
+    end
+    raise failure unless zero_pageviews
+
+    CSV.generate_line(VisitorAnalytics::EXPORT_HEADERS)
+  end
+  private_class_method :confirmed_zero_csv
 
   def self.fallback_snapshot(url, data_since:)
     uri = URI(url)

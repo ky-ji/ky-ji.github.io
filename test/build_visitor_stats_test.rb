@@ -188,6 +188,164 @@ class BuildVisitorStatsTest < Minitest::Test
     end
   end
 
+  def test_successful_empty_export_bootstraps_a_strict_zero_snapshot
+    @download_body = gzip("")
+    @total_body = JSON.generate(
+      "total" => 0,
+      "total_events" => 0,
+      "stats" => []
+    )
+    @fallback_status = 503
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_empty stderr
+      snapshot = JSON.parse(File.read(output))
+      assert VisitorAnalytics.valid_snapshot?(snapshot)
+      assert_equal "ky-ji.github.io", snapshot["site"]
+      assert_equal START, snapshot["data_since"]
+      %w[7d 30d all].each do |period|
+        assert_equal({
+          "pageviews" => 0,
+          "visitors" => 0,
+          "countries" => []
+        }, snapshot.dig("periods", period))
+      end
+      assert_equal [
+        "/api/v0/export",
+        "/api/v0/export/42",
+        "/api/v0/export/42/download",
+        "/api/v0/stats/total"
+      ], api_requests.map { |request| request[:path] }
+      assert_equal ["Bearer " + SECRET] * 4,
+        api_requests.map { |request| request[:authorization] }
+      refute requested?("/fallback.json")
+
+      stats_request = api_requests.last
+      stats_params = URI.decode_www_form(stats_request[:query]).to_h
+      assert_equal START, stats_params["start"]
+      assert_equal Time.iso8601(snapshot["generated_at"]),
+        Time.iso8601(stats_params["end"])
+      assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_successful_empty_export_with_nonzero_total_uses_fallback
+    @download_body = gzip("")
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: VisitorAnalytics::InvalidExportError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert_equal [
+        "/api/v0/export",
+        "/api/v0/export/42",
+        "/api/v0/export/42/download",
+        "/api/v0/stats/total"
+      ], api_requests.map { |request| request[:path] }
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_successful_empty_export_with_malformed_total_uses_fallback
+    @download_body = gzip("")
+    @total_body = JSON.generate("total" => "private-stats-total")
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: VisitorAnalytics::InvalidExportError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_successful_empty_export_with_failed_total_uses_fallback
+    @download_body = gzip("")
+    @total_status = 401
+    @total_body = "private-stats-response"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: VisitorAnalytics::InvalidExportError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_successful_empty_export_with_malformed_total_preserves_existing_output
+    @download_body = gzip("")
+    @total_body = JSON.generate("total" => "private-stats-total")
+    @fallback_status = 404
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+      original = "pre-existing-output\nwith exact bytes\n"
+      File.binwrite(output, original)
+
+      stdout, stderr, status = run_script(output: output)
+
+      refute status.success?
+      assert_empty stdout
+      assert_equal original, File.binread(output)
+      assert_match(/No valid visitor snapshot source/, stderr)
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_nonempty_invalid_exports_never_query_zero_stats
+    [" ", "\n", "private,headers\n", "\"private-unterminated"].each do |csv|
+      @download_body = gzip(csv)
+      @requests.clear
+
+      Dir.mktmpdir("visitor-stats-test") do |directory|
+        output = File.join(directory, "visitor-stats.json")
+
+        stdout, stderr, status = run_script(output: output)
+
+        assert status.success?, stderr
+        assert_empty stdout
+        assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+        refute requested?("/api/v0/stats/total")
+        assert requested?("/fallback.json")
+        assert_no_secret_or_private_data(stdout, stderr)
+      end
+    end
+  end
+
   def test_failed_fresh_api_reuses_valid_fallback_fixture
     @create_status = 503
     @create_body = "private-fresh-api-response"
@@ -530,6 +688,7 @@ class BuildVisitorStatsTest < Minitest::Test
     @server.mount_proc("/api/v0/export/42/download") do |request, response|
       record(request)
       response.status = @download_status
+      response["Content-Type"] = "application/gzip"
       response.body = @download_body
     end
     @server.mount_proc("/api/v0/export/42") do |request, response|
