@@ -1747,8 +1747,8 @@ class PagesWorkflowTest < Minitest::Test
     assert_includes @workflow, "visitor_analytics_core_test.cjs"
     assert_includes @workflow, "scripts/build_visitor_stats.rb"
     assert_includes @workflow, "bundle exec jekyll build"
-    assert_includes @workflow, "actions/upload-pages-artifact@v3"
-    assert_includes @workflow, "actions/deploy-pages@v4"
+    assert_includes @workflow, "actions/upload-pages-artifact@v5"
+    assert_includes @workflow, "actions/deploy-pages@v5"
   end
 
   def test_secret_is_scoped_and_never_printed
@@ -1836,12 +1836,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '2.6'
           bundler-cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
       - name: Run Ruby tests
@@ -1858,12 +1858,12 @@ jobs:
           ruby scripts/build_visitor_stats.rb
           --output assets/data/visitor-stats.json
           --fallback-url https://ky-ji.github.io/assets/data/visitor-stats.json
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - name: Build Jekyll
         env:
           JEKYLL_ENV: production
         run: bundle exec jekyll build
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -1879,7 +1879,7 @@ jobs:
     steps:
       - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 ~~~
 
 - [ ] **Step 5: Validate workflow syntax and behavior locally**
