@@ -43,6 +43,15 @@ class PagesWorkflowTest < Minitest::Test
     build_steps.map { |step| step["run"] }.compact.join("\n")
   end
 
+  def assert_manual_dispatch_uses_default_branch(condition)
+    refute_nil condition
+    assert_match(
+      /github\.event_name != 'workflow_dispatch'\s*\|\|\s*github\.ref == format\('refs\/heads\/\{0\}', github\.event\.repository\.default_branch\)/,
+      condition
+    )
+    refute_includes condition, "refs/heads/main"
+  end
+
   def test_has_all_required_triggers
     refute_empty WORKFLOW, "expected .github/workflows/pages.yml to exist"
     assert_equal ["main"], triggers.dig("push", "branches")
@@ -108,6 +117,18 @@ class PagesWorkflowTest < Minitest::Test
       "--fallback-url https://ky-ji.github.io/assets/data/visitor-stats.json"
   end
 
+  def test_build_job_limits_manual_dispatch_to_the_default_branch
+    assert_manual_dispatch_uses_default_branch(build_job["if"])
+  end
+
+  def test_secret_bearing_snapshot_step_repeats_the_default_branch_guard
+    snapshot = named_step("Build visitor snapshot")
+
+    assert_includes snapshot.dig("env", "GOATCOUNTER_API_KEY"),
+      "secrets.GOATCOUNTER_API_KEY"
+    assert_manual_dispatch_uses_default_branch(snapshot["if"])
+  end
+
   def test_pull_requests_use_the_aggregate_fixture_without_secrets
     step = named_step("Prepare visitor snapshot fixture")
     assert_includes step["if"], "github.event_name == 'pull_request'"
@@ -146,6 +167,12 @@ class PagesWorkflowTest < Minitest::Test
     assert_equal "deployment", deployment["id"]
   end
 
+  def test_deploy_job_limits_manual_dispatch_to_the_default_branch
+    assert_manual_dispatch_uses_default_branch(deploy_job["if"])
+    assert_includes deploy_job["if"],
+      "github.event_name != 'workflow_dispatch' || inputs.deploy"
+  end
+
   def test_configures_visitor_analytics_and_limits_secret_exposure
     assert_equal "ky-ji", workflow.dig("env", "GOATCOUNTER_SITE_CODE")
     assert_equal "2026-07-10T00:00:00+09:00",
@@ -167,8 +194,15 @@ class PagesWorkflowTest < Minitest::Test
   end
 
   def test_uses_stable_pages_concurrency
+    group = workflow.dig("concurrency", "group")
+
     assert_equal "Deploy GitHub Pages", workflow["name"]
-    assert_equal "pages", workflow.dig("concurrency", "group")
+    assert_includes group, "github.workflow"
+    assert_includes group, "github.event_name == 'pull_request'"
+    assert_includes group, "format('pr-{0}', github.event.pull_request.number)"
+    assert_includes group, "'production'"
+    assert_includes group, "&&"
+    assert_includes group, "||"
     assert_equal false, workflow.dig("concurrency", "cancel-in-progress")
   end
 
