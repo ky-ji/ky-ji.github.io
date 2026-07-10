@@ -25,10 +25,10 @@
     </button>
   </div>
 
-  <div class="visitor-analytics__periods" role="tablist" aria-label="Analytics period">
-    <button type="button" role="tab" data-period="7d" aria-selected="true">7 days</button>
-    <button type="button" role="tab" data-period="30d" aria-selected="false">30 days</button>
-    <button type="button" role="tab" data-period="all" aria-selected="false">All time</button>
+  <div class="visitor-analytics__periods" role="group" aria-label="Analytics period">
+    <button type="button" data-period="7d" aria-pressed="true">7 days</button>
+    <button type="button" data-period="30d" aria-pressed="false">30 days</button>
+    <button type="button" data-period="all" aria-pressed="false">All time</button>
   </div>
 
   <p class="visitor-analytics__status" data-status aria-live="polite">Loading analytics</p>

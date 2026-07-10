@@ -72,17 +72,24 @@ class VisitorMapTest < Minitest::Test
     assert_includes INCLUDE, "fa-xmark"
   end
 
-  def test_panel_has_live_status_and_three_period_tabs
+  def test_panel_has_live_status_and_three_pressed_period_buttons
     status = INCLUDE[/<[^>]+\bdata-status(?:\s|=)[^>]*>/m]
     refute_nil status
     assert_includes status, 'aria-live="polite"'
-    assert_includes INCLUDE, 'role="tablist"'
+    refute_includes INCLUDE, 'role="tablist"'
+    refute_match(/\brole="tab"/, INCLUDE)
 
-    tabs = INCLUDE.scan(/<button\b[^>]*\brole="tab"[^>]*>/m)
-    assert_equal 3, tabs.length
-    assert_equal %w[7d 30d all], tabs.map { |tab| tab[/data-period="([^"]+)"/, 1] }
+    group = INCLUDE[/<div\b[^>]*class="visitor-analytics__periods"[^>]*>/m]
+    refute_nil group
+    assert_includes group, 'role="group"'
+    assert_includes group, 'aria-label="Analytics period"'
+
+    buttons = INCLUDE.scan(/<button\b[^>]*\bdata-period="[^"]+"[^>]*>/m)
+    assert_equal 3, buttons.length
+    assert_equal %w[7d 30d all],
+      buttons.map { |button| button[/data-period="([^"]+)"/, 1] }
     assert_equal %w[true false false],
-      tabs.map { |tab| tab[/aria-selected="([^"]+)"/, 1] }
+      buttons.map { |button| button[/aria-pressed="([^"]+)"/, 1] }
   end
 
   def test_panel_contains_summary_globe_countries_and_times
@@ -190,8 +197,9 @@ class VisitorMapTest < Minitest::Test
     assert_includes hidden_fallback, "display: none"
   end
 
-  def test_period_controls_define_selected_hover_and_focus_states
-    assert_includes css_rule('.visitor-analytics__periods button[aria-selected="true"]'),
+  def test_period_controls_define_pressed_hover_and_focus_states
+    refute_includes CSS, 'button[aria-selected="true"]'
+    assert_includes css_rule('.visitor-analytics__periods button[aria-pressed="true"]'),
       "background: #247a4c"
     assert_includes css_rule(".visitor-analytics__periods button:hover"),
       "background: #303633"

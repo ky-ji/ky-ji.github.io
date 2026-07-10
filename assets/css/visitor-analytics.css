@@ -151,7 +151,7 @@
   background: #303633;
 }
 
-.visitor-analytics__periods button[aria-selected="true"] {
+.visitor-analytics__periods button[aria-pressed="true"] {
   color: #ffffff;
   background: #247a4c;
 }
