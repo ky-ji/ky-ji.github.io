@@ -143,6 +143,7 @@
     var periodButtons;
     var activePeriod = '7d';
     var snapshot = null;
+    var snapshotSource = null;
     var snapshotStatus = null;
     var centroids = null;
     var globe = null;
@@ -150,6 +151,7 @@
     var globePromise = null;
     var lastFocus = null;
     var resizeObserver = null;
+    var reducedMotion = false;
     var api;
 
     if (!document || !panel || !core ||
@@ -254,7 +256,7 @@
         points[index].name = displayName(points[index].code);
       }
       try {
-        globe.pointsData(points).ringsData(points);
+        globe.pointsData(points).ringsData(reducedMotion ? [] : points);
       } catch (_error) {
         disableGlobe();
       }
@@ -316,7 +318,7 @@
     function loadSnapshot() {
       var pending;
 
-      if (snapshot) return Promise.resolve(snapshot);
+      if (snapshot && snapshotSource === 'network') return Promise.resolve(snapshot);
       if (loadPromise) return loadPromise;
       setState('loading', 'Loading analytics');
 
@@ -332,6 +334,7 @@
           if (!core.validateSnapshot(value)) throw new Error('Invalid visitor statistics');
           storeSnapshot(value);
           snapshot = value;
+          snapshotSource = 'network';
           render(null);
           return value;
         }) : Promise.reject(new Error('Fetch unavailable'));
@@ -340,6 +343,7 @@
         var cached = readCache();
         if (cached) {
           snapshot = cached;
+          snapshotSource = 'cache';
           render('Showing last saved data');
           return cached;
         }
@@ -358,24 +362,69 @@
       if (globeFallback) globeFallback.hidden = false;
     }
 
+    function showGlobe() {
+      if (globeHost) globeHost.hidden = false;
+      if (globeFallback) globeFallback.hidden = true;
+    }
+
+    function pauseRenderer(renderer) {
+      try {
+        if (renderer && typeof renderer.pauseAnimation === 'function') {
+          renderer.pauseAnimation();
+        }
+      } catch (_error) {}
+    }
+
+    function pauseGlobe() {
+      pauseRenderer(globe);
+    }
+
+    function resumeGlobe() {
+      try {
+        if (globe && typeof globe.resumeAnimation === 'function') {
+          globe.resumeAnimation();
+        }
+      } catch (_error) {
+        disableGlobe();
+      }
+    }
+
+    function disconnectResizeObserver() {
+      try {
+        if (resizeObserver && typeof resizeObserver.disconnect === 'function') {
+          resizeObserver.disconnect();
+        }
+      } catch (_error) {}
+      resizeObserver = null;
+    }
+
     function disableGlobe() {
       var brokenGlobe = globe;
 
       globe = null;
-      try {
-        if (brokenGlobe && typeof brokenGlobe.pauseAnimation === 'function') {
-          brokenGlobe.pauseAnimation();
-        }
-      } catch (_error) {}
+      globePromise = null;
+      disconnectResizeObserver();
+      pauseRenderer(brokenGlobe);
       showGlobeFallback();
+    }
+
+    function prefersReducedMotion() {
+      try {
+        return root && typeof root.matchMedia === 'function' &&
+          root.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      } catch (_error) {
+        return false;
+      }
     }
 
     function configureGlobe() {
       var size = globeHost.clientWidth || 280;
       var controls;
-      var reducedMotion = false;
+      var globeOptions = { rendererConfig: { alpha: true } };
 
-      globe = globeFactory(globeHost, { rendererConfig: { alpha: true } });
+      reducedMotion = prefersReducedMotion();
+      if (reducedMotion) globeOptions.animateIn = false;
+      globe = globeFactory(globeHost, globeOptions);
       if (!globe) throw new Error('Globe creation failed');
       globe.width(size)
         .height(size)
@@ -404,11 +453,9 @@
         .ringRepeatPeriod(1500)
         .pointOfView({ lat: 24, lng: 105, altitude: 2.2 });
 
+      if (reducedMotion) globe.pointsTransitionDuration(0);
+
       controls = globe.controls();
-      try {
-        reducedMotion = root && typeof root.matchMedia === 'function' &&
-          root.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      } catch (_error) {}
       if (controls) {
         controls.enableZoom = false;
         controls.autoRotate = !reducedMotion;
@@ -423,6 +470,7 @@
         resizeObserver.observe(globeHost);
       }
       if (snapshot) render();
+      if (globe && !isOpen()) pauseGlobe();
     }
 
     function ensureGlobe() {
@@ -457,10 +505,10 @@
       ]).then(function (values) {
         centroids = values[1];
         configureGlobe();
+        if (globe) showGlobe();
         return globe;
       }).catch(function () {
-        globe = null;
-        showGlobeFallback();
+        disableGlobe();
         return null;
       });
       return globePromise;
@@ -476,12 +524,17 @@
         panel.classList.add('is-open');
         panel.setAttribute('aria-hidden', 'false');
         if (closeButton && typeof closeButton.focus === 'function') closeButton.focus();
+        if (globe) {
+          showGlobe();
+          resumeGlobe();
+        }
       }
       return Promise.all([loadSnapshot(), ensureGlobe()]);
     }
 
     function close() {
       if (!isOpen()) return;
+      pauseGlobe();
       panel.classList.remove('is-open');
       panel.setAttribute('aria-hidden', 'true');
       if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();

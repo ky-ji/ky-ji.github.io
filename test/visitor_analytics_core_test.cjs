@@ -8,6 +8,15 @@ const vm = require('node:vm');
 
 const corePath = path.join(__dirname, '..', 'assets', 'js', 'visitor-analytics-core.js');
 const centroidsPath = path.join(__dirname, '..', 'assets', 'data', 'country-centroids.json');
+const worldCountriesLicensePath = path.join(
+  __dirname, '..', 'assets', 'vendor', 'LICENSE-world-countries'
+);
+const worldCountriesNoticePath = path.join(
+  __dirname, '..', 'assets', 'vendor', 'NOTICE-world-countries'
+);
+const obsoleteCountryLicensePath = path.join(
+  __dirname, '..', 'assets', 'vendor', 'LICENSE-country-json'
+);
 const core = require(corePath);
 const snapshot = require('./fixtures/visitor-stats.json');
 
@@ -94,7 +103,7 @@ test('country centroids are compact, sorted, and valid', function () {
   const centroids = JSON.parse(fs.readFileSync(centroidsPath, 'utf8'));
   const codes = Object.keys(centroids);
 
-  assert.equal(codes.length, 223);
+  assert.equal(codes.length, 250);
   assert.deepEqual(codes, codes.slice().sort());
   codes.forEach(function (code) {
     const entry = centroids[code];
@@ -108,16 +117,34 @@ test('country centroids are compact, sorted, and valid', function () {
     assert.ok(Number.isFinite(entry.lng) && entry.lng >= -180 && entry.lng <= 180);
     assert.equal(Number(entry.lat.toFixed(4)), entry.lat);
     assert.equal(Number(entry.lng.toFixed(4)), entry.lng);
+    assert.equal(entry.lat === 0 && entry.lng === 0, false, code + ' uses a 0,0 sentinel');
   });
-  assert.deepEqual(centroids.KR, {
-    name: 'South Korea', lat: 35.9017, lng: 127.736
+  assert.deepEqual(centroids.GB, {
+    name: 'United Kingdom', lat: 54, lng: -2
   });
   assert.deepEqual(centroids.ME, {
-    name: 'Montenegro', lat: 0, lng: 0
+    name: 'Montenegro', lat: 42.5, lng: 19.3
   });
-  assert.deepEqual(centroids.US, {
-    name: 'United States', lat: 36.9664, lng: -95.8439
+  assert.deepEqual(centroids.RS, {
+    name: 'Serbia', lat: 44, lng: 21
   });
+  assert.deepEqual(centroids.TL, {
+    name: 'Timor-Leste', lat: -8.8333, lng: 125.9167
+  });
+  assert.equal(Object.prototype.hasOwnProperty.call(centroids, 'UK'), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(centroids, 'TP'), false);
+});
+
+test('country centroids carry the pinned world-countries attribution', function () {
+  assert.equal(fs.existsSync(worldCountriesLicensePath), true);
+  assert.ok(fs.readFileSync(worldCountriesLicensePath, 'utf8').length > 0);
+  const notice = fs.readFileSync(worldCountriesNoticePath, 'utf8');
+
+  assert.match(notice, /country-centroids\.json/);
+  assert.match(notice, /world-countries 5\.1\.0/);
+  assert.match(notice, /mledoze\/countries/);
+  assert.match(notice, /ODbL/);
+  assert.equal(fs.existsSync(obsoleteCountryLicensePath), false);
 });
 
 test('validates the fixture and derives its 7d model', function () {

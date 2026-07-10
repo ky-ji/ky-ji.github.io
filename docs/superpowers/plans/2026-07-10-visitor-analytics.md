@@ -36,7 +36,8 @@
 - _includes/visitor-analytics.html: panel markup and production-only tracker.
 - assets/vendor/globe.gl.min.js: pinned globe.gl 2.46.1 browser bundle.
 - assets/vendor/LICENSE-globe.gl: upstream MIT license.
-- assets/vendor/LICENSE-country-json: country centroid source MIT license.
+- assets/vendor/LICENSE-world-countries: country centroid source ODbL license.
+- assets/vendor/NOTICE-world-countries: centroid derivation and source notice.
 - assets/img/earth-night.jpg: pinned same-origin earth texture.
 - assets/data/country-centroids.json: compact ISO2/name/latitude/longitude lookup.
 - .github/workflows/pages.yml: test, snapshot, Jekyll build, and Pages deploy workflow.
@@ -682,7 +683,7 @@ test('ignores editable targets', () => {
 Run:
 
 ~~~bash
-/Users/jky/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --test test/visitor_analytics_core_test.cjs
+/Users/jky/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --test test/visitor_analytics_core_test.cjs test/visitor_analytics_controller_test.cjs
 ~~~
 
 The first run reports MODULE_NOT_FOUND. Add a compile-only CommonJS export with
@@ -1256,9 +1257,11 @@ git commit -m "feat: replace visitor widget with analytics panel"
 - Create: assets/vendor/LICENSE-globe.gl
 - Create: assets/img/earth-night.jpg
 - Create: assets/data/country-centroids.json
-- Create: assets/vendor/LICENSE-country-json
+- Create: assets/vendor/LICENSE-world-countries
+- Create: assets/vendor/NOTICE-world-countries
 - Create: assets/js/visitor-analytics.js
 - Modify: test/visitor_analytics_core_test.cjs
+- Create: test/visitor_analytics_controller_test.cjs
 
 - [ ] **Step 1: Extend marker tests for unknown and zero countries**
 
@@ -1358,12 +1361,11 @@ test "$(shasum -a 256 assets/img/earth-night.jpg | awk '{print $1}')" = "355ab23
 
 - [ ] **Step 6: Generate compact country centroids**
 
-Use country-json 2.3.0, MIT licensed, with npm integrity
-sha512-T8QN3dVN6oQJRx+GapaQayNzVx4yh46R9Ka0bsOS8JclpdciciOB4MqbrneE6xYGuEz9zFT8csQYTJwohGNeIw==.
-Join country-by-abbreviation.json to country-by-geo-coordinates.json by country
-name. Compute each marker as the midpoint of north/south and east/west, copy
-the package LICENSE to assets/vendor/LICENSE-country-json, and write only this
-runtime shape:
+Use world-countries 5.1.0 under ODbL, with npm integrity
+sha512-CXR6EBvTbArDlDDIWU3gfKb7Qk0ck2WNZ234b/A0vuecPzIfzzxH+O6Ejnvg1sT8XuiZjVlzOH0h08ZtaO7g0w==.
+Download the pinned registry tarball, read package/countries.json, copy the
+package LICENSE to assets/vendor/LICENSE-world-countries, and add
+assets/vendor/NOTICE-world-countries. Write only this runtime shape:
 
 ~~~json
 {
@@ -1372,45 +1374,44 @@ runtime shape:
 }
 ~~~
 
-The generated file must include every valid two-letter abbreviation and numeric
-bounding box from the pinned source, sorted by ISO code. For a bounding box
-that crosses the antimeridian, normalize the longitude midpoint back into
--180..180.
+The generated file must contain each unique valid cca2 with name.common and a
+two-number latlng, rounded to at most four decimal places and sorted by cca2.
+The pinned source produces exactly 250 entries, including XK. Assert current
+GB, TL, RS, and ME values, reject UK and TP, and reject a 0,0 sentinel.
 
 ~~~bash
-PNPM=/Users/jky/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/fallback/pnpm
 TMPDIR_COUNTRIES=$(mktemp -d)
-(cd "$TMPDIR_COUNTRIES" && "$PNPM" pack country-json@2.3.0)
-tar -xzf "$TMPDIR_COUNTRIES/country-json-2.3.0.tgz" -C "$TMPDIR_COUNTRIES"
+curl -fLsS -o "$TMPDIR_COUNTRIES/world-countries.tgz" \
+  https://registry.npmjs.org/world-countries/-/world-countries-5.1.0.tgz
+test "sha512-$(openssl dgst -sha512 -binary "$TMPDIR_COUNTRIES/world-countries.tgz" | openssl base64 -A)" = \
+  "sha512-CXR6EBvTbArDlDDIWU3gfKb7Qk0ck2WNZ234b/A0vuecPzIfzzxH+O6Ejnvg1sT8XuiZjVlzOH0h08ZtaO7g0w=="
+tar -xzf "$TMPDIR_COUNTRIES/world-countries.tgz" -C "$TMPDIR_COUNTRIES"
 mkdir -p assets/data assets/vendor
-cp "$TMPDIR_COUNTRIES/package/LICENSE" assets/vendor/LICENSE-country-json
-ruby -rjson -e '
-root = ARGV.fetch(0)
-output = ARGV.fetch(1)
-abbr = JSON.parse(File.read(File.join(root, "src/country-by-abbreviation.json")))
-geo = JSON.parse(File.read(File.join(root, "src/country-by-geo-coordinates.json")))
-codes = {}
-abbr.each { |row| codes[row["country"]] = row["abbreviation"].to_s.upcase }
-points = {}
-geo.each do |row|
-  code = codes[row["country"]]
-  next unless code && code.match?(/\A[A-Z]{2}\z/)
-  north, south, west, east = %w[north south west east].map { |key| Float(row[key]) rescue nil }
-  next unless north && south && west && east
-  lng = if west <= east
-    (west + east) / 2.0
-  else
-    (((west + east + 360.0) / 2.0) + 540.0) % 360.0 - 180.0
-  end
-  points[code] = {
-    "name" => row["country"],
-    "lat" => ((north + south) / 2.0).round(4),
-    "lng" => lng.round(4)
+cp "$TMPDIR_COUNTRIES/package/LICENSE" assets/vendor/LICENSE-world-countries
+node - "$TMPDIR_COUNTRIES/package/countries.json" assets/data/country-centroids.json <<'NODE'
+const fs = require('node:fs');
+const countries = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+const entries = {};
+for (const country of countries) {
+  if (!country || !/^[A-Z]{2}$/.test(country.cca2 || '') ||
+      !country.name || typeof country.name.common !== 'string' ||
+      !Array.isArray(country.latlng) || country.latlng.length !== 2 ||
+      !country.latlng.every(Number.isFinite)) continue;
+  if (Object.prototype.hasOwnProperty.call(entries, country.cca2)) {
+    throw new Error('duplicate cca2: ' + country.cca2);
   }
-end
-File.write(output, JSON.pretty_generate(Hash[points.sort]) + "\n")
-' "$TMPDIR_COUNTRIES/package" assets/data/country-centroids.json
-ruby -rjson -e 'data=JSON.parse(File.read(ARGV[0])); abort "too few countries" unless data.length > 200' assets/data/country-centroids.json
+  entries[country.cca2] = {
+    name: country.name.common,
+    lat: Number(country.latlng[0].toFixed(4)),
+    lng: Number(country.latlng[1].toFixed(4))
+  };
+}
+const sorted = {};
+Object.keys(entries).sort().forEach(code => { sorted[code] = entries[code]; });
+if (Object.keys(sorted).length !== 250) throw new Error('unexpected centroid count');
+fs.writeFileSync(process.argv[3], JSON.stringify(sorted) + '\n');
+NODE
+node --test test/visitor_analytics_core_test.cjs
 ~~~
 
 - [ ] **Step 7: Implement the DOM controller**
@@ -1715,7 +1716,7 @@ Expected: all Ruby and Node tests pass; Jekyll succeeds.
 - [ ] **Step 9: Commit the complete local experience**
 
 ~~~bash
-git add assets/vendor assets/img/earth-night.jpg assets/data/country-centroids.json assets/js/visitor-analytics.js assets/js/visitor-analytics-core.js test/visitor_analytics_core_test.cjs
+git add assets/vendor assets/img/earth-night.jpg assets/data/country-centroids.json assets/js/visitor-analytics.js assets/js/visitor-analytics-core.js test/visitor_analytics_core_test.cjs test/visitor_analytics_controller_test.cjs
 git commit -m "feat: render self-hosted visitor globe"
 ~~~
 

@@ -18,6 +18,16 @@ function copy(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise(function (resolveValue, rejectValue) {
+    resolve = resolveValue;
+    reject = rejectValue;
+  });
+  return { promise: promise, resolve: resolve, reject: reject };
+}
+
 class FakeClassList {
   constructor(initial) {
     this.values = new Set(initial || []);
@@ -168,7 +178,8 @@ function storageHarness(initial) {
 function globeHarness(settings) {
   const options = settings || {};
   const calls = {
-    factory: [], points: [], rings: [], labels: [], pointAttempts: 0, pauses: 0
+    factory: [], points: [], rings: [], labels: [], pointAttempts: 0,
+    pauses: 0, resumes: 0, transitionDurations: []
   };
   const globe = {};
   const chainMethods = [
@@ -186,9 +197,14 @@ function globeHarness(settings) {
     calls.labels.push(formatter);
     return globe;
   };
+  globe.pointsTransitionDuration = function (duration) {
+    calls.transitionDurations.push(duration);
+    return globe;
+  };
   globe.pointsData = function (points) {
     calls.pointAttempts += 1;
-    if (calls.pointAttempts > (options.failPointsAfter || Infinity)) {
+    if (Object.prototype.hasOwnProperty.call(options, 'failPointsAfter') &&
+        calls.pointAttempts > options.failPointsAfter) {
       throw new Error('late points failure');
     }
     calls.points.push(points);
@@ -206,9 +222,14 @@ function globeHarness(settings) {
     calls.pauses += 1;
     return globe;
   };
+  globe.resumeAnimation = function () {
+    calls.resumes += 1;
+    return globe;
+  };
 
   return {
     calls: calls,
+    instance: globe,
     factory: function (host, options) {
       calls.factory.push({ host: host, options: options });
       return globe;
@@ -251,6 +272,7 @@ function makeHarness(settings) {
   const fetchCalls = [];
   const scriptCalls = [];
   const textureCalls = [];
+  const resizeObservers = [];
   const globe = options.globe || globeHarness();
   const storage = options.storage === undefined ? storageHarness() : options.storage;
   const snapshots = options.snapshots ? options.snapshots.slice() : [copy(fixture)];
@@ -285,6 +307,16 @@ function makeHarness(settings) {
           return code === 'KR' ? 'South Korea' : code === 'US' ? 'United States' : code;
         };
       }
+    };
+  }
+  if (options.resizeObserver) {
+    window.ResizeObserver = function (callback) {
+      this.callback = callback;
+      this.disconnects = 0;
+      this.observed = null;
+      this.observe = function (element) { this.observed = element; };
+      this.disconnect = function () { this.disconnects += 1; };
+      resizeObservers.push(this);
     };
   }
 
@@ -331,6 +363,7 @@ function makeHarness(settings) {
     fetchCalls: fetchCalls,
     scriptCalls: scriptCalls,
     textureCalls: textureCalls,
+    resizeObservers: resizeObservers,
     globe: globe
   };
 }
@@ -429,6 +462,47 @@ test('invalid network data is not cached and a valid cache is rendered', async f
   assert.equal(hasState(harness.panel, 'unavailable'), false);
 });
 
+test('cache-derived snapshot refreshes from the network on a later open', async function () {
+  const cached = copy(fixture);
+  const fresh = copy(fixture);
+  const storage = storageHarness({ [CACHE_KEY]: JSON.stringify(cached) });
+  ['7d', '30d', 'all'].forEach(function (period) {
+    fresh.periods[period] = {
+      pageviews: 8,
+      visitors: 4,
+      countries: [
+        { code: 'KR', visitors: 3 },
+        { code: 'US', visitors: 1 }
+      ]
+    };
+  });
+  fresh.generated_at = '2026-07-10T04:00:00Z';
+  const harness = makeHarness({
+    storage: storage,
+    snapshots: [new Error('offline'), fresh]
+  });
+  const instance = controller.init(harness.controllerOptions);
+
+  await instance.open();
+  assert.equal(harness.status.textContent, 'Showing last saved data');
+  instance.close();
+  await instance.open();
+
+  assert.deepEqual({
+    requests: harness.fetchCalls.filter(function (call) {
+      return call.url === harness.panel.dataset.statsUrl;
+    }).length,
+    visitors: harness.metrics.visitors.textContent,
+    status: harness.status.textContent,
+    cacheWrites: storage.writes.length
+  }, {
+    requests: 2,
+    visitors: '4',
+    status: 'Analytics up to date',
+    cacheWrites: 1
+  });
+});
+
 test('invalid cache becomes unavailable and a later open retries the network', async function () {
   const storage = storageHarness({ [CACHE_KEY]: '{"schema_version":99}' });
   const harness = makeHarness({
@@ -509,6 +583,34 @@ test('globe resources load lazily once and receive only marker-derived data', as
     harness.globe.calls.labels[0]({ name: '<Korea & friends>', visitors: 1 }),
     '&lt;Korea &amp; friends&gt; &middot; 1 visitors'
   );
+  assert.equal(harness.globe.calls.controls.autoRotate, true);
+});
+
+test('reduced motion disables globe entry, transition, rotation, and ring animation', async function () {
+  const harness = makeHarness({
+    matchMedia: function () { return { matches: true }; }
+  });
+  const instance = controller.init(harness.controllerOptions);
+
+  await instance.open();
+
+  const points = harness.globe.calls.points.at(-1);
+  assert.deepEqual({
+    constructorOptions: harness.globe.calls.factory[0].options,
+    transitionDurations: harness.globe.calls.transitionDurations,
+    autoRotate: harness.globe.calls.controls.autoRotate,
+    pointCodes: points.map(function (point) { return point.code; }),
+    rings: harness.globe.calls.rings.at(-1)
+  }, {
+    constructorOptions: {
+      rendererConfig: { alpha: true },
+      animateIn: false
+    },
+    transitionDurations: [0],
+    autoRotate: false,
+    pointCodes: ['KR'],
+    rings: []
+  });
 });
 
 test('globe failure exposes fallback without erasing rendered metrics', async function () {
@@ -521,6 +623,79 @@ test('globe failure exposes fallback without erasing rendered metrics', async fu
   assert.equal(harness.globeFallback.hidden, false);
   assert.equal(harness.metrics.visitors.textContent, '1');
   assert.equal(harness.list.children.length, 1);
+});
+
+test('failed globe load retries successfully on a later open', async function () {
+  const harness = makeHarness();
+  let scriptAttempts = 0;
+  harness.controllerOptions.loadScript = function () {
+    scriptAttempts += 1;
+    return scriptAttempts === 1 ?
+      Promise.reject(new Error('first load failed')) : Promise.resolve();
+  };
+  const instance = controller.init(harness.controllerOptions);
+
+  await instance.open();
+  assert.equal(harness.globeFallback.hidden, false);
+  instance.close();
+  await instance.open();
+
+  assert.deepEqual({
+    scriptAttempts: scriptAttempts,
+    globeCreations: harness.globe.calls.factory.length,
+    hostHidden: harness.globeHost.hidden,
+    fallbackHidden: harness.globeFallback.hidden
+  }, {
+    scriptAttempts: 2,
+    globeCreations: 1,
+    hostHidden: false,
+    fallbackHidden: true
+  });
+});
+
+test('close pauses a successful globe and reopen resumes it', async function () {
+  const harness = makeHarness();
+  const instance = controller.init(harness.controllerOptions);
+
+  await instance.open();
+  instance.close();
+  assert.equal(harness.globe.calls.pauses, 1);
+  await instance.open();
+
+  assert.equal(harness.globe.calls.resumes, 1);
+  assert.equal(harness.globeHost.hidden, false);
+  assert.equal(harness.globeFallback.hidden, true);
+});
+
+test('globe completed after close remains paused with the panel hidden', async function () {
+  const script = deferred();
+  const harness = makeHarness();
+  harness.controllerOptions.loadScript = function () { return script.promise; };
+  const instance = controller.init(harness.controllerOptions);
+
+  const opening = instance.open();
+  instance.close();
+  script.resolve();
+  await opening;
+
+  assert.equal(instance.isOpen(), false);
+  assert.equal(harness.globe.calls.factory.length, 1);
+  assert.equal(harness.globe.calls.pauses, 1);
+  assert.equal(harness.globe.calls.resumes, 0);
+});
+
+test('failed globe update pauses renderer and disconnects its resize observer', async function () {
+  const failedGlobe = globeHarness({ failPointsAfter: 0 });
+  const harness = makeHarness({ globe: failedGlobe, resizeObserver: true });
+  const instance = controller.init(harness.controllerOptions);
+
+  await instance.open();
+
+  assert.equal(failedGlobe.calls.pauses, 1);
+  assert.equal(harness.resizeObservers.length, 1);
+  assert.equal(harness.resizeObservers[0].disconnects, 1);
+  assert.equal(harness.globeHost.hidden, true);
+  assert.equal(harness.globeFallback.hidden, false);
 });
 
 test('partial globe creation failure stays isolated from later period renders', async function () {
@@ -543,7 +718,17 @@ test('partial globe creation failure stays isolated from later period renders', 
 
 test('late globe update failure disables the renderer but preserves period data', async function () {
   const lateGlobe = globeHarness({ failPointsAfter: 1 });
-  const harness = makeHarness({ globe: lateGlobe });
+  const replacementGlobe = globeHarness();
+  let globeCreations = 0;
+  const harness = makeHarness({
+    globe: lateGlobe,
+    globeFactory: function (host, options) {
+      const selected = globeCreations === 0 ? lateGlobe : replacementGlobe;
+      globeCreations += 1;
+      selected.calls.factory.push({ host: host, options: options });
+      return selected.instance;
+    }
+  });
   const instance = controller.init(harness.controllerOptions);
   let escaped = null;
 
@@ -571,6 +756,14 @@ test('late globe update failure disables the renderer but preserves period data'
   });
   assert.equal(lateGlobe.calls.pointAttempts, 2);
   assert.equal(harness.metrics.visitors.textContent, '2');
+
+  instance.close();
+  await instance.open();
+  assert.equal(globeCreations, 2);
+  assert.equal(lateGlobe.calls.pointAttempts, 2);
+  assert.ok(replacementGlobe.calls.pointAttempts > 0);
+  assert.equal(harness.globeHost.hidden, false);
+  assert.equal(harness.globeFallback.hidden, true);
 });
 
 test('country naming falls back from Intl to centroid metadata', async function () {
