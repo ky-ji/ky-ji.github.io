@@ -253,7 +253,11 @@
       for (index = 0; index < points.length; index += 1) {
         points[index].name = displayName(points[index].code);
       }
-      globe.pointsData(points).ringsData(points);
+      try {
+        globe.pointsData(points).ringsData(points);
+      } catch (_error) {
+        disableGlobe();
+      }
     }
 
     function render(statusOverride) {
@@ -352,6 +356,18 @@
     function showGlobeFallback() {
       if (globeHost) globeHost.hidden = true;
       if (globeFallback) globeFallback.hidden = false;
+    }
+
+    function disableGlobe() {
+      var brokenGlobe = globe;
+
+      globe = null;
+      try {
+        if (brokenGlobe && typeof brokenGlobe.pauseAnimation === 'function') {
+          brokenGlobe.pauseAnimation();
+        }
+      } catch (_error) {}
+      showGlobeFallback();
     }
 
     function configureGlobe() {

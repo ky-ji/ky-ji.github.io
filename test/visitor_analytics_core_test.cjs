@@ -94,7 +94,7 @@ test('country centroids are compact, sorted, and valid', function () {
   const centroids = JSON.parse(fs.readFileSync(centroidsPath, 'utf8'));
   const codes = Object.keys(centroids);
 
-  assert.ok(codes.length > 200);
+  assert.equal(codes.length, 223);
   assert.deepEqual(codes, codes.slice().sort());
   codes.forEach(function (code) {
     const entry = centroids[code];
@@ -111,6 +111,9 @@ test('country centroids are compact, sorted, and valid', function () {
   });
   assert.deepEqual(centroids.KR, {
     name: 'South Korea', lat: 35.9017, lng: 127.736
+  });
+  assert.deepEqual(centroids.ME, {
+    name: 'Montenegro', lat: 0, lng: 0
   });
   assert.deepEqual(centroids.US, {
     name: 'United States', lat: 36.9664, lng: -95.8439

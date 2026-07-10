@@ -165,8 +165,11 @@ function storageHarness(initial) {
   };
 }
 
-function globeHarness() {
-  const calls = { factory: [], points: [], rings: [], labels: [] };
+function globeHarness(settings) {
+  const options = settings || {};
+  const calls = {
+    factory: [], points: [], rings: [], labels: [], pointAttempts: 0, pauses: 0
+  };
   const globe = {};
   const chainMethods = [
     'width', 'height', 'backgroundColor', 'globeImageUrl', 'showAtmosphere',
@@ -184,6 +187,10 @@ function globeHarness() {
     return globe;
   };
   globe.pointsData = function (points) {
+    calls.pointAttempts += 1;
+    if (calls.pointAttempts > (options.failPointsAfter || Infinity)) {
+      throw new Error('late points failure');
+    }
     calls.points.push(points);
     return globe;
   };
@@ -194,6 +201,10 @@ function globeHarness() {
   globe.controls = function () {
     calls.controls = {};
     return calls.controls;
+  };
+  globe.pauseAnimation = function () {
+    calls.pauses += 1;
+    return globe;
   };
 
   return {
@@ -527,6 +538,38 @@ test('partial globe creation failure stays isolated from later period renders', 
   assert.doesNotThrow(function () {
     harness.periods[1].dispatch('click', { target: harness.periods[1] });
   });
+  assert.equal(harness.metrics.visitors.textContent, '2');
+});
+
+test('late globe update failure disables the renderer but preserves period data', async function () {
+  const lateGlobe = globeHarness({ failPointsAfter: 1 });
+  const harness = makeHarness({ globe: lateGlobe });
+  const instance = controller.init(harness.controllerOptions);
+  let escaped = null;
+
+  await instance.open();
+  try {
+    harness.periods[1].dispatch('click', { target: harness.periods[1] });
+  } catch (error) {
+    escaped = error.message;
+  }
+
+  assert.deepEqual({
+    escaped: escaped,
+    fallbackHidden: harness.globeFallback.hidden
+  }, {
+    escaped: null,
+    fallbackHidden: false
+  });
+  assert.equal(harness.globeHost.hidden, true);
+  assert.equal(lateGlobe.calls.pauses, 1);
+  assert.equal(harness.metrics.visitors.textContent, '2');
+  assert.equal(harness.list.children.length, 2);
+
+  assert.doesNotThrow(function () {
+    harness.periods[2].dispatch('click', { target: harness.periods[2] });
+  });
+  assert.equal(lateGlobe.calls.pointAttempts, 2);
   assert.equal(harness.metrics.visitors.textContent, '2');
 });
 
