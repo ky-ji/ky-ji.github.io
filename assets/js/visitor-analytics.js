@@ -290,8 +290,8 @@
       empty = model.pageviews === 0 && model.visitors === 0;
       stale = core.isStale(snapshot, now());
       state = stale ? 'stale' : empty ? 'empty' : null;
-      message = snapshotStatus || (stale ? 'Data update delayed' :
-        empty ? 'Collecting new visits' : 'Analytics up to date');
+      message = stale ? 'Data update delayed' : snapshotStatus ||
+        (empty ? 'Collecting new visits' : 'Analytics up to date');
       setState(state, message);
       updateGlobe(model);
     }

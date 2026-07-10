@@ -89,10 +89,14 @@ class PagesWorkflowTest < Minitest::Test
 
   def test_uses_least_privilege_permissions
     assert_equal({"contents" => "read"}, workflow["permissions"])
-    assert_equal({"contents" => "read"}, jobs.dig("build", "permissions"))
-    assert_equal "write", deploy_job.dig("permissions", "pages")
-    assert_equal "write", deploy_job.dig("permissions", "id-token")
-    refute jobs.dig("build", "permissions").key?("pages")
+    assert_equal({
+      "contents" => "read",
+      "pages" => "read"
+    }, jobs.dig("build", "permissions"))
+    assert_equal({
+      "pages" => "write",
+      "id-token" => "write"
+    }, deploy_job["permissions"])
     refute jobs.dig("build", "permissions").key?("id-token")
   end
 

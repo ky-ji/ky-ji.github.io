@@ -462,6 +462,24 @@ test('invalid network data is not cached and a valid cache is rendered', async f
   assert.equal(hasState(harness.panel, 'unavailable'), false);
 });
 
+test('stale cached fallback reports delayed data instead of saved data', async function () {
+  const cached = copy(fixture);
+  const storage = storageHarness({ [CACHE_KEY]: JSON.stringify(cached) });
+  const harness = makeHarness({
+    storage: storage,
+    snapshots: [new Error('offline')],
+    now: function () {
+      return Date.parse(cached.generated_at) + (18 * 60 * 60 * 1000) + 1;
+    }
+  });
+
+  await controller.init(harness.controllerOptions).open();
+
+  assert.equal(hasState(harness.panel, 'stale'), true);
+  assert.equal(harness.status.textContent, 'Data update delayed');
+  assert.notEqual(harness.status.textContent, 'Showing last saved data');
+});
+
 test('cache-derived snapshot refreshes from the network on a later open', async function () {
   const cached = copy(fixture);
   const fresh = copy(fixture);

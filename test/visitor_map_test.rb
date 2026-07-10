@@ -8,6 +8,10 @@ class VisitorMapTest < Minitest::Test
   CONFIG = File.read(File.join(ROOT, "_config.yml"))
   CSS_PATH = File.join(ROOT, "assets/css/visitor-analytics.css")
   CSS = File.read(CSS_PATH)
+  H3_LICENSE_PATH = File.join(ROOT, "assets/vendor/LICENSE-h3")
+  H3_NOTICE_PATH = File.join(ROOT, "assets/vendor/NOTICE-h3")
+  H3_LICENSE = File.exist?(H3_LICENSE_PATH) ? File.read(H3_LICENSE_PATH) : ""
+  H3_NOTICE = File.exist?(H3_NOTICE_PATH) ? File.read(H3_NOTICE_PATH) : ""
   MOBILE_CSS = CSS[/@media \(max-width: 560px\) \{(.*)\}\s*@media \(prefers-reduced-motion/m, 1] || ""
 
   def css_rule(selector, source = CSS)
@@ -99,7 +103,7 @@ class VisitorMapTest < Minitest::Test
       "Views / Visitor" => "viewsPerVisitor",
       "Countries" => "countryCount"
     }.each do |label, metric|
-      assert_includes INCLUDE, "<dt>#{label}</dt>"
+      assert_match(/<dt\b[^>]*>#{Regexp.escape(label)}<\/dt>/m, INCLUDE)
       assert_includes INCLUDE, %(data-metric="#{metric}")
     end
 
@@ -109,6 +113,37 @@ class VisitorMapTest < Minitest::Test
     assert_includes INCLUDE, "data-tracking-start"
     assert_includes INCLUDE, "data-updated-at"
     assert_match(/<a\b[^>]*target="_blank"[^>]*rel="noopener noreferrer"/m, INCLUDE)
+  end
+
+  def test_visitors_term_defines_the_goatcounter_session_window_nonvisibly
+    visitors = INCLUDE[/<dt\b[^>]*>Visitors<\/dt>/]
+
+    refute_nil visitors
+    assert_includes visitors,
+      'title="Unique visitors counted within GoatCounter\'s eight-hour session window"'
+    assert_includes visitors,
+      'aria-label="Visitors, counted within GoatCounter\'s eight-hour session window"'
+    assert_match(/>Visitors<\/dt>\z/, visitors)
+  end
+
+  def test_bundled_h3_has_complete_license_and_attribution_notice
+    assert File.file?(H3_LICENSE_PATH), "expected LICENSE-h3"
+    assert File.file?(H3_NOTICE_PATH), "expected NOTICE-h3"
+    assert_includes H3_LICENSE, "Apache License"
+    assert_includes H3_LICENSE, "Version 2.0, January 2004"
+    assert_includes H3_LICENSE, "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION"
+    (1..9).each do |section|
+      assert_match(/^\s*#{section}\. /, H3_LICENSE, "missing Apache section #{section}")
+    end
+    assert_includes H3_LICENSE, "END OF TERMS AND CONDITIONS"
+    assert_includes H3_LICENSE, "APPENDIX: How to apply the Apache License to your work."
+    assert_operator H3_LICENSE.bytesize, :>, 10_000
+
+    assert_includes H3_NOTICE, "h3-js"
+    assert_includes H3_NOTICE,
+      "Copyright 2018-2019, 2022 Uber Technologies, Inc."
+    assert_includes H3_NOTICE, "globe.gl 2.46.1"
+    assert_includes H3_NOTICE, "LICENSE-h3"
   end
 
   def test_tracker_is_production_gated_and_exact_hostname_guarded
