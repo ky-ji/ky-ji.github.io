@@ -63,3 +63,4 @@ exclude:
   - lib/
   - scripts/
   - test/
+  - vendor/

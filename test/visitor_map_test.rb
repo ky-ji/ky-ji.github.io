@@ -42,7 +42,7 @@ class VisitorMapTest < Minitest::Test
   end
 
   def test_excludes_non_public_directories
-    %w[docs lib scripts test].each do |directory|
+    %w[docs lib scripts test vendor].each do |directory|
       assert_includes CONFIG, "  - #{directory}/"
     end
   end
