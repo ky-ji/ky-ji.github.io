@@ -1,6 +1,7 @@
 require "json"
 require "net/http"
 require "stringio"
+require "time"
 require "uri"
 require "zlib"
 
@@ -8,10 +9,17 @@ class GoatCounterClient
   class ResponseError < StandardError; end
   class TimeoutError < StandardError; end
 
-  def initialize(site_code:, token:, base_url: nil, sleeper: Kernel.method(:sleep))
+  def initialize(
+    site_code:,
+    token:,
+    base_url: nil,
+    sleeper: Kernel.method(:sleep),
+    monotonic_clock: proc { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
+  )
     @token = token
     @base_url = (base_url || "https://" + site_code + ".goatcounter.com").sub(%r{/+\z}, "")
     @sleeper = sleeper
+    @monotonic_clock = monotonic_clock
   end
 
   def export_csv(timeout: 120)
@@ -20,16 +28,13 @@ class GoatCounterClient
     deadline = monotonic_time + timeout
 
     loop do
+      ensure_before_deadline!(deadline)
       status = json_request(:get, "/api/v0/export/" + export_id.to_s)
-      if present?(status["error"])
-        raise ResponseError, "GoatCounter export status reported an error"
-      end
-      break if present?(status["finished_at"])
+      finished = completed_status?(status, export_id)
+      now = ensure_before_deadline!(deadline)
+      break if finished
 
-      if monotonic_time >= deadline
-        raise TimeoutError, "GoatCounter export polling reached its timeout"
-      end
-      @sleeper.call(2)
+      @sleeper.call([2, deadline - now].min)
     end
 
     response = request(:get, "/api/v0/export/" + export_id.to_s + "/download")
@@ -62,6 +67,34 @@ class GoatCounterClient
     raise ResponseError, "GoatCounter returned malformed JSON"
   end
 
+  def completed_status?(status, expected_id)
+    status_id = parse_export_id(status)
+    unless status_id == expected_id
+      raise ResponseError, "GoatCounter returned a mismatched export id"
+    end
+
+    error = status["error"]
+    unless error.nil? || error.is_a?(String)
+      raise ResponseError, "GoatCounter returned an invalid export status error field"
+    end
+    unless error.nil? || error.empty?
+      raise ResponseError, "GoatCounter export status reported an error"
+    end
+
+    finished_at = status["finished_at"]
+    return false if finished_at.nil?
+    unless finished_at.is_a?(String) && !finished_at.empty?
+      raise ResponseError, "GoatCounter returned an invalid export status finished_at"
+    end
+
+    begin
+      Time.iso8601(finished_at)
+    rescue ArgumentError
+      raise ResponseError, "GoatCounter returned an invalid export status finished_at"
+    end
+    true
+  end
+
   def request(method, path, body = nil)
     uri = URI.join(@base_url + "/", path.sub(/\A\//, ""))
     request_class = method == :post ? Net::HTTP::Post : Net::HTTP::Get
@@ -84,19 +117,20 @@ class GoatCounterClient
   end
 
   def decompress(compressed)
-    reader = Zlib::GzipReader.new(StringIO.new(compressed))
-    reader.read
-  rescue Zlib::Error, EOFError
+    Zlib::GzipReader.wrap(StringIO.new(compressed)) { |reader| reader.read }
+  rescue Zlib::Error, EOFError, IOError, TypeError
     raise ResponseError, "GoatCounter returned invalid gzip data"
-  ensure
-    reader.close if reader
   end
 
   def monotonic_time
-    Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    @monotonic_clock.call
   end
 
-  def present?(value)
-    !value.nil? && !value.to_s.strip.empty?
+  def ensure_before_deadline!(deadline)
+    now = monotonic_time
+    if now >= deadline
+      raise TimeoutError, "GoatCounter export polling reached its timeout"
+    end
+    now
   end
 end

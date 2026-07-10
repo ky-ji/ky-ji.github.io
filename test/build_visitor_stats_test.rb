@@ -65,6 +65,21 @@ class BuildVisitorStatsTest < Minitest::Test
     ], snapshot.dig("periods", "all", "countries")
   end
 
+  def test_help_documents_both_defaults
+    stdout, stderr, status = Open3.capture3(
+      RbConfig.ruby,
+      SCRIPT,
+      "--help",
+      chdir: ROOT
+    )
+
+    assert status.success?, stderr
+    assert_empty stderr
+    assert_includes stdout, "Output path (default: assets/data/visitor-stats.json)"
+    assert_includes stdout,
+      "Fallback URL (default: https://ky-ji.github.io/assets/data/visitor-stats.json)"
+  end
+
   def test_fresh_export_writes_a_valid_strict_snapshot
     Dir.mktmpdir("visitor-stats-test") do |directory|
       output = File.join(directory, "visitor-stats.json")

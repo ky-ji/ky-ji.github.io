@@ -52,8 +52,14 @@ module VisitorStatsBuild
       fallback_url: DEFAULT_FALLBACK_URL
     }
     OptionParser.new do |parser|
-      parser.on("--output PATH") { |value| options[:output] = value }
-      parser.on("--fallback-url URL") { |value| options[:fallback_url] = value }
+      parser.on(
+        "--output PATH",
+        "Output path (default: " + DEFAULT_OUTPUT + ")"
+      ) { |value| options[:output] = value }
+      parser.on(
+        "--fallback-url URL",
+        "Fallback URL (default: " + DEFAULT_FALLBACK_URL + ")"
+      ) { |value| options[:fallback_url] = value }
     end.parse!(arguments)
     options
   end
