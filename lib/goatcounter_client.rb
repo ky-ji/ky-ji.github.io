@@ -79,8 +79,10 @@ class GoatCounterClient
 
     total = totals["total"]
     validate_nonnegative_integer!(total, "total pageview count")
-    if totals.key?("total_events")
-      validate_nonnegative_integer!(totals["total_events"], "total event count")
+    total_events = totals["total_events"]
+    validate_nonnegative_integer!(total_events, "total event count")
+    unless total_events == 0
+      raise ResponseError, "GoatCounter returned an invalid total event count"
     end
     total == 0
   end

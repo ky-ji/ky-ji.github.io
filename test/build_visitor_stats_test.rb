@@ -261,6 +261,81 @@ class BuildVisitorStatsTest < Minitest::Test
     end
   end
 
+  def test_successful_empty_export_with_positive_event_total_uses_fallback
+    @download_body = gzip("")
+    @total_body = JSON.generate(
+      "total" => 0,
+      "total_events" => 7,
+      "stats" => [{"name" => "private-positive-events"}]
+    )
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: VisitorAnalytics::InvalidExportError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_successful_empty_export_with_missing_event_total_uses_fallback
+    @download_body = gzip("")
+    @total_body = JSON.generate(
+      "total" => 0,
+      "stats" => [{"name" => "private-missing-events"}]
+    )
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal "Fresh visitor snapshot unavailable: VisitorAnalytics::InvalidExportError\n",
+        stderr
+      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_positive_event_total_with_unavailable_fallback_preserves_output
+    @download_body = gzip("")
+    @total_body = JSON.generate(
+      "total" => 0,
+      "total_events" => 7,
+      "stats" => [{"name" => "private-positive-events"}]
+    )
+    @fallback_status = 404
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+      original = "pre-existing-output\nwith exact bytes\n"
+      File.binwrite(output, original)
+
+      stdout, stderr, status = run_script(output: output)
+
+      refute status.success?
+      assert_empty stdout
+      assert_equal original, File.binread(output)
+      assert_match(/No valid visitor snapshot source/, stderr)
+      assert requested?("/api/v0/stats/total")
+      assert requested?("/fallback.json")
+      assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
   def test_successful_empty_export_with_malformed_total_uses_fallback
     @download_body = gzip("")
     @total_body = JSON.generate("total" => "private-stats-total")

@@ -413,10 +413,10 @@ class GoatCounterClientTest < Minitest::Test
     refute_match(/secret-token|2Path,Title,Event/, error.message)
   end
 
-  def test_zero_pageviews_returns_true_for_strict_zero_total
+  def test_zero_pageviews_returns_true_for_strict_zero_totals
     @total_body = JSON.generate(
       "total" => 0,
-      "total_events" => 7,
+      "total_events" => 0,
       "stats" => [{"name" => "private-stat"}]
     )
     start_at = Time.iso8601("2026-07-01T00:00:00+09:00")
@@ -464,7 +464,7 @@ class GoatCounterClientTest < Minitest::Test
     end
   end
 
-  def test_zero_pageviews_validates_total_events_when_present
+  def test_zero_pageviews_rejects_malformed_total_events
     [nil, -1, 1.5, true, false, "private-events"].each do |total_events|
       @total_body = JSON.generate("total" => 0, "total_events" => total_events)
 
@@ -475,6 +475,35 @@ class GoatCounterClientTest < Minitest::Test
       assert_match(/event/i, error.message)
       refute_match(/private-events|secret-token/, error.message)
     end
+  end
+
+  def test_zero_pageviews_rejects_positive_total_events
+    @total_body = JSON.generate(
+      "total" => 0,
+      "total_events" => 7,
+      "stats" => [{"name" => "private-positive-events"}]
+    )
+
+    error = assert_raises(GoatCounterClient::ResponseError) do
+      client.zero_pageviews?(**stats_range)
+    end
+
+    assert_match(/event/i, error.message)
+    refute_match(/private-positive-events|secret-token/, error.message)
+  end
+
+  def test_zero_pageviews_requires_total_events
+    @total_body = JSON.generate(
+      "total" => 0,
+      "stats" => [{"name" => "private-missing-events"}]
+    )
+
+    error = assert_raises(GoatCounterClient::ResponseError) do
+      client.zero_pageviews?(**stats_range)
+    end
+
+    assert_match(/event/i, error.message)
+    refute_match(/private-missing-events|secret-token/, error.message)
   end
 
   def test_zero_pageviews_rejects_malformed_json_without_echoing_it
