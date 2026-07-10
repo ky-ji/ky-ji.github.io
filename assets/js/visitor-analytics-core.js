@@ -288,7 +288,8 @@
 
       centroid = centroids[country.code];
       if (!objectValue(centroid) || !finiteNumber(centroid.lat) ||
-          !finiteNumber(centroid.lng)) {
+          centroid.lat < -90 || centroid.lat > 90 ||
+          !finiteNumber(centroid.lng) || centroid.lng < -180 || centroid.lng > 180) {
         continue;
       }
 
@@ -301,6 +302,10 @@
         visitors: country.visitors
       });
     }
+    points.sort(function (left, right) {
+      return right.visitors - left.visitors ||
+        (left.code < right.code ? -1 : left.code > right.code ? 1 : 0);
+    });
     return points;
   }
 

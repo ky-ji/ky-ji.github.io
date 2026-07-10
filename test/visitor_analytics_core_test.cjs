@@ -7,6 +7,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const corePath = path.join(__dirname, '..', 'assets', 'js', 'visitor-analytics-core.js');
+const centroidsPath = path.join(__dirname, '..', 'assets', 'data', 'country-centroids.json');
 const core = require(corePath);
 const snapshot = require('./fixtures/visitor-stats.json');
 
@@ -87,6 +88,33 @@ test('exposes the complete API on window in browsers', function () {
   });
   assert.deepEqual(Object.keys(context.window.VisitorAnalyticsCore).sort(),
     Object.keys(core).sort());
+});
+
+test('country centroids are compact, sorted, and valid', function () {
+  const centroids = JSON.parse(fs.readFileSync(centroidsPath, 'utf8'));
+  const codes = Object.keys(centroids);
+
+  assert.ok(codes.length > 200);
+  assert.deepEqual(codes, codes.slice().sort());
+  codes.forEach(function (code) {
+    const entry = centroids[code];
+    assert.match(code, /^[A-Z]{2}$/);
+    assert.deepEqual(Object.keys(entry), ['name', 'lat', 'lng']);
+    assert.equal(typeof entry.name, 'string');
+    assert.ok(entry.name.length > 0);
+    assert.equal(typeof entry.lat, 'number');
+    assert.equal(typeof entry.lng, 'number');
+    assert.ok(Number.isFinite(entry.lat) && entry.lat >= -90 && entry.lat <= 90);
+    assert.ok(Number.isFinite(entry.lng) && entry.lng >= -180 && entry.lng <= 180);
+    assert.equal(Number(entry.lat.toFixed(4)), entry.lat);
+    assert.equal(Number(entry.lng.toFixed(4)), entry.lng);
+  });
+  assert.deepEqual(centroids.KR, {
+    name: 'South Korea', lat: 35.9017, lng: 127.736
+  });
+  assert.deepEqual(centroids.US, {
+    name: 'United States', lat: 36.9664, lng: -95.8439
+  });
 });
 
 test('validates the fixture and derives its 7d model', function () {
@@ -462,7 +490,7 @@ test('treats invalid snapshots and unsafe explicit stale arguments as stale', fu
   assert.equal(core.isStale(snapshot, generatedAt + 1, 0), true);
 });
 
-test('maps known positive countries with finite numeric centroids in model order', function () {
+test('maps known positive countries with finite numeric centroids', function () {
   const model = {
     countries: [
       { code: 'KR', visitors: 3 },
@@ -485,6 +513,39 @@ test('maps known positive countries with finite numeric centroids in model order
     { code: 'KR', name: 'South Korea', lat: 36.5, lng: 127.8, visitors: 3 },
     { code: 'US', name: 'United States', lat: 39.8, lng: -98.6, visitors: 1 }
   ]);
+});
+
+test('markers omit coordinates outside geographic ranges', function () {
+  const points = core.markers({
+    countries: [
+      { code: 'CA', visitors: 3 },
+      { code: 'MX', visitors: 2 },
+      { code: 'KR', visitors: 1 }
+    ]
+  }, {
+    CA: { name: 'Canada', lat: 90.0001, lng: -106.3 },
+    MX: { name: 'Mexico', lat: 23.6, lng: -180.0001 },
+    KR: { name: 'South Korea', lat: 35.9, lng: 127.7 }
+  });
+
+  assert.deepEqual(points.map(function (point) { return point.code; }), ['KR']);
+});
+
+test('markers omit unusable countries and sort by visitors', function () {
+  const points = core.markers({
+    countries: [
+      { code: 'ZZ', visitors: 9 },
+      { code: 'US', visitors: 1 },
+      { code: 'JP', visitors: 0 },
+      { code: 'KR', visitors: 3 }
+    ]
+  }, {
+    KR: { name: 'South Korea', lat: 36.5, lng: 127.8 },
+    US: { name: 'United States', lat: 38.0, lng: -97.0 },
+    JP: { name: 'Japan', lat: 36.0, lng: 138.0 }
+  });
+
+  assert.deepEqual(points.map(function (point) { return point.code; }), ['KR', 'US']);
 });
 
 test('requires own centroid entries and falls back from a missing name to the code', function () {
