@@ -2,10 +2,15 @@ require "json"
 require "net/http"
 require "stringio"
 require "time"
+require "timeout"
 require "uri"
 require "zlib"
 
 class GoatCounterClient
+  SITE_CODE_PATTERN = /\A[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/.freeze
+  LOOPBACK_HOSTS = ["127.0.0.1", "::1"].freeze
+  TIMEOUT_MESSAGE = "GoatCounter export operation reached its timeout".freeze
+
   class ResponseError < StandardError; end
   class TimeoutError < StandardError; end
 
@@ -14,34 +19,90 @@ class GoatCounterClient
     token:,
     base_url: nil,
     sleeper: Kernel.method(:sleep),
-    monotonic_clock: proc { Process.clock_gettime(Process::CLOCK_MONOTONIC) }
+    monotonic_clock: proc { Process.clock_gettime(Process::CLOCK_MONOTONIC) },
+    allow_insecure_loopback: false
   )
+    validate_site_code!(site_code)
+    validate_token!(token)
     @token = token
-    @base_url = (base_url || "https://" + site_code + ".goatcounter.com").sub(%r{/+\z}, "")
+    @base_url = validated_base_url(site_code, base_url, allow_insecure_loopback)
     @sleeper = sleeper
     @monotonic_clock = monotonic_clock
   end
 
   def export_csv(timeout: 120)
-    created = json_request(:post, "/api/v0/export", "format" => "csv")
-    export_id = parse_export_id(created)
     deadline = monotonic_time + timeout
+    created = json_request(
+      :post,
+      "/api/v0/export",
+      {"format" => "csv"},
+      expected_status: 202,
+      deadline: deadline
+    )
+    export_id = parse_export_id(created)
 
     loop do
-      ensure_before_deadline!(deadline)
-      status = json_request(:get, "/api/v0/export/" + export_id.to_s)
+      status = json_request(
+        :get,
+        "/api/v0/export/" + export_id.to_s,
+        expected_status: 200,
+        deadline: deadline
+      )
       finished = completed_status?(status, export_id)
-      now = ensure_before_deadline!(deadline)
-      break if finished
+      if finished
+        response = request(
+          :get,
+          "/api/v0/export/" + export_id.to_s + "/download",
+          expected_statuses: [200, 202],
+          deadline: deadline
+        )
+        return decompress(response.body, deadline) if response.code.to_i == 200
+      end
 
-      @sleeper.call([2, deadline - now].min)
+      sleep_before_poll(deadline)
     end
-
-    response = request(:get, "/api/v0/export/" + export_id.to_s + "/download")
-    decompress(response.body)
   end
 
   private
+
+  def validate_site_code!(site_code)
+    unless site_code.is_a?(String) && SITE_CODE_PATTERN.match?(site_code)
+      raise ArgumentError, "invalid GoatCounter site code"
+    end
+  end
+
+  def validate_token!(token)
+    unless token.is_a?(String) && !token.empty?
+      raise ArgumentError, "invalid GoatCounter token"
+    end
+  end
+
+  def validated_base_url(site_code, base_url, allow_insecure_loopback)
+    production_url = "https://" + site_code + ".goatcounter.com"
+    return production_url if base_url.nil?
+    unless base_url.is_a?(String)
+      raise ArgumentError, "invalid GoatCounter base URL"
+    end
+    return production_url if [production_url, production_url + "/"].include?(base_url)
+
+    uri = URI.parse(base_url)
+    if allow_insecure_loopback == true && valid_loopback_uri?(uri)
+      return base_url.sub(%r{/\z}, "")
+    end
+    raise ArgumentError, "invalid GoatCounter base URL"
+  rescue URI::InvalidURIError
+    raise ArgumentError, "invalid GoatCounter base URL"
+  end
+
+  def valid_loopback_uri?(uri)
+    uri.is_a?(URI::HTTP) &&
+      uri.scheme == "http" &&
+      LOOPBACK_HOSTS.include?(uri.hostname) &&
+      ["", "/"].include?(uri.path) &&
+      uri.userinfo.nil? &&
+      uri.query.nil? &&
+      uri.fragment.nil?
+  end
 
   def parse_export_id(response)
     value = response["id"]
@@ -57,14 +118,23 @@ class GoatCounterClient
     export_id
   end
 
-  def json_request(method, path, body = nil)
-    parsed = JSON.parse(request(method, path, body).body)
+  def json_request(method, path, body = nil, expected_status:, deadline:)
+    response = request(
+      method,
+      path,
+      body,
+      expected_statuses: [expected_status],
+      deadline: deadline
+    )
+    begin
+      parsed = within_deadline(deadline) { JSON.parse(response.body) }
+    rescue JSON::ParserError, TypeError
+      raise ResponseError, "GoatCounter returned malformed JSON"
+    end
     unless parsed.is_a?(Hash)
       raise ResponseError, "GoatCounter returned an invalid JSON response shape"
     end
     parsed
-  rescue JSON::ParserError, TypeError
-    raise ResponseError, "GoatCounter returned malformed JSON"
   end
 
   def completed_status?(status, expected_id)
@@ -95,7 +165,7 @@ class GoatCounterClient
     true
   end
 
-  def request(method, path, body = nil)
+  def request(method, path, body = nil, expected_statuses:, deadline:)
     uri = URI.join(@base_url + "/", path.sub(/\A\//, ""))
     request_class = method == :post ? Net::HTTP::Post : Net::HTTP::Get
     http_request = request_class.new(uri)
@@ -105,21 +175,58 @@ class GoatCounterClient
       http_request.body = JSON.generate(body)
     end
 
-    response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
-      http.open_timeout = 10
-      http.read_timeout = 30
-      http.request(http_request)
+    response = within_deadline(deadline) do |remaining|
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = uri.scheme == "https"
+      http.open_timeout = [10, remaining].min
+      http.read_timeout = [30, remaining].min
+      http.start { |session| session.request(http_request) }
     end
-    unless response.code.to_i.between?(200, 299)
+    unless expected_statuses.include?(response.code.to_i)
       raise ResponseError, "GoatCounter returned HTTP " + response.code
     end
     response
   end
 
-  def decompress(compressed)
-    Zlib::GzipReader.wrap(StringIO.new(compressed)) { |reader| reader.read }
+  def decompress(compressed, deadline)
+    within_deadline(deadline) { read_gzip(compressed) }
+  end
+
+  def read_gzip(compressed)
+    reader = nil
+    begin
+      reader = Zlib::GzipReader.new(StringIO.new(compressed))
+      contents = reader.read
+      reader.close
+      reader = nil
+      contents
+    rescue Zlib::Error, EOFError, IOError, TypeError
+      raise ResponseError, "GoatCounter returned invalid gzip data"
+    ensure
+      close_gzip_reader(reader)
+    end
+  end
+
+  def close_gzip_reader(reader)
+    reader.close if reader
   rescue Zlib::Error, EOFError, IOError, TypeError
-    raise ResponseError, "GoatCounter returned invalid gzip data"
+    nil
+  end
+
+  def sleep_before_poll(deadline)
+    within_deadline(deadline) do |remaining|
+      @sleeper.call([2, remaining].min)
+    end
+  end
+
+  def within_deadline(deadline)
+    now = ensure_before_deadline!(deadline)
+    remaining = deadline - now
+    result = Timeout.timeout(remaining) { yield remaining }
+    ensure_before_deadline!(deadline)
+    result
+  rescue Timeout::Error, Errno::ETIMEDOUT
+    raise TimeoutError, TIMEOUT_MESSAGE
   end
 
   def monotonic_time
@@ -129,7 +236,7 @@ class GoatCounterClient
   def ensure_before_deadline!(deadline)
     now = monotonic_time
     if now >= deadline
-      raise TimeoutError, "GoatCounter export polling reached its timeout"
+      raise TimeoutError, TIMEOUT_MESSAGE
     end
     now
   end

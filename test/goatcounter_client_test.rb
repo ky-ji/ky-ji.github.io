@@ -14,6 +14,7 @@ class GoatCounterClientTest < Minitest::Test
     @polls = 0
     @create_status = 202
     @create_body = JSON.generate("id" => 42)
+    @create_stream = nil
     @status_status = 200
     @status_body = proc do |poll|
       JSON.generate(
@@ -21,8 +22,10 @@ class GoatCounterClientTest < Minitest::Test
         "finished_at" => (poll > 1 ? "2026-07-10T03:00:00Z" : nil)
       )
     end
+    @downloads = 0
     @download_status = 200
     @download_body = gzip(@csv)
+    @download_stream = nil
 
     @server = WEBrick::HTTPServer.new(
       Port: 0,
@@ -41,7 +44,7 @@ class GoatCounterClientTest < Minitest::Test
   end
 
   def test_creates_polls_and_downloads_completed_csv_export
-    clock = clock_returning(0.0, 0.0, 0.1, 2.1, 2.2)
+    clock = clock_returning(0.0)
 
     assert_equal @csv, client(monotonic_clock: clock).export_csv(timeout: 5)
 
@@ -61,7 +64,7 @@ class GoatCounterClientTest < Minitest::Test
 
   def test_times_out_when_export_never_finishes
     @status_body = proc { |_poll| JSON.generate("id" => 42, "finished_at" => nil) }
-    clock = clock_returning(0.0, 0.0, 0.5, 1.0)
+    clock = clock_returning(*([0.0] * 8), 0.5, 0.5, 1.0)
 
     error = assert_raises(GoatCounterClient::TimeoutError) do
       client(monotonic_clock: clock).export_csv(timeout: 1)
@@ -72,11 +75,57 @@ class GoatCounterClientTest < Minitest::Test
     refute @requests.any? { |request| request[:path].end_with?("/download") }
   end
 
+  def test_total_deadline_is_established_before_create_request
+    clock = clock_returning(0.0, 1.0)
+
+    error = assert_raises(GoatCounterClient::TimeoutError) do
+      client(monotonic_clock: clock).export_csv(timeout: 1)
+    end
+
+    assert_match(/timeout/i, error.message)
+    assert_empty @requests
+    assert_empty @sleeps
+    refute_match(/secret-token/, error.message)
+  end
+
+  def test_times_out_during_trickled_create_body
+    @create_stream = trickled_body(JSON.generate("id" => 42))
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    error = assert_raises(GoatCounterClient::TimeoutError) do
+      client.export_csv(timeout: 0.12)
+    end
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+
+    assert_operator elapsed, :<, 0.8
+    assert_match(/timeout/i, error.message)
+    refute_match(/secret-token/, error.message)
+    assert_equal ["/api/v0/export"], @requests.map { |request| request[:path] }
+  end
+
+  def test_times_out_during_trickled_download_body
+    @status_body = proc do |_poll|
+      JSON.generate("id" => 42, "finished_at" => "2026-07-10T03:00:00Z")
+    end
+    @download_stream = trickled_body(gzip(@csv))
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    error = assert_raises(GoatCounterClient::TimeoutError) do
+      client.export_csv(timeout: 0.12)
+    end
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+
+    assert_operator elapsed, :<, 0.8
+    assert_match(/timeout/i, error.message)
+    refute_match(/secret-token/, error.message)
+    assert_equal 1, @downloads
+  end
+
   def test_rejects_completion_that_arrives_after_deadline
     @status_body = proc do |_poll|
       JSON.generate("id" => 42, "finished_at" => "2026-07-10T03:00:00Z")
     end
-    clock = clock_returning(0.0, 0.0, 1.1)
+    clock = clock_returning(*([0.0] * 6), 1.1)
 
     assert_raises(GoatCounterClient::TimeoutError) do
       client(monotonic_clock: clock).export_csv(timeout: 1)
@@ -89,7 +138,7 @@ class GoatCounterClientTest < Minitest::Test
 
   def test_does_not_start_status_poll_at_deadline
     @status_body = proc { |_poll| JSON.generate("id" => 42, "finished_at" => nil) }
-    clock = clock_returning(0.0, 1.0)
+    clock = clock_returning(*([0.0] * 5), 1.0)
 
     assert_raises(GoatCounterClient::TimeoutError) do
       client(monotonic_clock: clock).export_csv(timeout: 1)
@@ -101,7 +150,7 @@ class GoatCounterClientTest < Minitest::Test
 
   def test_sleeps_only_for_sub_two_second_remaining_duration
     @status_body = proc { |_poll| JSON.generate("id" => 42, "finished_at" => nil) }
-    clock = clock_returning(0.0, 0.0, 0.25, 1.0)
+    clock = clock_returning(*([0.0] * 8), 0.25, 0.25, 1.0)
 
     assert_raises(GoatCounterClient::TimeoutError) do
       client(monotonic_clock: clock).export_csv(timeout: 1)
@@ -138,6 +187,70 @@ class GoatCounterClientTest < Minitest::Test
 
     assert_response_error_without_secrets { client.export_csv }
     assert_equal "/api/v0/export/42/download", @requests.last[:path]
+  end
+
+  def test_rejects_wrong_create_success_statuses
+    [200, 201, 206].each do |status|
+      @create_status = status
+      @create_body = JSON.generate("id" => 42, "private" => "private-create-response")
+
+      error = assert_raises(GoatCounterClient::ResponseError) { client.export_csv }
+      assert_match(/HTTP/i, error.message)
+      refute_match(/private-create-response|secret-token/, error.message)
+    end
+  end
+
+  def test_rejects_wrong_status_success_statuses
+    [201, 202, 206].each do |status|
+      @status_status = status
+      @status_body = proc do |_poll|
+        JSON.generate(
+          "id" => 42,
+          "finished_at" => "2026-07-10T03:00:00Z",
+          "private" => "private-status-response"
+        )
+      end
+
+      error = assert_raises(GoatCounterClient::ResponseError) { client.export_csv }
+      assert_match(/HTTP/i, error.message)
+      refute_match(/private-status-response|secret-token/, error.message)
+    end
+  end
+
+  def test_rejects_wrong_download_success_statuses
+    [201, 204, 206].each do |status|
+      @status_body = proc do |_poll|
+        JSON.generate("id" => 42, "finished_at" => "2026-07-10T03:00:00Z")
+      end
+      @download_status = status
+      @download_body = "private-download-response"
+
+      error = assert_raises(GoatCounterClient::ResponseError) { client.export_csv }
+      assert_match(/HTTP/i, error.message)
+      refute_match(/private-download-response|secret-token/, error.message)
+    end
+  end
+
+  def test_download_accepted_then_ready_returns_to_status_polling
+    @status_body = proc do |_poll|
+      JSON.generate("id" => 42, "finished_at" => "2026-07-10T03:00:00Z")
+    end
+    @download_status = proc { |download| download == 1 ? 202 : 200 }
+    @download_body = proc do |download|
+      download == 1 ? "private-pending-download" : gzip(@csv)
+    end
+
+    assert_equal @csv, client.export_csv(timeout: 5)
+    assert_equal 2, @downloads
+    assert_equal [
+      "/api/v0/export",
+      "/api/v0/export/42",
+      "/api/v0/export/42/download",
+      "/api/v0/export/42",
+      "/api/v0/export/42/download"
+    ], @requests.map { |request| request[:path] }
+    assert_equal ["Bearer secret-token"] * 5,
+      @requests.map { |request| request[:authorization] }
   end
 
   def test_rejects_status_error_immediately
@@ -300,6 +413,75 @@ class GoatCounterClientTest < Minitest::Test
       default_client.instance_variable_get(:@base_url)
   end
 
+  def test_rejects_invalid_site_codes_before_request
+    invalid_codes = [
+      nil,
+      "",
+      "Ky-Ji",
+      "-ky-ji",
+      "ky-ji-",
+      "ky.ji",
+      "ky/ji",
+      "a" * 64
+    ]
+
+    invalid_codes.each do |site_code|
+      assert_configuration_rejected(site_code: site_code)
+    end
+  end
+
+  def test_rejects_empty_and_non_string_tokens_before_request
+    [nil, "", 42].each do |token|
+      assert_configuration_rejected(token: token)
+    end
+  end
+
+  def test_rejects_arbitrary_https_and_decorated_production_urls
+    invalid_urls = [
+      "https://example.com",
+      "https://ky-ji.goatcounter.com/path",
+      "https://ky-ji.goatcounter.com/?private=query",
+      "https://ky-ji.goatcounter.com/#private-fragment",
+      "https://private-user@ky-ji.goatcounter.com"
+    ]
+
+    invalid_urls.each do |url|
+      assert_configuration_rejected(base_url: url)
+    end
+  end
+
+  def test_rejects_plaintext_non_loopback_url
+    assert_configuration_rejected(base_url: "http://192.0.2.1:8080")
+  end
+
+  def test_rejects_loopback_without_explicit_permission
+    assert_configuration_rejected(base_url: base_url, allow_insecure_loopback: false)
+  end
+
+  def test_accepts_exact_production_url_with_trailing_slash
+    configured = GoatCounterClient.new(
+      site_code: "ky-ji",
+      token: "secret-token",
+      base_url: "https://ky-ji.goatcounter.com/"
+    )
+
+    assert_equal "https://ky-ji.goatcounter.com",
+      configured.instance_variable_get(:@base_url)
+    assert_empty @requests
+  end
+
+  def test_accepts_explicit_ipv6_loopback_configuration
+    configured = GoatCounterClient.new(
+      site_code: "ky-ji",
+      token: "secret-token",
+      base_url: "http://[::1]:8080/",
+      allow_insecure_loopback: true
+    )
+
+    assert_equal "http://[::1]:8080", configured.instance_variable_get(:@base_url)
+    assert_empty @requests
+  end
+
   private
 
   def client(monotonic_clock: nil)
@@ -307,7 +489,8 @@ class GoatCounterClientTest < Minitest::Test
       site_code: "ky-ji",
       token: "secret-token",
       base_url: base_url,
-      sleeper: proc { |seconds| @sleeps << seconds }
+      sleeper: proc { |seconds| @sleeps << seconds },
+      allow_insecure_loopback: true
     }
     options[:monotonic_clock] = monotonic_clock if monotonic_clock
     GoatCounterClient.new(**options)
@@ -321,8 +504,12 @@ class GoatCounterClientTest < Minitest::Test
   def mount_fake_api
     @server.mount_proc("/api/v0/export/42/download") do |request, response|
       record(request)
-      response.status = @download_status
-      response.body = @download_body
+      @downloads += 1
+      response.status = dynamic_value(@download_status, @downloads)
+      assign_body(
+        response,
+        @download_stream || dynamic_value(@download_body, @downloads)
+      )
     end
     @server.mount_proc("/api/v0/export/42") do |request, response|
       record(request)
@@ -335,7 +522,7 @@ class GoatCounterClientTest < Minitest::Test
       record(request)
       response.status = @create_status
       response["Content-Type"] = "application/json"
-      response.body = @create_body
+      assign_body(response, @create_stream || @create_body)
     end
   end
 
@@ -349,6 +536,17 @@ class GoatCounterClientTest < Minitest::Test
     }
   end
 
+  def dynamic_value(value, count)
+    value.respond_to?(:call) ? value.call(count) : value
+  end
+
+  def assign_body(response, body)
+    if body.respond_to?(:call)
+      response.chunked = true
+    end
+    response.body = body
+  end
+
   def gzip(value)
     buffer = StringIO.new
     Zlib::GzipWriter.wrap(buffer) { |writer| writer.write(value) }
@@ -360,14 +558,23 @@ class GoatCounterClientTest < Minitest::Test
     proc { values.empty? ? last : values.shift }
   end
 
+  def trickled_body(value, delay: 0.04, pieces: 6)
+    slice_size = [(value.bytesize.to_f / pieces).ceil, 1].max
+    chunks = value.bytes.each_slice(slice_size).map { |bytes| bytes.pack("C*") }
+    proc do |output|
+      chunks.each_with_index do |chunk, index|
+        output.write(chunk)
+        sleep(delay) unless index == chunks.length - 1
+      end
+    end
+  end
+
   def assert_invalid_finished_at(value)
     @status_body = proc do |_poll|
       JSON.generate("id" => 42, "finished_at" => value)
     end
-    clock = clock_returning(0.0, 0.0, 0.25, 1.0)
-
     error = assert_raises(GoatCounterClient::ResponseError) do
-      client(monotonic_clock: clock).export_csv(timeout: 1)
+      client.export_csv(timeout: 1)
     end
 
     assert_match(/finished_at/i, error.message)
@@ -395,5 +602,21 @@ class GoatCounterClientTest < Minitest::Test
     error = assert_raises(GoatCounterClient::ResponseError) { yield }
     assert_match(/HTTP/i, error.message)
     refute_match(/private .* response|secret-token/, error.message)
+  end
+
+  def assert_configuration_rejected(options = {})
+    defaults = {
+      site_code: "ky-ji",
+      token: "private-configuration-token",
+      base_url: base_url,
+      allow_insecure_loopback: true
+    }
+
+    error = assert_raises(ArgumentError) do
+      GoatCounterClient.new(**defaults.merge(options))
+    end
+
+    refute_match(/private-configuration-token/, error.message)
+    assert_empty @requests
   end
 end

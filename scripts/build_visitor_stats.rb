@@ -15,6 +15,7 @@ module VisitorStatsBuild
   DEFAULT_OUTPUT = "assets/data/visitor-stats.json".freeze
   DEFAULT_FALLBACK_URL =
     "https://ky-ji.github.io/assets/data/visitor-stats.json".freeze
+  MAX_FUTURE_SECONDS = 5 * 60
 
   class InvalidSnapshotError < StandardError; end
   class FallbackError < StandardError; end
@@ -30,19 +31,21 @@ module VisitorStatsBuild
         site_code: site_code,
         token: token,
         base_url: environment["GOATCOUNTER_BASE_URL"],
+        allow_insecure_loopback:
+          environment["GOATCOUNTER_ALLOW_INSECURE_LOOPBACK"] == "1",
         data_since: data_since
       )
     rescue StandardError => error
       warn "Fresh visitor snapshot unavailable: " + error.class.name
       begin
-        fallback_snapshot(options[:fallback_url])
+        fallback_snapshot(options[:fallback_url], data_since: data_since)
       rescue StandardError
         warn "No valid visitor snapshot source"
         return 1
       end
     end
 
-    atomic_write(options[:output], snapshot)
+    atomic_write(options[:output], snapshot, data_since: data_since)
     0
   end
 
@@ -65,21 +68,28 @@ module VisitorStatsBuild
   end
   private_class_method :parse_options
 
-  def self.fresh_snapshot(site_code:, token:, base_url:, data_since:)
+  def self.fresh_snapshot(
+    site_code:,
+    token:,
+    base_url:,
+    allow_insecure_loopback:,
+    data_since:
+  )
     csv = GoatCounterClient.new(
       site_code: site_code,
       token: token,
-      base_url: base_url
+      base_url: base_url,
+      allow_insecure_loopback: allow_insecure_loopback
     ).export_csv
     snapshot = VisitorAnalytics::SnapshotBuilder.new(
       site: SITE,
       data_since: data_since
     ).build(csv)
-    validate_snapshot(snapshot)
+    validate_snapshot(snapshot, data_since: data_since)
   end
   private_class_method :fresh_snapshot
 
-  def self.fallback_snapshot(url)
+  def self.fallback_snapshot(url, data_since:)
     uri = URI(url)
     response = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") do |http|
       http.open_timeout = 10
@@ -90,20 +100,34 @@ module VisitorStatsBuild
       raise FallbackError, "fallback request was unsuccessful"
     end
 
-    validate_snapshot(JSON.parse(response.body))
+    validate_snapshot(JSON.parse(response.body), data_since: data_since)
   end
   private_class_method :fallback_snapshot
 
-  def self.validate_snapshot(snapshot)
+  def self.validate_snapshot(snapshot, data_since:, now: Time.now)
     unless VisitorAnalytics.valid_snapshot?(snapshot)
       raise InvalidSnapshotError, "visitor snapshot failed validation"
     end
+    unless snapshot["site"] == SITE
+      raise InvalidSnapshotError, "visitor snapshot failed identity validation"
+    end
+
+    snapshot_start = Time.iso8601(snapshot["data_since"])
+    generated_at = Time.iso8601(snapshot["generated_at"])
+    unless snapshot_start == data_since
+      raise InvalidSnapshotError, "visitor snapshot failed identity validation"
+    end
+    if generated_at > now + MAX_FUTURE_SECONDS
+      raise InvalidSnapshotError, "visitor snapshot failed time validation"
+    end
     snapshot
+  rescue ArgumentError
+    raise InvalidSnapshotError, "visitor snapshot failed time validation"
   end
   private_class_method :validate_snapshot
 
-  def self.atomic_write(path, snapshot)
-    validate_snapshot(snapshot)
+  def self.atomic_write(path, snapshot, data_since:)
+    validate_snapshot(snapshot, data_since: data_since)
     directory = File.dirname(path)
     FileUtils.mkdir_p(directory)
     temporary = Tempfile.new(["visitor-stats-", ".json"], directory)

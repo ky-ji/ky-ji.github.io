@@ -14,6 +14,8 @@ class BuildVisitorStatsTest < Minitest::Test
   SCRIPT = File.join(ROOT, "scripts/build_visitor_stats.rb")
   SECRET = "integration-secret-token"
   START = "2026-07-01T00:00:00+09:00"
+  SUBPROCESS_TIMEOUT = 10
+  SUBPROCESS_TERM_GRACE = 0.5
 
   def setup
     @csv = File.read(File.expand_path("fixtures/goatcounter_pageviews.csv", __dir__))
@@ -66,10 +68,12 @@ class BuildVisitorStatsTest < Minitest::Test
   end
 
   def test_help_documents_both_defaults
-    stdout, stderr, status = Open3.capture3(
+    stdout, stderr, status = capture_subprocess(
+      {},
       RbConfig.ruby,
       SCRIPT,
       "--help",
+      timeout: SUBPROCESS_TIMEOUT,
       chdir: ROOT
     )
 
@@ -78,6 +82,25 @@ class BuildVisitorStatsTest < Minitest::Test
     assert_includes stdout, "Output path (default: assets/data/visitor-stats.json)"
     assert_includes stdout,
       "Fallback URL (default: https://ky-ji.github.io/assets/data/visitor-stats.json)"
+  end
+
+  def test_subprocess_watchdog_terminates_hung_child
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+    error = assert_raises(Timeout::Error) do
+      capture_subprocess(
+        {},
+        RbConfig.ruby,
+        "-e",
+        "sleep 30",
+        timeout: 0.1,
+        chdir: ROOT
+      )
+    end
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+
+    assert_operator elapsed, :<, 2
+    assert_match(/subprocess timed out/i, error.message)
   end
 
   def test_fresh_export_writes_a_valid_strict_snapshot
@@ -127,18 +150,25 @@ class BuildVisitorStatsTest < Minitest::Test
   end
 
   def test_invalid_generated_snapshot_reuses_valid_fallback_fixture
+    start_time = Time.now + (4 * 60)
+    start = start_time.getlocal(9 * 60 * 60).iso8601
+    fallback = JSON.parse(@fallback_fixture)
+    fallback["data_since"] = start
+    fallback["generated_at"] = start_time.utc.iso8601
+    @fallback_body = JSON.generate(fallback)
+
     Dir.mktmpdir("visitor-stats-test") do |directory|
       output = File.join(directory, "visitor-stats.json")
 
       stdout, stderr, status = run_script(
         output: output,
-        start: "2099-07-01T00:00:00+09:00"
+        start: start
       )
 
       assert status.success?, stderr
       assert_empty stdout
       assert_match(/Fresh visitor snapshot unavailable: \S+\n\z/, stderr)
-      assert_equal JSON.parse(@fallback_fixture), JSON.parse(File.read(output))
+      assert_equal fallback, JSON.parse(File.read(output))
       assert requested?("/fallback.json")
       assert_no_secret_or_private_data(stdout, stderr)
     end
@@ -163,6 +193,49 @@ class BuildVisitorStatsTest < Minitest::Test
       assert_empty stdout
       assert_equal original, File.binread(output)
       assert_match(/No valid visitor snapshot source/, stderr)
+      assert requested?("/fallback.json")
+      assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
+  def test_fallback_with_wrong_site_preserves_existing_output
+    snapshot = JSON.parse(@fallback_fixture)
+    snapshot["site"] = "private.example"
+
+    assert_rejected_fallback_preserves_output(snapshot)
+  end
+
+  def test_fallback_with_wrong_start_instant_preserves_existing_output
+    snapshot = JSON.parse(@fallback_fixture)
+    snapshot["data_since"] = "2026-07-01T00:00:01+09:00"
+
+    assert_rejected_fallback_preserves_output(snapshot)
+  end
+
+  def test_fallback_with_far_future_generation_time_preserves_existing_output
+    snapshot = JSON.parse(@fallback_fixture)
+    snapshot["generated_at"] = "2099-01-01T00:00:00Z"
+
+    assert_rejected_fallback_preserves_output(snapshot)
+  end
+
+  def test_old_fallback_with_equivalent_start_instant_is_accepted
+    @create_status = 500
+    @create_body = "private-fresh-api-response"
+    snapshot = JSON.parse(@fallback_fixture)
+    snapshot["data_since"] = "2026-06-30T15:00:00Z"
+    snapshot["generated_at"] = "2026-07-01T00:00:00Z"
+    @fallback_body = JSON.generate(snapshot)
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(output: output)
+
+      assert status.success?, stderr
+      assert_empty stdout
+      assert_equal snapshot, JSON.parse(File.read(output))
       assert requested?("/fallback.json")
       assert_equal ["visitor-stats.json"], Dir.children(directory)
       assert_no_secret_or_private_data(stdout, stderr)
@@ -205,14 +278,41 @@ class BuildVisitorStatsTest < Minitest::Test
     end
   end
 
+  def test_local_api_requires_explicit_loopback_environment_switch
+    @fallback_status = 503
+    @fallback_body = "private-unavailable-fallback"
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+
+      stdout, stderr, status = run_script(
+        output: output,
+        allow_insecure_loopback: false
+      )
+
+      refute status.success?
+      assert_empty stdout
+      assert_empty api_requests
+      refute File.exist?(output)
+      assert_match(/Fresh visitor snapshot unavailable: ArgumentError/, stderr)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
+  end
+
   private
 
-  def run_script(output:, start: START, omitted_env: nil)
+  def run_script(
+    output:,
+    start: START,
+    omitted_env: nil,
+    allow_insecure_loopback: true
+  )
     environment = {
       "GOATCOUNTER_SITE_CODE" => "ky-ji",
       "GOATCOUNTER_API_KEY" => SECRET,
       "VISITOR_ANALYTICS_START" => start,
       "GOATCOUNTER_BASE_URL" => base_url,
+      "GOATCOUNTER_ALLOW_INSECURE_LOOPBACK" => (allow_insecure_loopback ? "1" : nil),
       "HTTP_PROXY" => nil,
       "HTTPS_PROXY" => nil,
       "http_proxy" => nil,
@@ -221,14 +321,78 @@ class BuildVisitorStatsTest < Minitest::Test
     }
     environment[omitted_env] = nil if omitted_env
 
-    Open3.capture3(
+    capture_subprocess(
       environment,
       RbConfig.ruby,
       SCRIPT,
       "--output", output,
       "--fallback-url", base_url + "/fallback.json",
+      timeout: SUBPROCESS_TIMEOUT,
       chdir: ROOT
     )
+  end
+
+  def capture_subprocess(environment, *command, timeout:, chdir:)
+    streams = []
+    wait_thread = nil
+    stdout_reader = nil
+    stderr_reader = nil
+    timed_out = false
+
+    begin
+      stdin, stdout, stderr, wait_thread = Open3.popen3(
+        environment,
+        *command,
+        chdir: chdir,
+        pgroup: true
+      )
+      streams = [stdin, stdout, stderr]
+      stdin.close
+      stdout_reader = Thread.new { stdout.read }
+      stderr_reader = Thread.new { stderr.read }
+
+      unless wait_thread.join(timeout)
+        timed_out = true
+        terminate_subprocess(wait_thread)
+      end
+
+      stdout_text = stdout_reader.value
+      stderr_text = stderr_reader.value
+      raise Timeout::Error, "subprocess timed out" if timed_out
+
+      [stdout_text, stderr_text, wait_thread.value]
+    ensure
+      terminate_subprocess(wait_thread) if wait_thread && wait_thread.alive?
+      streams.each { |stream| close_stream(stream) }
+      stdout_reader.join if stdout_reader && stdout_reader.alive?
+      stderr_reader.join if stderr_reader && stderr_reader.alive?
+    end
+  end
+
+  def terminate_subprocess(wait_thread)
+    return unless wait_thread && wait_thread.alive?
+
+    signal_process_group("TERM", wait_thread.pid)
+    return if wait_thread.join(SUBPROCESS_TERM_GRACE)
+
+    signal_process_group("KILL", wait_thread.pid)
+    wait_thread.join
+  end
+
+  def signal_process_group(signal, pid)
+    Process.kill(signal, -pid)
+  rescue Errno::ESRCH
+    begin
+      Process.kill(signal, pid)
+    rescue Errno::ESRCH
+      nil
+    end
+  end
+
+  def close_stream(stream)
+    stream.close unless stream.closed?
+  rescue IOError
+    nil
   end
 
   def mount_fake_endpoints
@@ -289,5 +453,27 @@ class BuildVisitorStatsTest < Minitest::Test
     refute_match(/private-(?:fresh|invalid|unavailable)/, output)
     refute_includes output, "2Path,Title,Event"
     refute_includes output, '"schema_version"'
+  end
+
+  def assert_rejected_fallback_preserves_output(snapshot)
+    @create_status = 500
+    @create_body = "private-fresh-api-response"
+    @fallback_body = JSON.generate(snapshot)
+
+    Dir.mktmpdir("visitor-stats-test") do |directory|
+      output = File.join(directory, "visitor-stats.json")
+      original = "pre-existing-output\nwith exact bytes\n"
+      File.binwrite(output, original)
+
+      stdout, stderr, status = run_script(output: output)
+
+      refute status.success?
+      assert_empty stdout
+      assert_equal original, File.binread(output)
+      assert_match(/No valid visitor snapshot source/, stderr)
+      assert requested?("/fallback.json")
+      assert_equal ["visitor-stats.json"], Dir.children(directory)
+      assert_no_secret_or_private_data(stdout, stderr)
+    end
   end
 end
