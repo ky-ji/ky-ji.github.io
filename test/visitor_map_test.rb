@@ -6,6 +6,13 @@ class VisitorMapTest < Minitest::Test
   INCLUDE_PATH = File.join(ROOT, "_includes/visitor-analytics.html")
   INCLUDE = File.exist?(INCLUDE_PATH) ? File.read(INCLUDE_PATH) : ""
   CONFIG = File.read(File.join(ROOT, "_config.yml"))
+  CSS_PATH = File.join(ROOT, "assets/css/visitor-analytics.css")
+  CSS = File.read(CSS_PATH)
+  MOBILE_CSS = CSS[/@media \(max-width: 560px\) \{(.*)\}\s*@media \(prefers-reduced-motion/m, 1] || ""
+
+  def css_rule(selector, source = CSS)
+    source[/#{Regexp.escape(selector)}\s*\{([^}]*)\}/m, 1] || ""
+  end
 
   def test_removes_failed_widget_providers
     refute_includes LAYOUT + INCLUDE, "feed-pulse.com"
@@ -122,5 +129,94 @@ class VisitorMapTest < Minitest::Test
     assert_includes INCLUDE, 'class="visitor-analytics__header"'
     assert_includes INCLUDE, 'class="visitor-analytics__countries"'
     assert_includes INCLUDE, 'class="visitor-analytics__footer"'
+  end
+
+  def test_panel_width_and_corner_radius_are_bounded
+    panel = css_rule(".visitor-analytics")
+    assert_includes panel, "max-width: 560px"
+    assert_includes panel, "max-height: calc(100vh - 40px)"
+    assert_includes MOBILE_CSS, "width: calc(100vw - 24px)"
+
+    radii = CSS.scan(/border-radius:\s*(\d+)px/).flatten.map(&:to_i)
+    refute_empty radii
+    assert_operator radii.max, :<=, 8
+  end
+
+  def test_close_button_and_globe_have_stable_dimensions
+    close = css_rule(".visitor-analytics__close")
+    assert_includes close, "width: 36px"
+    assert_includes close, "height: 36px"
+
+    globe = css_rule(".visitor-analytics__globe")
+    assert_includes globe, "width: 280px"
+    assert_includes globe, "height: 280px"
+    assert_match(
+      /\.visitor-analytics__globe-wrap,\s*\.visitor-analytics__globe\s*\{[^}]*width:\s*220px;[^}]*height:\s*220px;/m,
+      MOBILE_CSS
+    )
+  end
+
+  def test_desktop_and_mobile_layouts_keep_stable_tracks
+    body = css_rule(".visitor-analytics__body")
+    metrics = css_rule(".visitor-analytics__metrics")
+    globe_wrap = css_rule(".visitor-analytics__globe-wrap")
+    assert_includes body, "display: flex"
+    assert_includes metrics, "display: grid"
+    assert_includes metrics, "grid-template-columns: repeat(4, minmax(0, 1fr))"
+    assert_includes globe_wrap, "flex: 0 0 280px"
+
+    mobile_metrics = css_rule(".visitor-analytics__metrics", MOBILE_CSS)
+    mobile_body = css_rule(".visitor-analytics__body", MOBILE_CSS)
+    assert_includes mobile_metrics,
+      "grid-template-columns: repeat(2, minmax(0, 1fr))"
+    assert_includes mobile_body, "flex-direction: column"
+  end
+
+  def test_panel_open_and_data_states_are_styled
+    assert_includes css_rule(".visitor-analytics.is-open"), "display: block"
+    assert_includes css_rule(".visitor-analytics.is-loading .visitor-analytics__status"),
+      "color: #74d39b"
+    assert_match(
+      /\.visitor-analytics\.is-empty \.visitor-analytics__status,\s*\.visitor-analytics\.is-stale \.visitor-analytics__status\s*\{[^}]*color:\s*#f4b942/m,
+      CSS
+    )
+    assert_includes css_rule(".visitor-analytics.is-unavailable .visitor-analytics__status"),
+      "color: #ef7d72"
+
+    fallback = css_rule(".visitor-analytics__globe-fallback")
+    hidden_fallback = css_rule(".visitor-analytics__globe-fallback[hidden]")
+    assert_includes fallback, "display: grid"
+    assert_includes fallback, "color: #ef7d72"
+    assert_includes hidden_fallback, "display: none"
+  end
+
+  def test_period_controls_define_selected_hover_and_focus_states
+    assert_includes css_rule('.visitor-analytics__periods button[aria-selected="true"]'),
+      "background: #247a4c"
+    assert_includes css_rule(".visitor-analytics__periods button:hover"),
+      "background: #303633"
+    assert_includes css_rule(".visitor-analytics a:focus-visible"),
+      "outline: 2px solid #55c987"
+  end
+
+  def test_theme_containers_are_reset_without_float_declarations
+    reset = CSS[/(?:\.visitor-analytics|:where\(\.visitor-analytics\)) \.visitor-analytics__header,\s*(?:\.visitor-analytics|:where\(\.visitor-analytics\)) \.visitor-analytics__countries,\s*(?:\.visitor-analytics|:where\(\.visitor-analytics\)) \.visitor-analytics__footer\s*\{([^}]*)\}/m, 1] || ""
+    assert_includes reset, "position: static"
+    assert_includes reset, "width: auto"
+    assert(
+      reset.include?("all: initial") || reset.include?("float: none"),
+      "theme reset must explicitly neutralize inherited layout properties"
+    )
+    refute_match(/\bfloat\s*:/, CSS)
+    assert_includes CSS,
+      ":where(.visitor-analytics) .visitor-analytics__header"
+  end
+
+  def test_panel_uses_fixed_tracking_and_a_multi_family_palette
+    assert_includes CSS, "letter-spacing: 0"
+    assert_includes CSS, "background: rgba(24, 27, 26, 0.97)"
+    assert_includes CSS, "#247a4c"
+    assert_includes CSS, "#f4b942"
+    assert_includes CSS, "#ef7d72"
   end
 end
