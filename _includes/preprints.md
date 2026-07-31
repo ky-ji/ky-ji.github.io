@@ -18,13 +18,7 @@
     <img src="{{ link.image }}" class="teaser img-fluid z-depth-1" style="width=100;height=40%">
   </div>
   <div class="col-sm-9" style="position: relative;padding-right: 15px;padding-left: 20px;">
-      <div class="title">
-        {% if pdf_url != empty %}
-        <a href="{{ pdf_url }}">{{ link.title }}</a>
-        {% else %}
-        <span class="title-no-link">{{ link.title }}</span>
-        {% endif %}
-      </div>
+      <div class="title"><a{% if pdf_url != empty %} href="{{ pdf_url }}"{% endif %}>{{ link.title }}</a></div>
       <div class="author">{{ link.authors }}</div>
     <div class="links">
       {% if pdf_url != empty or link.placeholder_links %}
