@@ -15,6 +15,7 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua U
 - **Agent-Guided Adaptation:** Guiding real-world skill acquisition and adaptation with frontier foundation models.
 - **Continual Real-World Learning:** Scaling embodied learning by harnessing the spatial, multimodal, and interactive richness of the physical world.
 
+<p style="color: #d32f2f;"><strong>If this vision resonates with you, feel free to reach out.</strong></p>
 
 {% include_relative _includes/publications.md %}
 {% include_relative _includes/preprints.md %}
