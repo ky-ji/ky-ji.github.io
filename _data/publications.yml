@@ -77,6 +77,25 @@ main:
     # page: https://imagenet3d.github.io/
     image: ./assets/img/samcl.png
   
+  - title: "RoboStream: Weaving Spatio-Temporal Reasoning with Memory in Vision-Language Models for Robotics"
+    authors: Yuzhi Huang, Jie Wu, Weijue Bu, Ziyi Xiong, Gaoyang Jiang, Ye Li, <strong>Kangye Ji</strong>, Shuzhao Xie, Yue Huang, Chenglei Wu, Jingyan Jiang, Zhi Wang
+    conference_short: ECCV
+    conference: European Conference on Computer Vision <strong>(ECCV)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2603.12939
+    bibtex: https://arxiv.org/bibtex/2603.12939
+    code: https://github.com/yu2hi13/RoboStream
+    page: https://robostream123.github.io/
+    image: ./assets/img/RoboStream.webp
+
+  - title: "Evolving Cache Schedules for Fast Diffusion Policy Inference"
+    authors: Siying Wang, <strong>Kangye Ji</strong>, Di Wang, Fei Cheng
+    conference_short: PRCV
+    conference: Chinese Conference on Pattern Recognition and Computer Vision <strong>(PRCV)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2607.20293
+    bibtex: https://arxiv.org/bibtex/2607.20293
+    code: https://github.com/pillom/EVO
+    image: ./assets/img/EVO.webp
+
   - title: "Efficient Continual Learning with Low Memory Footprint For Edge Device"
     authors: Zeqing Wang, Fei Cheng, <strong>Kangye Ji</strong>, Bohu Huang
     conference_short: ASP-DAC
@@ -84,6 +103,6 @@ main:
     pdf: https://www.arxiv.org/pdf/2407.10545
     code: https://github.com/INV-WZQ/LightCL
     # page: https://class-il.mpi-inf.mpg.de/mnemonics/
-    bibtex: https://dblp.org/rec/journals/corr/abs-2407-10545.html?view=bibtex
+    bibtex: https://dblp.org/rec/journals/corr/abs-2407.10545.html?view=bibtex
     # notes: Early Accept
     image: ./assets/img/lightcl.png

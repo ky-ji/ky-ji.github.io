@@ -10,22 +10,31 @@
 {% for link in site.data.preprints.main %}
 
 <li>
+{% assign pdf_url = link.pdf | default: '' %}
+{% assign code_url = link.code | default: '' %}
+{% assign page_url = link.page | default: '' %}
 <div class="pub-row">
   <div class="col-sm-3 abbr" style="position: relative;padding-right: 15px;padding-left: 15px;">
     <img src="{{ link.image }}" class="teaser img-fluid z-depth-1" style="width=100;height=40%">
   </div>
   <div class="col-sm-9" style="position: relative;padding-right: 15px;padding-left: 20px;">
-      <div class="title"><a href="{{ link.pdf }}">{{ link.title }}</a></div>
+      <div class="title">
+        {% if pdf_url != empty %}
+        <a href="{{ pdf_url }}">{{ link.title }}</a>
+        {% else %}
+        <span class="title-no-link">{{ link.title }}</span>
+        {% endif %}
+      </div>
       <div class="author">{{ link.authors }}</div>
     <div class="links">
-      {% if link.pdf %} 
-      <a href="{{ link.pdf }}" class="btn btn-sm z-depth-0" role="button" target="_blank" style="font-size:12px;">PDF</a>
+      {% if pdf_url != empty or link.placeholder_links %}
+      <a href="{{ pdf_url }}" class="btn btn-sm z-depth-0" role="button" style="font-size:12px;"{% if pdf_url == empty %} aria-disabled="true" tabindex="-1" onclick="return false;"{% else %} target="_blank" rel="noopener"{% endif %}>PDF</a>
       {% endif %}
-      {% if link.code %} 
-      <a href="{{ link.code }}" class="btn btn-sm z-depth-0" role="button" target="_blank" style="font-size:12px;">Code</a>
+      {% if code_url != empty or link.placeholder_links %}
+      <a href="{{ code_url }}" class="btn btn-sm z-depth-0" role="button" style="font-size:12px;"{% if code_url == empty %} aria-disabled="true" tabindex="-1" onclick="return false;"{% else %} target="_blank" rel="noopener"{% endif %}>Code</a>
       {% endif %}
-      {% if link.page %} 
-      <a href="{{ link.page }}" class="btn btn-sm z-depth-0" role="button" target="_blank" style="font-size:12px;">Project Page</a>
+      {% if page_url != empty or link.placeholder_links %}
+      <a href="{{ page_url }}" class="btn btn-sm z-depth-0" role="button" style="font-size:12px;"{% if page_url == empty %} aria-disabled="true" tabindex="-1" onclick="return false;"{% else %} target="_blank" rel="noopener"{% endif %}>Project Page</a>
       {% endif %}
       {% if link.data %} 
       <a href="{{ link.data }}" class="btn btn-sm z-depth-0" role="button" target="_blank" style="font-size:12px;">Dataset</a>
@@ -51,4 +60,3 @@
 </ol>
 </div>
 {% endif %}
-

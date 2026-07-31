@@ -1,9 +1,30 @@
 main:
+  - title: "Real-Time VLAs with World Model Foresight"
+    authors: >-
+      <strong>Kangye Ji</strong>, Lei Bai, Huanan Liu, Ye Li, Hanyun Cui,
+      Liuyang Song, Chenglei Wu, Hongbo Zhang, Yuan Meng, Zhi Wang
+    conference_short: Preprint
+    conference: Preprint.
+    placeholder_links: true
+    pdf: ""
+    code: ""
+    page: ""
+    image: ./assets/img/WM4VLA.webp
 
-
+  - title: "ProprioVLA: Proprioceptive Self-Grounding for Vision-Language-Action Policies"
+    authors: >-
+      <strong>Kangye Ji</strong>, Lei Bai, Zhibo Wang, Boxue Yang, Ye Li,
+      Chenglei Wu, Yuan Meng, Zhi Wang
+    conference_short: Preprint
+    conference: Preprint.
+    placeholder_links: true
+    pdf: ""
+    code: ""
+    page: ""
+    image: ./assets/img/ProprioVLA.webp
 
   # - title: "TMPQ-DM: Joint Timestep Reduction and Quantization Precision Selection for Efficient Diffusion Models"
-  #   authors: Haojun Sun, Chen Tang, Zhi Wang, Yuan Meng, <strong>Kangye Ji</strong>, Jingyan Jiang, Xinzhu Ma, Wenwu Zhu 
+  #   authors: Haojun Sun, Chen Tang, Zhi Wang, Yuan Meng, <strong>Kangye Ji</strong>, Jingyan Jiang, Xinzhu Ma, Wenwu Zhu
   #   conference_short: Preprint
   #   conference: Preprint.
   #   pdf: https://arxiv.org/pdf/2404.09532
@@ -11,5 +32,3 @@ main:
   #   # data: https://github.com/wufeim/imagenet3d
   #   # page: https://imagenet3d.github.io/
   #   image: ./assets/img/tmpq-dm.png
-
-    
