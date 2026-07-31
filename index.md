@@ -4,15 +4,16 @@ layout: homepage
 
 ## About Me
 
-I am a Ph.D. student at [Tsinghua University](https://www.tsinghua.edu.cn/en/), supervised by [Prof. Wang Zhi](http://pages.mmlab.top/), and a member of the [Efficient Deep Learning and Embodiment Group](https://ky-ji.github.io/group). I received my bachelor's degree in Computer Science and Technology from [Xidian University](https://en.xidian.edu.cn/). My current research focuses on building efficient Embodied AI systems.
+I am a Ph.D. student at [Tsinghua University](https://www.tsinghua.edu.cn/en/), supervised by [Prof. Wang Zhi](http://pages.mmlab.top/), and a member of the [Efficient Deep Learning and Embodiment Group](https://ky-ji.github.io/group). I received my bachelor's degree in Computer Science and Technology from [Xidian University](https://en.xidian.edu.cn/). I envision action-native foundation models for real-time control, agent-guided adaptation, and continual real-world learning.
 ## Education 
 Sep. 2021 - June. 2025, B.E in Computer Science and Technology, Xidian University  
 From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua University
 
 ## Research Interests
 
-- **Efficient AI:** memory-efficient, computation-efficient, and data-efficient algorithms for training, fine-tuning, and inference
-- **Embodied AI:** vision-language-action models, diffusion policies.
+- **Real-Time Embodied Intelligence:** Model acceleration and streaming execution for responsive, closed-loop action.
+- **Agent-Guided Adaptation:** Leveraging cloud-scale reasoning agents to guide skill acquisition and adaptation in the physical world.
+- **Continual Real-World Learning:** Turning spatial, multimodal, and interaction-rich real-world experience into dense supervision for scalable learning.
 
 
 {% include_relative _includes/publications.md %}
