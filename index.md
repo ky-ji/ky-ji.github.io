@@ -4,16 +4,16 @@ layout: homepage
 
 ## About Me
 
-I am a Ph.D. student at [Tsinghua University](https://www.tsinghua.edu.cn/en/), supervised by [Prof. Wang Zhi](http://pages.mmlab.top/), and a member of the [Efficient Deep Learning and Embodiment Group](https://ky-ji.github.io/group). I received my bachelor's degree in Computer Science and Technology from [Xidian University](https://en.xidian.edu.cn/). My long-term research goal is to build action-native foundation models that act in real time, adapt under agent guidance, and continually learn from the physical world.
+I am a Ph.D. student at [Tsinghua University](https://www.tsinghua.edu.cn/en/), supervised by [Prof. Wang Zhi](http://pages.mmlab.top/), and a member of the [Efficient Deep Learning and Embodiment Group](https://ky-ji.github.io/group). I received my bachelor's degree in Computer Science and Technology from [Xidian University](https://en.xidian.edu.cn/). My long-term research goal is to build action-native foundation models that act, adapt, and continually learn from the physical world.
 ## Education 
 Sep. 2021 - June. 2025, B.E in Computer Science and Technology, Xidian University  
 From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua University
 
 ## Research Interests
 
-- **Real-Time Embodied Intelligence:** Model acceleration and streaming execution for responsive, closed-loop action.
-- **Agent-Guided Adaptation:** Leveraging cloud-scale reasoning agents to guide skill acquisition and adaptation in the physical world.
-- **Continual Real-World Learning:** Turning spatial, multimodal, and interaction-rich real-world experience into dense supervision for scalable learning.
+- **Real-Time Embodied Intelligence:** Developing efficient models and execution strategies for real-time interaction with the physical world.
+- **Agent-Guided Adaptation:** Guiding real-world skill acquisition and adaptation with frontier foundation models.
+- **Continual Real-World Learning:** Scaling embodied learning by harnessing the spatial, multimodal, and interactive richness of the physical world.
 
 
 {% include_relative _includes/publications.md %}
