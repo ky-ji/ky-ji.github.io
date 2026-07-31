@@ -4,7 +4,7 @@ layout: homepage
 
 ## About Me
 
-I am a Ph.D. student at [Tsinghua University](https://www.tsinghua.edu.cn/en/), supervised by [Prof. Wang Zhi](http://pages.mmlab.top/), and a member of the [Efficient Deep Learning and Embodiment Group](https://ky-ji.github.io/group). I received my bachelor's degree in Computer Science and Technology from [Xidian University](https://en.xidian.edu.cn/). I envision action-native foundation models for real-time control, agent-guided adaptation, and continual real-world learning.
+I am a Ph.D. student at [Tsinghua University](https://www.tsinghua.edu.cn/en/), supervised by [Prof. Wang Zhi](http://pages.mmlab.top/), and a member of the [Efficient Deep Learning and Embodiment Group](https://ky-ji.github.io/group). I received my bachelor's degree in Computer Science and Technology from [Xidian University](https://en.xidian.edu.cn/). My long-term research goal is to build action-native foundation models that act in real time, adapt under agent guidance, and continually learn from the physical world.
 ## Education 
 Sep. 2021 - June. 2025, B.E in Computer Science and Technology, Xidian University  
 From Sep. 2025, Ph.D. in Computer Science and Technology, MMLab@SIGS, Tsinghua University
