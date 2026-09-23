@@ -1,7 +1,4 @@
 ## Services
 
-**Conference Reviewer**
-
-- European Conference on Computer Vision (ECCV) 2026
-- Conference on Neural Information Processing Systems (NeurIPS) 2026
-- International Conference on Learning Representations (ICLR) 2027
+- **Reviewer:** ECCV 2026, NeurIPS 2026, ICLR 2027
+- **TA:** Fundamentals of Big Data Systems (B) (64100033-200), Fall 2025
