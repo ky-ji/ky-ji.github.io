@@ -23,10 +23,10 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, Tsinghua University
 {% include_relative _includes/projects.md %}
 
 ## Selected Awards
-- **Oct. 2026** National Scholarship, China
+- **Oct. 2026** National Scholarship, Tsinghua University (Top 1%)
 - **Jun. 2025** Merit Graduate, Xidian University
 - **Feb. 2025** Xiaomi Top Grade Scholarship (Only 5 students in Xidian University)
-- **Nov. 2024** National Scholarship, China (Top 1%)
+- **Nov. 2024** National Scholarship, Xidian University (Top 1%)
 - **Nov. 2023** Merit Student Pacesetter, Xidian University (Top 1%)
 - **Nov. 2023** Top Grade Scholarship, Xidian University (Top 1%)
 
