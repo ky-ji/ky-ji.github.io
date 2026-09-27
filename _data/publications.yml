@@ -79,8 +79,8 @@ main:
 
   - title: "ElegantVLA: Learning When to Think for Efficient Vision-Language-Action Models"
     authors: Ye Li, Huanan Liu, <strong>Kangye Ji</strong>, Yuan Meng, Jiajun Fan, Yuansong Wang, Shiyu Qin, Chenglei Wu, Shu-Tao Xia, Zhi Wang
-    conference_short: NeurIPS
-    conference: Advances in Neural Information Processing Systems <strong>(NeurIPS)</strong>, 2026.
+    conference_short: NIPS
+    conference: Advances in Neural Information Processing Systems <strong>(NIPS)</strong>, 2026.
     pdf: https://arxiv.org/pdf/2605.29438
     bibtex: https://arxiv.org/bibtex/2605.29438
     page: https://anonymous.4open.science/w/elegantvla/
