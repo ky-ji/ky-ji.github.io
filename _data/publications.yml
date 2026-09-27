@@ -76,6 +76,23 @@ main:
     # data: https://github.com/wufeim/imagenet3d
     # page: https://imagenet3d.github.io/
     image: ./assets/img/samcl.png
+
+  - title: "ElegantVLA: Learning When to Think for Efficient Vision-Language-Action Models"
+    authors: Ye Li, Huanan Liu, <strong>Kangye Ji</strong>, Yuan Meng, Jiajun Fan, Yuansong Wang, Shiyu Qin, Chenglei Wu, Shu-Tao Xia, Zhi Wang
+    conference_short: NeurIPS
+    conference: Advances in Neural Information Processing Systems <strong>(NeurIPS)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2605.29438
+    bibtex: https://arxiv.org/bibtex/2605.29438
+    page: https://anonymous.4open.science/w/elegantvla/
+    image: ./assets/img/ElegantVLA.png
+
+  - title: "TS-DP: Reinforcement Speculative Decoding For Temporal Adaptive Diffusion Policy Acceleration"
+    authors: Ye Li, Jiahe Feng, Yuan Meng, <strong>Kangye Ji</strong>, Chen Tang, Xinwan Wen, Shutao Xia, Zhi Wang, Wenwu Zhu
+    conference_short: TMM
+    conference: IEEE Transactions on Multimedia <strong>(TMM)</strong>, 2026.
+    pdf: https://arxiv.org/pdf/2512.15773
+    bibtex: https://arxiv.org/bibtex/2512.15773
+    image: ./assets/img/TS-DP.png
   
   - title: "RoboStream: Weaving Spatio-Temporal Reasoning with Memory in Vision-Language Models for Robotics"
     authors: Yuzhi Huang, Jie Wu, Weijue Bu, Ziyi Xiong, Gaoyang Jiang, Ye Li, <strong>Kangye Ji</strong>, Shuzhao Xie, Yue Huang, Chenglei Wu, Jingyan Jiang, Zhi Wang
