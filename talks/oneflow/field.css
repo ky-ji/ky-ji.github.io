@@ -1,0 +1,83 @@
+.field-intro, .field-data {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.45fr);
+  align-items: start;
+  gap: clamp(1.5rem, 5vw, 5rem);
+}
+.field-intro h2 { text-wrap: balance; }
+.field-intro > p, .field-reading p, .field-case > p {
+  margin: 0;
+  font-size: 1.03rem;
+  line-height: 1.9;
+}
+.field-atlas { margin: 2rem 0; border-block: 1px solid var(--line); }
+.field-picker { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0; padding: 1rem 0 0; border: 0; }
+.field-picker[hidden], .field-case[hidden] { display: none; }
+.field-picker legend, .field-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+.field-picker label { position: relative; cursor: pointer; }
+.field-picker span {
+  display: block; padding: .56rem 1rem;
+  border: 1px solid var(--line); border-radius: 4px;
+  color: var(--muted); background: white;
+  font-size: .93rem; line-height: 1.45;
+}
+.field-picker label:hover span { border-color: var(--blue); color: var(--blue); }
+.field-picker input:checked + span { color: white; background: var(--ink); border-color: var(--ink); font-weight: 650; }
+.field-picker input:focus-visible + span { outline: 3px solid #b65d22; outline-offset: 2px; }
+.field-case { padding: 1.15rem 0 1.45rem; }
+.field-case h3, .field-reading h3 { margin: 0 0 .75rem; }
+.field-photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(.4rem, 1vw, .8rem); }
+.field-photos figure { margin: 0; }
+.field-photos img { display: block; width: 100%; height: auto; border-radius: 3px; }
+.field-photos figcaption { padding: .4rem 0 .1rem; color: var(--muted); font-size: .88rem; line-height: 1.5; }
+.field-case > p { margin: .8rem 0 0; max-width: 57em; }
+.field-table { table-layout: fixed; width: 100%; margin: 0; }
+.field-table caption { margin: 0 0 .7rem; }
+.field-table th:first-child { width: 32%; }
+.field-table thead th:nth-child(2) { width: 14%; }
+.field-table thead th:nth-child(3) { width: 15%; }
+.field-table thead th:nth-child(4) { width: 18%; }
+.field-table thead th:last-child { width: 21%; }
+.field-table th, .field-table td { vertical-align: middle; font-variant-numeric: tabular-nums; }
+.field-table th small { display: block; font-weight: 400; font-size: .82rem; color: var(--muted); }
+.field-table td:last-child { color: var(--blue); font-weight: 650; }
+.field-table .field-latency { background: var(--pale); }
+.field-latency th:first-child { padding-left: .4rem; }
+.field-source { margin: .7rem 0 0; color: var(--muted); font-size: .875rem; line-height: 1.7; }
+.field-control { margin: 1.6rem 0 0; padding: 1.1rem clamp(.8rem, 2vw, 1.6rem); border-left: 3px solid var(--blue); background: var(--pale); }
+.field-control h3 { margin: 0 0 .45rem; }
+.field-control p { margin: .35rem 0 0; line-height: 1.8; }
+@media (max-width: 760px) {
+  .field-intro, .field-data { grid-template-columns: minmax(0, 1fr); gap: .9rem; }
+  .field-picker span { padding-inline: .7rem; }
+}
+@media (max-width: 480px) {
+  .field-atlas { margin: 1.4rem 0; }
+  .field-picker { display: grid; grid-template-columns: repeat(2, 1fr); }
+  .field-picker span { text-align: center; }
+  .field-photos { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: .65rem; }
+  .field-photos figure:first-child { grid-column: 1 / -1; }
+  .field-photos figure:first-child img { width: 100%; height: auto; }
+  .field-table th:first-child { width: 26%; }
+  .field-table thead th:nth-child(2) { width: 13%; }
+  .field-table thead th:nth-child(3) { width: 16%; }
+  .field-table thead th:nth-child(4) { width: 21%; }
+  .field-table thead th:last-child { width: 24%; }
+  .field-table :is(td, th) { font-size: .86rem; padding-inline: .12rem; }
+  .field-table thead th { font-size: .78rem; }
+  .field-table th small { font-size: .75rem; }
+}
+@media print {
+  .field-picker { display: none; }
+  .field-case[hidden] { display: block; }
+  .field-case { break-inside: avoid; }
+  .field-intro, .field-data { display: block; }
+  .field-table { margin-top: 1rem; }
+}
