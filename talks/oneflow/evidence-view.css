@@ -153,3 +153,8 @@
 
 .ev-latency .ev-toolbar button b { margin-left:.25em; font:650 1em/1 var(--ev-mono); }
 .deck:not(.is-flow) .slide-body:has(> .claim) .ev-scaling .ev-takeaway { display:none; }
+.oneflow-publication main .ev-lat-summary { min-width: 0; }
+@media (max-width:420px) {
+  .oneflow-publication main .ev-lat-summary { grid-template-columns:minmax(0,1fr); gap:.6rem; }
+  .oneflow-publication main .ev-lat-summary > div + div { border-top:1px solid var(--ev-rule); padding-top:.4rem; }
+}

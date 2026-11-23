@@ -72,3 +72,7 @@
 #deck.is-flow .slide-cover :is(.slide-word,.cover-sub) { color:var(--s-ink); }
 #deck.is-flow:has(.slide-cover:not([hidden])) :is(.deck-stage,.deck-canvas) { background:#faf9f3; }
 #deck.is-flow:has(.s-field:not([hidden])) :is(.deck-stage,.deck-canvas) { background:var(--v3-night); }
+@media (max-width:420px) {
+  #deck.is-flow .ev-lat-summary { grid-template-columns:minmax(0,1fr); gap:.6rem; }
+  #deck.is-flow .ev-lat-summary > div + div { border-top:1px solid var(--ev-rule); padding-top:.4rem; }
+}
