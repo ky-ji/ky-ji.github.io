@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="OneFlow 中文技术报告与演示：通过实机回击、逐轮去噪演示和对照实验，理解机器人如何用一次前向传播生成动作。">
+  <meta name="description" content="OneFlow 中文技术报告与演示：从预训练流策略的串行去噪瓶颈出发，解释如何把多个阶段分摊到连续重规划，并用对照实验检验单次前向传播的动作质量和时延。">
   <title>OneFlow · 多步去噪，单次前向 | Kangye Ji</title>
   <link rel="icon" href="../assets/img/Tsinghua_University_Logo.svg">
   <link rel="stylesheet" href="oneflow/talk.css">
@@ -31,43 +31,37 @@
           <h1 lang="en" id="title">OneFlow</h1>
           <p class="subtitle">多步去噪，单次前向</p>
           <p class="paper-name" lang="en">Parallelizing Flows for One-Pass Action Generation</p>
-          <p class="lead">一张新画面每 16.67 ms 到来一次。面对滑来的冰球，原生策略仅生成动作就要 46.99 ms。能否让预训练策略保留多步去噪的质量，同时赶上下一次观测？</p>
+          <p class="lead">许多机器人策略依靠多步去噪生成高质量动作，但每一步都要等上一步算完。能否让已有的流策略保留多步采样的任务表现，同时把每轮重规划的等待压到一次前向传播的量级？</p>
           <div class="hero-actions"><button id="start-talk" type="button" hidden><span class="play-icon" aria-hidden="true"></span>开始演讲</button><a href="#problem">阅读讲稿</a></div>
         </div>
-        <figure class="replay" aria-labelledby="replay-title">
-          <div class="photo">
-            <img id="hockey-frame" src="oneflow/hockey-03.webp" width="1080" height="864" fetchpriority="high" alt="机械臂的球拍在中线附近接触来球。">
-            <span class="timecode" aria-hidden="true">+<span id="timecode">133</span> ms</span>
-          </div>
-          <div class="replay-head"><figcaption id="replay-title">OneFlow+ 实机回击 <span>论文图 1 · 逐帧查看</span></figcaption><button id="play-frames" type="button" hidden>¼ 速回放</button></div>
-          <div class="frames" aria-label="选择录像帧">
-            <a href="oneflow/hockey-01.webp" aria-label="查看 0 毫秒的画面" data-time="0" data-alt="来球滑向中线，机械臂准备迎球。"><img src="oneflow/hockey-01.webp" alt=""><span>0</span></a>
-            <a href="oneflow/hockey-02.webp" aria-label="查看 67 毫秒的画面" data-time="67" data-alt="机械臂移动球拍，迎向来球。"><img src="oneflow/hockey-02.webp" alt=""><span>67</span></a>
-            <a href="oneflow/hockey-03.webp" aria-label="查看 133 毫秒的画面" aria-current="true" data-time="133" data-alt="机械臂的球拍在中线附近接触来球。"><img src="oneflow/hockey-03.webp" alt=""><span>133</span></a>
-            <a href="oneflow/hockey-04.webp" aria-label="查看 200 毫秒的画面" data-time="200" data-alt="触球后，机械臂的球拍继续向前移动。"><img src="oneflow/hockey-04.webp" alt=""><span>200</span></a>
-            <a href="oneflow/hockey-05.webp" aria-label="查看 267 毫秒的画面" data-time="267" data-alt="冰球离开球拍，向对侧滑动。"><img src="oneflow/hockey-05.webp" alt=""><span>267</span></a>
-            <a href="oneflow/hockey-06.webp" aria-label="查看 333 毫秒的画面" data-time="333" data-alt="回击后的冰球继续远离机械臂。"><img src="oneflow/hockey-06.webp" alt=""><span>333 ms</span></a>
-          </div>
+        <figure class="cover-schedule">
+          <img src="oneflow/schedule.webp" width="1867" height="1165" fetchpriority="high" alt="原生采样的箭头在每一轮内纵向穿过所有噪声阶段，OneFlow 的箭头沿连续重规划轮次呈对角线推进。">
+          <figcaption><strong>去噪的顺序依赖放在哪里？</strong><span>论文图 1 · 每列代表一轮重规划，颜色由浅至深表示去噪推进。</span></figcaption>
         </figure>
       </div>
     </section>
 
     <nav class="agenda wrap" aria-label="30 分钟报告安排">
-      <a href="#problem"><small>00–04 分钟</small><strong>问题与实时预算</strong></a>
+      <a href="#problem"><small>00–04 分钟</small><strong>流策略的串行瓶颈</strong></a>
       <a href="#method"><small>04–14 分钟</small><strong>一个动作怎样跨轮去噪</strong></a>
       <a href="#results"><small>14–22 分钟</small><strong>成功率与速度对照</strong></a>
-      <a href="#field"><small>22–27 分钟</small><strong>回到真实冰球桌</strong></a>
+      <a href="#field"><small>22–27 分钟</small><strong>动态实机验证</strong></a>
       <a href="#discussion"><small>27–30 分钟</small><strong>讨论与边界</strong></a>
     </nav>
     <section class="chapter" id="problem" aria-labelledby="problem-heading">
       <div class="wrap chapter-grid">
-        <div class="chapter-head"><p class="eyebrow" lang="en">The problem</p><h2 id="problem-heading">球在动，<br>模型在等什么？</h2></div>
+        <div class="chapter-head"><p class="eyebrow" lang="en">Research question</p><h2 id="problem-heading">多步动作生成，<br>为什么难以加速？</h2></div>
         <div class="body">
-          <p>在论文的实机设置中，GR00T N1.7 每次规划 16 个动作，只发出第一个动作就重新观察。相机以 60 帧/秒采集画面，目标控制间隔是 16.67 ms。流策略从随机噪声出发，反复预测修正方向，逐渐得到一段可执行的动作。普通采样器的第 2 次预测必须等第 1 次更新结束，第 3 次又要等第 2 次。在快速交互中，新观测的价值会随着这段等待而下降。</p>
-          <div class="equation"><span lang="en">X<sub>i+1</sub> = X<sub>i</sub> + h<sub>i</sub> v<sub>θ</sub>(X<sub>i</sub>, t<sub>i</sub>, o<sub>k</sub>)</span><small>原生 Euler 采样 · 论文公式 1</small></div>
-          <p>这里有两个不同的时间。<strong><i>i</i> 是去噪阶段</strong>，表示动作估计离干净轨迹还有多远。<strong><i>k</i> 是重规划轮次</strong>，每当机器人执行若干动作、获得新观测 <i>o<sub>k</sub></i>，就进入下一轮。原生采样在每一个 <i>k</i> 里走完所有 <i>i</i>。</p>
-          <p>直接减少去噪步数会有什么代价？论文在 RoboTwin 2.0 上保持 Fast-WAM 权重不变，把十步原生采样改成一步，平均任务成功率从 <strong>89.4% 降到 40.8%</strong>。OneFlow 保留多个去噪阶段，把其中的顺序依赖移到相邻几次重规划之间。</p>
-          <details class="related"><summary>与少步求解、蒸馏和缓存有什么区别？</summary><p>少步求解减少网络调用，但较大的积分步长会改变动作估计。蒸馏可以把多步求解学进一个新模型，需要针对策略重新训练。缓存可以复用已有特征或动作，复用越多，近似误差也越值得关心。OneFlow 选择保留策略权重，在一次调用内并行计算多个阶段，再用新观测更新保留下来的计划。</p></details>
+          <p>从流匹配策略，到视觉语言动作模型（VLA），再到同时预测视频和动作的世界动作模型（WAM），许多机器人模型都依靠迭代去噪生成一段动作。它们在操作任务中表现出色，但多次网络调用首尾相依。机器人只有等这一串计算结束，才能根据观测发出新动作。在动态或接触密集的任务中，这段等待限制了闭环响应。</p>
+          <div class="equation"><span lang="en">X<sub>i+1</sub> = X<sub>i</sub> + h<sub>i</sub> v<sub>θ</sub>(X<sub>i</sub>, t<sub>i</sub>, o<sub>k</sub>)</span><small>原生 Euler 采样 · 论文公式 1。第 i + 1 阶段要用到第 i 阶段刚算出的动作估计。</small></div>
+          <h3>降低计算量有哪些代价？</h3>
+          <dl class="prior-work">
+            <div><dt>少步求解</dt><dd>减少函数求值次数可以缩短等待，但步数很少时，积分的离散化误差可能降低任务成功率。</dd></div>
+            <div><dt>蒸馏</dt><dd>把多步采样学进少数几步，需要针对策略重新训练，并处理优化稳定性问题。</dd></div>
+            <div><dt>缓存复用</dt><dd>复用中间特征或动作状态能省去重复计算。复用越激进，近似误差越会限制进一步加速。</dd></div>
+          </dl>
+          <p class="question-line">能否直接用已有的预训练流策略，在一次前向传播的时延量级上，保留多步采样的动作质量？</p>
+          <p>OneFlow 尝试在单次前向传播里容纳更多计算，让多个去噪阶段并行。困难在于，如果每次都从噪声开始求一条新轨迹，后续阶段所需的输入还不存在。即使并行估计这些输入，也往往需要多轮网络调用来修正它们。闭环控制提供了另一种安排计算的机会。</p>
         </div>
       </div>
     </section>
@@ -75,7 +69,7 @@
     <section class="chapter method" id="method" aria-labelledby="method-heading">
       <div class="wrap">
         <div class="section-intro"><p class="eyebrow" lang="en">Rolling pipeline</p><h2 id="method-heading">同一轮并行更新，跨轮逐步去噪</h2>
-          <p>机器人可以预测未来 8 步，却只执行前 2 步就重新观察。下一轮仍有 6 个动作位置与上一轮重叠。OneFlow 把不同噪声水平下的整段动作估计都留下来，使新观测能同时修正即将执行的动作与后续计划。</p>
+          <p>把重规划轮次 <i>k</i> 与去噪阶段 <i>i</i> 分开看，顺序依赖就有了新的位置。机器人若预测未来 8 步，只执行前 2 步就重新观察，下一轮仍有 6 个动作位置与上一轮重叠。OneFlow 保留不同噪声水平的整段动作估计，将依次去噪的工作分摊到连续几轮重规划。初始化后，每轮用最新观测做一次批量前向传播，就能同时推进这些阶段。</p>
         </div>
         <figure class="diagonal" id="action-path" aria-labelledby="path-heading">
   <figcaption><strong id="path-heading">追踪第 9 个动作</strong><span>预测窗口 H = 8 · 每轮执行 E = 2 · 去噪阶段 N = 4</span></figcaption>
@@ -340,6 +334,23 @@
           <figure><img src="oneflow/field-hockey-07.webp" width="560" height="420" loading="lazy" alt="冰球向人类搭档所在的一侧滑去。"><figcaption>球返回发球一侧</figcaption></figure>
         </div>
         <p>每轮发 10 个球，机器人将球击回发球一侧才计入回击。每种方法共接 500 个来球，原生采样、OneFlow、OneFlow+ 的回击率分别为 6%、34% 和 66%。</p>
+        <details class="field-replay"><summary>逐帧观看一次真实回击</summary>
+        <figure class="replay" aria-labelledby="replay-title">
+          <div class="photo">
+            <img id="hockey-frame" src="oneflow/hockey-03.webp" width="1080" height="864" loading="lazy" alt="机械臂的球拍在中线附近接触来球。">
+            <span class="timecode" aria-hidden="true">+<span id="timecode">133</span> ms</span>
+          </div>
+          <div class="replay-head"><figcaption id="replay-title">OneFlow+ 实机回击 <span>论文图 1 · 逐帧查看</span></figcaption><button id="play-frames" type="button" hidden>¼ 速回放</button></div>
+          <div class="frames" aria-label="选择录像帧">
+            <a href="oneflow/hockey-01.webp" aria-label="查看 0 毫秒的画面" data-time="0" data-alt="来球滑向中线，机械臂准备迎球。"><img src="oneflow/hockey-01.webp" alt=""><span>0</span></a>
+            <a href="oneflow/hockey-02.webp" aria-label="查看 67 毫秒的画面" data-time="67" data-alt="机械臂移动球拍，迎向来球。"><img src="oneflow/hockey-02.webp" alt=""><span>67</span></a>
+            <a href="oneflow/hockey-03.webp" aria-label="查看 133 毫秒的画面" aria-current="true" data-time="133" data-alt="机械臂的球拍在中线附近接触来球。"><img src="oneflow/hockey-03.webp" alt=""><span>133</span></a>
+            <a href="oneflow/hockey-04.webp" aria-label="查看 200 毫秒的画面" data-time="200" data-alt="触球后，机械臂的球拍继续向前移动。"><img src="oneflow/hockey-04.webp" alt=""><span>200</span></a>
+            <a href="oneflow/hockey-05.webp" aria-label="查看 267 毫秒的画面" data-time="267" data-alt="冰球离开球拍，向对侧滑动。"><img src="oneflow/hockey-05.webp" alt=""><span>267</span></a>
+            <a href="oneflow/hockey-06.webp" aria-label="查看 333 毫秒的画面" data-time="333" data-alt="回击后的冰球继续远离机械臂。"><img src="oneflow/hockey-06.webp" alt=""><span>333 ms</span></a>
+          </div>
+        </figure>
+        </details>
       </article>
     </div>
 
@@ -408,13 +419,12 @@
       <div class="deck-top"><span>OneFlow <b>／</b> <span id="deck-time"></span></span><div><button id="deck-notes-button" aria-controls="deck-notes" aria-pressed="false" type="button">讲者提示</button><button id="deck-full" type="button" hidden>全屏</button><button id="deck-exit" type="button">退出演讲</button></div></div>
       <div class="deck-stage">
         <section class="slide" data-section="main">
-          <div class="slide-split"><div><p class="slide-label">2026.11.25 · 机器人学习</p><h2 class="slide-word" tabindex="-1">OneFlow</h2><h3>多步去噪，单次前向</h3><p>机械臂想每 16.67 ms 重新观察并出手。原生策略的推理中位数是 46.99 ms。在它算完之前，冰球已经到了别处。</p><p class="slide-source" lang="en">Parallelizing Flows for One-Pass Action Generation</p></div><figure><img src="oneflow/hockey-03.webp" width="1080" height="864" alt="OneFlow+ 球拍接触来球的瞬间"><figcaption>OneFlow+ 回击冰球 · 论文图 1</figcaption></figure></div>
+          <div class="slide-split"><div><p class="slide-label">2026.11.25 · 机器人学习</p><h2 class="slide-word" tabindex="-1">OneFlow</h2><h3>多步去噪，单次前向</h3><p>从流匹配策略到 VLA 和世界动作模型，许多策略依靠多步去噪生成动作。一次重规划要等多个前向传播串行完成，限制了闭环响应速度。</p><p class="slide-source" lang="en">Parallelizing Flows for One-Pass Action Generation</p></div><figure class="slide-schedule"><img src="oneflow/schedule.webp" width="1867" height="1165" alt="论文图 1，原生采样与 OneFlow 的去噪依赖分别沿列和对角线推进。"><figcaption>论文图 1 · 去噪阶段与连续重规划轮次</figcaption></figure></div>
         </section>
         <section class="slide" data-section="problem" hidden>
-          <p class="slide-label">闭环控制</p><h2 tabindex="-1">相机已经更新，动作还要等几步？</h2>
-          <p class="slide-lede">一次预测给出一整段动作。原生采样从噪声出发，沿途每一步都要等上一步的结果。</p>
-          <div class="slide-equation">X<sub>i+1</sub> = X<sub>i</sub> + h<sub>i</sub> v<sub>θ</sub>(X<sub>i</sub>, t<sub>i</sub>, o<sub>k</sub>)</div>
-          <div class="slide-pair"><div><strong>去噪阶段 <i>i</i></strong><p>策略给出的速度描述动作估计沿去噪时间的变化，逐步把噪声变为可执行的轨迹。</p></div><div><strong>重规划轮次 <i>k</i></strong><p>执行一小段动作后，相机给出新画面，策略可以修正余下计划。</p></div></div>
+          <p class="slide-label">研究问题</p><h2 tabindex="-1">能用一次前向的时延，保留多步采样的质量吗？</h2>
+          <dl class="prior-work slide-prior"><div><dt>少步求解</dt><dd>减少函数求值，步数过少时会放大离散化误差。</dd></div><div><dt>蒸馏</dt><dd>把多步压进少数几步，需要为策略重新训练。</dd></div><div><dt>缓存复用</dt><dd>减少重复计算，过度复用会引入近似误差。</dd></div></dl>
+          <p>OneFlow 提出的方向是在一次前向传播中并行计算多个去噪阶段。但顺序求解时，后一个阶段所需的输入，要等前一个阶段算完才会出现。</p>
         </section>
         <section class="slide slide-path" data-section="action-path" hidden>
           <p class="slide-label">关键观察 · 动作窗口重叠</p><h2 tabindex="-1">跟着一个未来动作，读这条对角线</h2>
@@ -461,7 +471,7 @@
         <section class="slide" data-section="discussion" hidden>
           <p class="slide-label">讨论</p><h2 tabindex="-1">一次前向传播，靠的是此前几轮的工作</h2>
           <div class="slide-pair"><div><strong>跨轮保留，轮内并行</strong><p>同一个未来动作可以先在高噪声阶段形成，再用临近执行时的新观测修正。策略权重全程冻结。</p></div><div><strong>稳态有前提</strong><p>回合开始时仍需多步初始化。后续轮次依靠窗口重叠，且硬件需要有容纳多个并行阶段的余量。</p></div></div>
-          <p>回到冰球桌：当目标控制间隔是 16.67 ms 时，OneFlow+ 的模型推理中位数 11.97 ms 已经进入这一预算。相机采集、机械执行和完整控制回路仍各有自己的时延。</p><p class="slide-source">论文表 5、补充材料 B.3 与 D 节。</p>
+          <p>较早的观测参与形成动作，临近执行的观测完成最后的修正。在所测基准上，预训练流策略由此以每轮一次批量前向传播保留了多步采样的任务表现。</p><p class="slide-source">论文第 3–5 节与补充材料 D 节。</p>
         </section>
       </div>
       <aside id="deck-notes" class="deck-notes" aria-label="该页讲者提示" hidden></aside>

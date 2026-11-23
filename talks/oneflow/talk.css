@@ -250,3 +250,18 @@ thead th { font-weight: 500; color: var(--muted); border-top: 1px solid var(--li
   .deck-top button { padding: .38rem .35rem; }
 }
 @media print { .agenda { display: none; } }
+.cover-schedule { background: #f8fbfd; border: 1px solid #b7cdd9; padding: clamp(1rem,2.4vw,2rem); border-radius: 4px; color: var(--ink); }
+.cover-schedule img { display: block; width: 100%; height: auto; }
+.cover-schedule figcaption { display: grid; gap: .35rem; margin-top: .85rem; padding-top: .85rem; border-top: 1px solid var(--line); }
+.cover-schedule figcaption span { color: var(--muted); font-size: .87rem; line-height: 1.55; }
+.prior-work { margin: .65rem 0 1.35rem; }
+.prior-work > div { display: grid; grid-template-columns: 5.2em minmax(0,1fr); gap: .7rem; border-top: 1px solid var(--line); padding: .65rem 0; line-height: 1.65; }
+.prior-work dt { color: var(--blue); font-weight: 650; }
+.prior-work dd { margin: 0; }
+.body .question-line { font-size: clamp(1.2rem,1.8vw,1.55rem); line-height: 1.55; color: var(--ink); font-weight: 655; margin-block: 1.5rem 1rem; }
+.slide-prior { font-size: clamp(1.05rem,1.8vw,1.65rem); }
+.slide-schedule { background: #fff; border: 1px solid var(--line); padding: 1rem; }
+.field-replay { margin: 1rem 0; }
+.field-replay summary { color: var(--blue); cursor: pointer; font-weight: 600; }
+.field-replay .replay { max-width: 45rem; margin: 1rem 0; padding: .85rem; border-radius: 4px; background: #12354c; color: white; }
+@media print { .cover-schedule { max-width: 70%; } }
