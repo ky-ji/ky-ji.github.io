@@ -1,23 +1,41 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="oneflow-publication">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="OneFlow 中文学术报告：沿论文引言的论证，从流策略的串行去噪瓶颈出发，用重绘的图解说明两条时间轴、动作窗口重叠、流式对齐与并行重建，并用对照实验检验稳态每轮一次批量前向的动作质量与实测耗时。">
+  <meta name="description" content="预训练流策略能否在一次前向传播的等待时间里，保留多步去噪的动作质量？这场 30 分钟的 OneFlow 报告通过交互图解、对照实验与真实机械臂记录回答这个问题。">
   <title>OneFlow · 多步去噪，单次前向 | Kangye Ji</title>
-  <link rel="icon" href="../assets/img/Tsinghua_University_Logo.svg">
-  <link rel="stylesheet" href="oneflow/talk.css?v=20261124.1">
-  <link rel="stylesheet" href="oneflow/pipeline.css?v=20261124.1">
-  <link rel="stylesheet" href="oneflow/results.css?v=20261124.1">
-  <link rel="stylesheet" href="oneflow/field.css?v=20261124.1">
-  <link rel="stylesheet" href="oneflow/deck.css?v=20261124.1">
-  <script defer src="oneflow/talk.js?v=20261124.1"></script>
-  <script defer src="oneflow/pipeline.js?v=20261124.1"></script>
-  <script defer src="oneflow/results.js?v=20261124.1"></script>
-  <script defer src="oneflow/field.js?v=20261124.1"></script>
+  <link rel="icon" href="oneflow/oneflow-mark.svg">
+  <link rel="stylesheet" href="oneflow/talk.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/pipeline.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/results.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/field.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/deck.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/frame.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/motion-lab.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/call-studio.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/evidence-view.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/robot-observatory.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/mechanism-motion.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/serial-motion.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/continuation-view.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/routes-figure.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/publication.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/projector-fit.css?v=20261124.2">
+  <script defer src="oneflow/talk.js?v=20261124.2"></script>
+  <script defer src="oneflow/pipeline.js?v=20261124.2"></script>
+  <script defer src="oneflow/field.js?v=20261124.2"></script>
+  <script defer src="oneflow/frame.js?v=20261124.2"></script>
+  <script defer src="oneflow/motion-lab.js?v=20261124.2"></script>
+  <script defer src="oneflow/call-studio.js?v=20261124.2"></script>
+  <script defer src="oneflow/evidence-view.js?v=20261124.2"></script>
+  <script defer src="oneflow/robot-observatory.js?v=20261124.2"></script>
+  <script defer src="oneflow/mechanism-motion.js?v=20261124.2"></script>
+  <script defer src="oneflow/serial-motion.js?v=20261124.2"></script>
+  <script defer src="oneflow/continuation-view.js?v=20261124.2"></script>
 </head>
 <body>
-  <a class="skip" href="#main">跳到正文</a>
+
   <svg class="svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
     <defs>
       <g id="sch-col">
@@ -34,26 +52,129 @@
       <g id="sch-diag"><use href="#sch-diag1"/><use href="#sch-diag1" y="78"/><use href="#sch-diag1" y="156"/><use href="#sch-diag1" y="234"/></g>
     </defs>
   </svg>
-  <header class="masthead">
-    <nav class="wrap mast-inner" aria-label="讲稿导航">
-      <div class="crumb"><a href="../">Kangye Ji</a><span aria-hidden="true">/</span><a href="./index.html">Talks</a></div>
-      <div class="contents"><a href="#problem">引言</a><a href="#method">方法</a><a href="#results">实验</a><a href="#field">实机</a><a href="#discussion">讨论</a><a href="#sources">资料</a></div>
-      <button class="mast-talk" type="button" data-start-talk hidden>演讲模式</button>
-    </nav>
+  <header class="v3-header" data-v3-header>
+    <a class="v3-skip" href="#problem">跳到报告正文</a>
+    <div class="v3-header-in">
+      <nav class="v3-crumbs" aria-label="站点">
+        <a href="../">Kangye Ji</a>
+        <a href="./index.html">讲座</a>
+        <a class="v3-crumbs-mark" href="#top" lang="en"><img src="oneflow/oneflow-mark.svg" width="22" height="22" alt="">One<i>Flow</i></a>
+      </nav>
+      <nav class="v3-nav" aria-label="章节" data-v3-nav>
+        <a href="#problem">问题</a>
+        <a href="#method">方法</a>
+        <a href="#results">实验</a>
+        <a href="#field">实机</a>
+        <span class="v3-nav-ind" aria-hidden="true"><i></i></span>
+      </nav>
+      <button class="v3-talk" type="button" data-start-talk hidden>
+        <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true" focusable="false"><path d="M2 1l9 5-9 5z" fill="currentColor"/></svg>
+        <span>演讲</span>
+      </button>
+    </div>
+    <span class="v3-read" aria-hidden="true"></span>
   </header>
   <main id="main">
-    <section class="cover" aria-labelledby="title">
-      <div class="hero wrap">
-        <div class="intro">
-          <p class="meta"><time datetime="2026-11-25">2026.11.25</time><span class="divider"></span>机器人学习 · 30 分钟报告</p>
-          <h1 lang="en" id="title">OneFlow</h1>
-          <p class="subtitle">多步去噪，单次前向</p>
-          <p class="paper-name" lang="en">Parallelizing Flows for One-Pass Action Generation</p>
-          <p class="lead">许多预训练流策略用多步去噪生成动作。原生采样要等上一步算完才能继续。能否保留多步采样的任务表现，同时让机器人在接近一次前向传播的时间内拿到新动作？</p>
-          <div class="hero-actions"><button id="start-talk" type="button" data-start-talk hidden><span class="play-icon" aria-hidden="true"></span>开始演讲</button><a href="#problem">阅读讲稿</a></div>
-          <p class="hero-hint" data-talk-hint hidden>12 页 · ← → 翻页与分步 · N 讲者提示与建议时间 · F 全屏</p>
-        </div>
-        <figure class="sched" id="cover-sched" aria-labelledby="sched-title">
+    <section id="top" class="v3-cover" aria-labelledby="v3-title">
+    <div class="v3-cover-text">
+      <p class="v3-cover-kicker">
+        <span><img src="oneflow/oneflow-mark.svg" width="28" height="28" alt="">机器人学习学术报告</span>
+        <time datetime="2026-11-25">2026.11.25</time>
+      </p>
+      <div class="v3-cover-head">
+        <h1 class="v3-title" id="v3-title" lang="en">One<i>Flow</i></h1>
+        <p class="v3-cover-thesis">能否在接近一次前向的时间里，<br><span class="term">保留</span>多步去噪的动作质量？</p>
+        <p class="v3-cover-paper" lang="en">Parallelizing Flows for One-Pass Action Generation</p>
+      </div>
+      <div class="v3-cover-actions">
+        <button class="v3-btn v3-btn-primary" id="start-talk" type="button" data-start-talk hidden>
+          <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true" focusable="false"><path d="M2 1l9 5-9 5z" fill="currentColor"/></svg>
+          开始演讲
+        </button>
+        <a class="v3-btn v3-btn-text" href="#problem">阅读全文</a>
+      </div>
+    </div>
+    <figure class="v3-plate" aria-label="主视觉：从噪声到动作的流线">
+      <div id="hero-art"><div data-of-motion="flow"><svg class="om-still" viewBox="0 0 600 319" role="img" aria-label="去噪轨迹示意：分散的源噪声随流时间收束为平滑动作。"><rect width="600" height="319" fill="#faf9f3"/><g fill="none" stroke="#3268ac" stroke-opacity=".53" stroke-width="1.1"><path d="M 3 135.5 C 55 144.1 72 165.7 114 139.9 S 228 96.2 288 117.0 S 400 209.1 458 183.8 S 555 112.0 597 112.1"/><path d="M 3 73.4 C 55 45.9 72 52.7 114 59.3 S 228 119.1 288 134.0 S 400 224.0 458 200.0 S 555 121.0 597 128.0"/><path d="M 3 86.0 C 55 64.0 72 61.1 114 74.7 S 228 135.2 288 145.9 S 400 234.7 458 211.8 S 555 130.0 597 140.6"/><path d="M 3 79.3 C 55 54.5 72 102.3 114 66.6 S 228 146.4 288 154.0 S 400 242.4 458 220.3 S 555 139.0 597 150.7"/><path d="M 3 148.9 C 55 113.4 72 157.8 114 130.7 S 228 168.9 288 170.7 S 400 257.0 458 236.2 S 555 148.0 597 166.4"/><path d="M 3 112.6 C 55 143.5 72 95.6 114 128.5 S 228 95.6 288 116.5 S 400 208.7 458 183.4 S 555 112.0 597 111.8"/><path d="M 3 228.8 C 55 227.3 72 259.7 114 228.0 S 228 121.0 288 135.5 S 400 225.2 458 201.3 S 555 121.0 597 129.0"/><path d="M 3 137.3 C 55 100.7 72 132.6 114 118.5 S 228 139.3 288 149.1 S 400 237.3 458 214.5 S 555 130.0 597 142.7"/><path d="M 3 121.6 C 55 143.7 72 96.8 114 133.0 S 228 152.8 288 158.9 S 400 246.4 458 224.5 S 555 139.0 597 153.9"/><path d="M 3 143.8 C 55 107.2 72 148.5 114 125.0 S 228 155.1 288 160.1 S 400 248.4 458 227.1 S 555 148.0 597 159.5"/><path d="M 3 107.9 C 55 144.7 72 111.1 114 126.8 S 228 99.3 288 119.4 S 400 211.0 458 185.8 S 555 112.0 597 113.6"/><path d="M 3 106.1 C 55 71.7 72 94.8 114 88.4 S 228 127.3 288 140.4 S 400 229.2 458 205.6 S 555 121.0 597 132.2"/><path d="M 3 81.6 C 55 56.2 72 59.1 114 68.6 S 228 131.4 288 143.0 S 400 232.4 458 209.3 S 555 130.0 597 138.7"/><path d="M 3 76.3 C 55 78.2 72 107.3 114 77.3 S 228 147.4 288 154.7 S 400 243.0 458 220.9 S 555 139.0 597 151.2"/><path d="M 3 91.3 C 55 70.8 72 65.5 114 80.8 S 228 166.1 288 168.6 S 400 255.3 458 234.4 S 555 148.0 597 165.0"/><path d="M 3 170.3 C 55 195.9 72 147.9 114 183.4 S 228 112.5 288 129.6 S 400 219.3 458 194.7 S 555 112.0 597 120.3"/><path d="M 3 73.7 C 55 109.1 72 64.7 114 91.9 S 228 110.0 288 127.1 S 400 218.4 458 194.0 S 555 121.0 597 123.5"/><path d="M 3 75.3 C 55 66.1 72 105.3 114 70.6 S 228 125.0 288 138.1 S 400 228.4 458 205.0 S 555 130.0 597 135.5"/><path d="M 3 228.3 C 55 229.0 72 259.3 114 228.7 S 228 147.3 288 154.7 S 400 242.9 458 220.8 S 555 139.0 597 151.1"/><path d="M 3 180.5 C 55 202.6 72 205.4 114 191.8 S 228 155.2 288 160.2 S 400 248.5 458 227.1 S 555 148.0 597 159.6"/><path d="M 3 101.6 C 55 83.8 72 128.7 114 92.4 S 228 106.4 288 124.8 S 400 215.5 458 190.6 S 555 112.0 597 117.2"/><path d="M 3 81.5 C 55 71.9 72 51.6 114 76.6 S 228 120.2 288 134.9 S 400 224.7 458 200.8 S 555 121.0 597 128.6"/><path d="M 3 97.6 C 55 74.7 72 121.9 114 85.8 S 228 129.0 288 141.1 S 400 230.9 458 207.7 S 555 130.0 597 137.5"/><path d="M 3 241.3 C 55 240.1 72 210.3 114 240.7 S 228 140.8 288 149.7 S 400 238.9 458 216.5 S 555 139.0 597 147.9"/><path d="M 3 233.4 C 55 197.8 72 241.9 114 215.1 S 228 158.3 288 162.6 S 400 250.4 458 229.2 S 555 148.0 597 161.2"/><path d="M 3 79.6 C 55 55.8 72 103.4 114 67.4 S 228 101.1 288 120.8 S 400 212.2 458 187.1 S 555 112.0 597 114.6"/></g><g font-family="sans-serif" font-weight="650" font-size="16" fill="#16344f"><text x="13" y="27">源噪声</text><text x="587" y="27" text-anchor="end">动作估计</text></g><text x="13" y="302" fill="#45617a" font-family="sans-serif" font-size="13">去噪过程示意 →</text></svg></div></div>
+    </figure>
+  </section>
+
+    <nav class="v3-agenda" aria-labelledby="v3-agenda-title">
+    <header class="v3-agenda-head">
+      <h2 id="v3-agenda-title">阅读路线 <span lang="en">Reading route</span></h2>
+      <p>27 分钟主讲 · 3 分钟问答 · 12 页</p>
+    </header>
+    <!-- --v3-min 是该段的分钟数，决定横向路线上的宽度占比 -->
+    <ol class="v3-route">
+      <li style="--v3-min:5.5">
+        <a href="#problem">
+          <span class="v3-route-time">00:00–05:30</span>
+          <span class="v3-route-name">问题 <i lang="en">Problem</i></span>
+          <span class="v3-route-note">多步去噪的质量与等待</span>
+        </a>
+      </li>
+      <li style="--v3-min:10">
+        <a href="#method">
+          <span class="v3-route-time">05:30–15:30</span>
+          <span class="v3-route-name">方法 <i lang="en">Method</i></span>
+          <span class="v3-route-note">跨轮接续，一次批量前向</span>
+        </a>
+      </li>
+      <li style="--v3-min:7.5">
+        <a href="#results">
+          <span class="v3-route-time">15:30–23:00</span>
+          <span class="v3-route-name">实验 <i lang="en">Results</i></span>
+          <span class="v3-route-note">成功率、计算预算与实测时延</span>
+        </a>
+      </li>
+      <li style="--v3-min:3">
+        <a href="#field">
+          <span class="v3-route-time">23:00–26:00</span>
+          <span class="v3-route-name">实机 <i lang="en">Real robot</i></span>
+          <span class="v3-route-note">四项动态操作</span>
+        </a>
+      </li>
+      <li style="--v3-min:4">
+        <a href="#discussion">
+          <span class="v3-route-time">26:00–30:00</span>
+          <span class="v3-route-name">讨论 <i lang="en">Discussion</i></span>
+          <span class="v3-route-note">总结与问答</span>
+        </a>
+      </li>
+    </ol>
+  </nav>
+
+    <section class="chapter" id="problem" aria-labelledby="problem-heading">
+      <div class="wrap chapter-inner">
+        <p class="rail"><b>引言</b><small>00:00–05:30</small></p>
+        <div class="chapter-main">
+          <h2 id="problem-heading"><span class="headline-clause">多步去噪能提高动作质量，</span><span class="headline-clause">机器人却要等它算完</span></h2>
+          <div class="prose">
+            <p>从面向单一任务的流匹配策略，到视觉语言动作模型（VLA），再到同时预测未来画面和动作的世界动作模型（WAM），许多机器人策略都用迭代去噪生成一段动作。在原生采样中，每一步都用上一步更新后的动作估计来预测速度，网络调用只能首尾相接。</p>
+            <p>机器人要等这一串计算全部结束，才能根据本轮观测发出新动作。减少步数可以缩短等待，也可能降低任务成功率。物体还在移动、机械臂与物体的接触还在变化时，这段等待限制了机器人根据新观测修正动作的速度。</p>
+          </div>
+
+
+          <figure class="fig loop" id="serial-loop" aria-labelledby="loop-title">
+            <figcaption class="fig-head"><strong id="loop-title">一轮重规划里，机器人在等什么</strong><span>示例数据：Fast-WAM · RoboTwin 2.0 · 论文表 3</span></figcaption>
+            <p class="loop-lineage"><span><b>专用流策略</b>面向单一任务</span><span><b>VLA</b>视觉语言动作模型</span><span><b>WAM</b>世界动作模型</span><em>这三类模型都有采用迭代去噪的实例</em></p>
+            <div class="loop-rows">
+              <p class="loop-head"><span></span><span>一轮之内的网络调用，后一次要等前一次</span><span data-step="1">回合成功率</span></p>
+              <div class="loop-row">
+                <b>原生十步<small>10 次串行调用</small></b>
+                <span class="loop-track"><span class="loop-io">观测</span><span class="flowchips" aria-hidden="true"><i class="lv0"></i><i class="lv0"></i><i class="lv1"></i><i class="lv1"></i><i class="lv2"></i><i class="lv2"></i><i class="lv3"></i><i class="lv3"></i><i class="lv4"></i><i class="lv4"></i></span><span class="loop-io">动作</span></span>
+                <strong data-step="1">89.4%</strong>
+              </div>
+              <div class="loop-row">
+                <b>原生一步<small>1 次调用</small></b>
+                <span class="loop-track"><span class="loop-io">观测</span><span class="flowchips loop-one" aria-hidden="true"><i></i></span><span class="loop-io">动作</span></span>
+                <strong data-step="1">40.8%</strong>
+              </div>
+            </div>
+            <p class="fig-note read-only">每个箭头形色块是一次网络调用，链条的长度就是机器人拿到新动作之前要等的调用次数。右侧是 Fast-WAM 在 50 项任务的标准和随机化场景中的平均成功率。调用次数不等于毫秒数，实测耗时还取决于硬件和实现，见<a href="#latency">实测耗时</a>一节。</p>
+          </figure>
+          <details class="research-detail schedule-detail"><summary>查看原生求解公式与论文中的调度图</summary>
+<div class="equation"><span lang="en">X<sub>i+1</sub> = X<sub>i</sub> + h<sub>i</sub> v<sub>θ</sub>(X<sub>i</sub>, t<sub>i</sub>, o<sub>k</sub>)</span><small>原生 Euler 采样，论文公式 1。第 i + 1 步要用到第 i 步刚算出的动作估计，所以一轮之内的 N 次调用无法并行。</small></div><figure class="sched" id="cover-sched" aria-labelledby="sched-title">
           <div class="sched-panels">
             <div class="sched-panel">
               <p><b>原生采样</b>一轮之内，串行走完所有阶段</p>
@@ -75,78 +196,66 @@
           </div>
           <figcaption><strong id="sched-title">去噪的顺序依赖放在哪里？</strong>依据论文图 1 重绘。每列是一轮重规划，颜色由灰到深蓝表示去噪推进。<i aria-hidden="true"></i>左图的橙框标出一次规划内的串行更新。右图的橙框沿对角线标出各阶段估计如何跨轮接续，动作窗口也随执行向前移动。</figcaption>
         </figure>
-      </div>
-    </section>
-
-    <nav class="agenda wrap" aria-label="30 分钟报告安排">
-      <ol>
-        <li style="--w:5.5;--c:var(--n0)"><a href="#problem"><small>00:00–05:30</small><strong>引言</strong><span>动作质量与闭环时延的冲突</span></a></li>
-        <li style="--w:10;--c:var(--n1)"><a href="#method"><small>05:30–15:30</small><strong>方法</strong><span>两条时间轴，一条滚动流水线</span></a></li>
-        <li style="--w:7.5;--c:var(--n2)"><a href="#results"><small>15:30–23:00</small><strong>实验</strong><span>质量、机制、计算量、耗时</span></a></li>
-        <li style="--w:3;--c:var(--n3)"><a href="#field"><small>23:00–26:00</small><strong>实机</strong><span>动态操作</span></a></li>
-        <li style="--w:4;--c:var(--n4)"><a href="#discussion"><small>26:00–30:00</small><strong>讨论</strong><span>边界与提问</span></a></li>
-      </ol>
-    </nav>
-
-    <section class="chapter" id="problem" aria-labelledby="problem-heading">
-      <div class="wrap chapter-inner">
-        <p class="rail"><b>引言</b><small>00:00–05:30</small></p>
-        <div class="chapter-main">
-          <h2 id="problem-heading">多步去噪，把动作质量和闭环时延绑在了一起</h2>
-          <div class="prose">
-            <p>从面向单一任务的流匹配策略，到视觉语言动作模型（VLA），再到同时预测未来画面和动作的世界动作模型（WAM），许多机器人策略都用迭代去噪生成一段动作。在原生采样中，每一步都用上一步更新后的动作估计来预测速度，网络调用只能首尾相接。</p>
-            <p>机器人要等这一串计算全部结束，才能根据本轮观测发出新动作。减少步数可以缩短等待，也可能降低任务成功率。物体还在移动、机械臂与物体的接触还在变化时，这段等待限制了机器人根据新观测修正动作的速度。</p>
-          </div>
-          <div class="equation"><span lang="en">X<sub>i+1</sub> = X<sub>i</sub> + h<sub>i</sub> v<sub>θ</sub>(X<sub>i</sub>, t<sub>i</sub>, o<sub>k</sub>)</span><small>原生 Euler 采样，论文公式 1。第 i + 1 步要用到第 i 步刚算出的动作估计，所以一轮之内的 N 次调用无法并行。</small></div>
-
-          <figure class="fig loop" id="serial-loop" aria-labelledby="loop-title">
-            <figcaption class="fig-head"><strong id="loop-title">一轮重规划里，机器人在等什么</strong><span>示例数据：Fast-WAM · RoboTwin 2.0 · 论文表 3</span></figcaption>
-            <p class="loop-lineage"><span><b>专用流策略</b>面向单一任务</span><span><b>VLA</b>视觉语言动作模型</span><span><b>WAM</b>世界动作模型</span><em>这三类模型都有采用迭代去噪的实例</em></p>
-            <div class="loop-rows">
-              <p class="loop-head"><span></span><span>一轮之内的网络调用，后一次要等前一次</span><span data-step="1">回合成功率</span></p>
-              <div class="loop-row">
-                <b>原生十步<small>10 次串行调用</small></b>
-                <span class="loop-track"><span class="loop-io">观测</span><span class="flowchips" aria-hidden="true"><i class="lv0"></i><i class="lv0"></i><i class="lv1"></i><i class="lv1"></i><i class="lv2"></i><i class="lv2"></i><i class="lv3"></i><i class="lv3"></i><i class="lv4"></i><i class="lv4"></i></span><span class="loop-io">动作</span></span>
-                <strong data-step="1">89.4%</strong>
-              </div>
-              <div class="loop-row">
-                <b>原生一步<small>1 次调用</small></b>
-                <span class="loop-track"><span class="loop-io">观测</span><span class="flowchips loop-one" aria-hidden="true"><i></i></span><span class="loop-io">动作</span></span>
-                <strong data-step="1">40.8%</strong>
-              </div>
-            </div>
-            <p class="fig-note read-only">每个箭头形色块是一次网络调用，链条的长度就是机器人拿到新动作之前要等的调用次数。右侧是 Fast-WAM 在 50 项任务的标准和随机化场景中的平均成功率。调用次数不等于毫秒数，实测耗时还取决于硬件和实现，见<a href="#latency">实测耗时</a>一节。</p>
-          </figure>
+</details>
 
           <h3 id="question">已有的加速路线，各付出了什么代价</h3>
           <div class="prose">
             <p>已有方法主要从三个方向减少计算。它们对训练和推理的要求各不相同。</p>
           </div>
-          <figure class="fig" id="routes-fig" aria-label="三条已有的加速路线及其代价">
-            <div class="routes">
-              <div class="route">
-                <h4>少步求解</h4>
-                <span class="flowchips" aria-hidden="true"><i class="wide lv1"></i><i class="wide lv4"></i></span>
-                <small>同一个网络，步数更少，步长更大</small>
-                <p>减少函数求值次数，直接缩短串行的调用链。</p>
-                <p class="route-cost"><b>代价</b>步数很少时，积分的离散化误差可能拉低任务成功率。</p>
-              </div>
-              <div class="route">
-                <h4>蒸馏</h4>
-                <span class="flowchips" aria-hidden="true"><i class="wide lv3"></i></span>
-                <small>另行训练出来的少步模型</small>
-                <p>把多步采样学进少数几步。</p>
-                <p class="route-cost"><b>代价</b>需要针对具体策略做额外训练，优化过程也可能不稳定。</p>
-              </div>
-              <div class="route">
-                <h4>缓存复用</h4>
-                <span class="flowchips" aria-hidden="true"><i class="lv0"></i><i class="lv1 hat"></i><i class="lv2 hat"></i><i class="lv3"></i><i class="lv4 hat"></i></span>
-                <small>斜纹表示沿用之前的结果</small>
-                <p>复用中间特征或动作状态，省去重复计算。</p>
-                <p class="route-cost"><b>代价</b>复用越激进，近似误差越限制进一步加速。</p>
-              </div>
-            </div>
-          </figure>
+          <figure class="fig rf-plate" id="routes-fig" aria-label="已有的三种推理加速路线及其代价">
+  <div class="routes">
+    <div class="route">
+      <h4>少步求解</h4>
+      <svg class="rf-drawing" viewBox="0 0 304 138" role="img" aria-label="在相同的去噪时间区间，四次小步积分与两次大步积分都从零走到一。下方单次步长是上方的两倍。">
+        <g class="rf-muted rf-label" text-anchor="middle"><text x="75" y="18">t = 0</text><text x="267" y="18">t = 1</text></g>
+        <path class="rf-guide" d="M75 26V107 M267 26V107"/>
+        <g class="rf-label"><text x="12" y="51">4 步</text><text x="12" y="93">2 步</text></g>
+        <path class="rf-line" d="M75 45H267"/>
+        <g class="rf-dot"><circle cx="75" cy="45" r="4.3"/><circle cx="123" cy="45" r="4.3"/><circle cx="171" cy="45" r="4.3"/><circle cx="219" cy="45" r="4.3"/><circle cx="267" cy="45" r="4.3"/></g>
+        <path class="rf-highlight" d="M75 87H267"/>
+        <g class="rf-dot-accent"><circle cx="75" cy="87" r="5.2"/><circle cx="171" cy="87" r="5.2"/><circle cx="267" cy="87" r="5.2"/></g>
+        <path class="rf-bracket" d="M75 102v5h96v-5"/>
+        <text x="123" y="130" text-anchor="middle" class="rf-label rf-accent">Δt = ½</text>
+      </svg>
+      <small>同一个网络，步数更少，步长更大</small>
+      <p>减少函数求值次数，直接缩短串行的调用链。</p>
+      <p class="route-cost"><b>代价</b>步数很少时，积分的离散化误差可能拉低任务成功率。</p>
+    </div>
+    <div class="route">
+      <h4>蒸馏</h4>
+      <svg class="rf-drawing" viewBox="0 0 304 138" role="img" aria-label="教师策略从噪声依次调用四次网络，产生用于蒸馏的监督。学生策略通过额外训练，学习用更少的调用生成动作。">
+        <g class="rf-label"><text x="10" y="37">教师</text><text x="10" y="115">学生</text></g>
+        <path class="rf-line" d="M63 31H270"/>
+        <g class="rf-block"><rect x="64" y="19" width="28" height="24" rx="2"/><rect x="111" y="19" width="28" height="24" rx="2"/><rect x="158" y="19" width="28" height="24" rx="2"/><rect x="205" y="19" width="28" height="24" rx="2"/></g>
+        <circle class="rf-end" cx="270" cy="31" r="4"/>
+        <path class="rf-transfer" d="M270 41v56m-5-7 5 7 5-7"/>
+        <text class="rf-label rf-muted" x="256" y="75" text-anchor="end">蒸馏监督</text>
+        <path class="rf-highlight" d="M64 109H270"/>
+        <rect x="127" y="97" width="59" height="24" rx="2" class="rf-student"/>
+        <circle class="rf-dot-accent" cx="270" cy="109" r="4.7"/>
+      </svg>
+      <small>另行训练出来的少步模型</small>
+      <p>把多步采样学进少数几步。</p>
+      <p class="route-cost"><b>代价</b>需要针对具体策略做额外训练，优化过程也可能不稳定。</p>
+    </div>
+    <div class="route">
+      <h4>缓存复用</h4>
+      <svg class="rf-drawing" viewBox="0 0 304 138" role="img" aria-label="上排是上次计算得到的四组特征。本次对第一组和第三组重新计算，沿箭头复用第二组和第四组旧特征，斜纹标出复用项。">
+        <g class="rf-label"><text x="8" y="36">上次</text><text x="8" y="104">本次</text></g>
+        <g class="rf-old"><rect x="66" y="18" width="35" height="25" rx="2"/><rect x="120" y="18" width="35" height="25" rx="2"/><rect x="174" y="18" width="35" height="25" rx="2"/><rect x="228" y="18" width="35" height="25" rx="2"/></g>
+        <path class="rf-transfer" d="M137.5 48v31m-5-7 5 7 5-7 M245.5 48v31m-5-7 5 7 5-7"/>
+        <g class="rf-student"><rect x="66" y="86" width="35" height="25" rx="2"/><rect x="174" y="86" width="35" height="25" rx="2"/></g>
+        <g class="rf-old"><rect x="120" y="86" width="35" height="25" rx="2"/><rect x="228" y="86" width="35" height="25" rx="2"/></g>
+        <path class="rf-hatch" d="M121 103l12-16m-10 23 18-23m-9 23 18-23m-10 23 14-18 M229 103l12-16m-10 23 18-23m-9 23 18-23m-10 23 14-18"/>
+        <text class="rf-legend rf-accent" x="67" y="132">重算</text>
+        <text class="rf-legend rf-muted" x="122" y="132">复用</text>
+      </svg>
+      <small>斜纹表示沿用之前的结果</small>
+      <p>复用中间特征或动作状态，省去重复计算。</p>
+      <p class="route-cost"><b>代价</b>复用越激进，近似误差越限制进一步加速。</p>
+    </div>
+  </div>
+</figure>
 
           <div class="ask" id="ask-fig">
             <p class="ask-q">能否直接使用已有的预训练流策略，在<b>一次前向传播的时延量级</b>上，保留<b>多步采样的动作质量</b>？</p>
@@ -182,6 +291,7 @@
             <figcaption class="fig-head"><strong id="path-heading">追踪动作 9</strong><span>示意：预测 H = 8 · 每轮执行 E = 2 · 去噪阶段 N = 4</span></figcaption>
             <div class="axes-body">
               <div>
+                <div data-of-motion="overlap"></div>
                 <p class="axes-title"><b>物理时间：窗口每轮前移 2 格</b>相邻两轮重叠 6 格，动作 9 在窗口里停留四轮</p>
                 <div class="stair" role="img" aria-label="四轮重规划的动作窗口依次是 3 到 10、5 到 12、7 到 14、9 到 16。动作 9 在四个窗口里分别位于第 7、5、3、1 格。">
                   <div class="stair-row"><b>第 1 轮<small>9 在第 7 格</small></b><span class="cells" style="--s:1"><i class="is-exec">3</i><i class="is-exec">4</i><i>5</i><i>6</i><i>7</i><i>8</i><i class="is-new is-9 lv1">9</i><i class="is-new">10</i></span></div>
@@ -209,11 +319,35 @@
             <p class="fig-note read-only">竖着读右图的一列：四个阶段共用这一轮的观测，由一次批量调用同时更新。沿橙框的对角线读：动作 9 从进入窗口到排在队首，依次接受 o<sub>1</sub> 到 o<sub>4</sub> 四次观测的修正。较早的观测在高噪声阶段确定大致的计划，临近执行的观测完成最后的修正。图中只追踪一条信息传播路径，每一轮里动作 9 其实同时存在于四个噪声水平的候选中。</p>
           </figure>
 
-          <h3>逐轮推演：稳态每轮恰好一次批量调用</h3>
+          <h3>从第一段到第五段，逐轮数网络调用</h3>
           <div class="prose">
             <p>回合开始时流水线是空的，第一次规划仍然要用原生多步采样，并把沿途的状态保存下来。此后的每一轮，这些状态先对齐到新的窗口，再作为一个批次送进同一个预训练网络。一次调用里有 <var>N</var> 个候选，所以网络调用次数是 1，批内的计算量并没有消失。实际多花多少时间，要看<a href="#latency">实测耗时</a>。</p>
           </div>
-          <figure class="fig walk" id="replanning-demo" data-walk aria-labelledby="walk-title">
+          <div id="replanning-demo"><figure class="call-studio" id="call-studio" data-call-studio aria-label="相同五段动作的网络调用调度示意">
+  <figcaption class="cs-title"><span>调用时序实验</span><strong>生成同样五段动作，要等多少次前向？</strong></figcaption>
+  <div class="cs-scenes">
+    <div class="cs-lane" data-sampler="native">
+      <div class="cs-name"><h4>原生采样</h4><span>每段 4 次串行调用</span></div>
+      <div class="cs-robot" aria-hidden="true"></div>
+      <div class="cs-receipt"><span>已生成动作段</span><strong><b data-chunks>1</b><small> / 5</small></strong></div>
+      <div class="cs-tape" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="cs-lane is-oneflow" data-sampler="oneflow">
+      <div class="cs-name"><h4>OneFlow</h4><span>初始化 4 次，稳态每段 1 次</span></div>
+      <div class="cs-robot" aria-hidden="true"></div>
+      <div class="cs-receipt"><span>已生成动作段</span><strong><b data-chunks>1</b><small> / 5</small></strong></div>
+      <div class="cs-tape" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+  </div>
+  <div class="cs-player" hidden>
+    <button type="button" data-cs-play>播放</button>
+    <label><span>网络调用次序</span><input type="range" min="0" max="20" value="4" step=".05" aria-label="网络调用次序，从 0 至 20"></label>
+    <output data-cs-count>4 / 20</output>
+    <button type="button" data-cs-reset aria-label="回到初始化之前">重置</button>
+  </div>
+  <p class="cs-caption">两边沿同一条示意轨迹运动，每收到一段动作就前进一段。横轴记录去噪网络调用次数。包含初始化时，5 段动作各需 20 次和 8 次调用。硬件实测时延见<a href="#latency">时延实验</a>。</p>
+</figure><details class="research-detail "><summary>逐轮检查动作编号、候选状态和累计调用</summary>
+<figure class="fig walk" id="walk-detail" data-walk aria-labelledby="walk-title">
             <div class="walk-top">
               <div class="fig-head"><strong id="walk-title"><span id="pipeline-title">逐轮推演滚动流水线</span></strong><span>示意：H = 8 · E = 2 · N = 4</span></div>
               <div class="walk-tabs" role="group" aria-label="选择重规划轮次" hidden>
@@ -250,8 +384,9 @@
             </div>
             <p class="walk-say" aria-live="polite" aria-atomic="true"><strong data-label>第 1 轮</strong><span data-text>动作 1、2 已执行。四个候选各自保留 3–8，在末尾补入 9、10。它们共享这一轮的新观测，一次批量调用给出四组速度，据此重建各阶段的状态和本轮输出。机器人执行动作 3、4。动作 9 刚进入窗口，排在第 7 格。</span></p>
           </figure>
+</details></div>
 
-          <h3 id="mechanics">一轮之内：流式对齐，一次批量调用，并行重建</h3>
+          <h3 id="mechanics">一次重规划怎样更新所有去噪阶段</h3>
           <div class="prose">
             <p><strong>流式对齐</strong>处理的是物理时间。执行两步后，每个候选去掉开头两格，保留的六格连同各自的噪声一起前移。尾部空出的两格这样补上：先从末端状态扣去它原有的源噪声分量，把余量延伸到新位置，再按这个候选所处阶段的噪声水平加入新噪声。各阶段共用同一份新噪声。对齐之后，所有候选描述的是同一段未来。</p>
             <p><strong>并行重建</strong>处理的是去噪时间。对齐后的候选组成一个批次，共享本轮的新观测。网络一次给出每个候选的速度 <var>V<sub>i</sub></var>，也就给出各自对最终动作的估计 <var>D<sub>i</sub></var>。再用只取决于去噪网格的权重，将源噪声与这些终点估计组合成全部新状态。最后一个状态就是本轮输出的动作块，机器人执行它的前 <var>E</var> 步。其余状态全部保留，下一轮从它们出发。</p>
@@ -340,7 +475,9 @@
             <p>把递推展开，每一层都是源噪声和各终点估计的加权和。权重只取决于去噪网格，可以预先算好，用一次矩阵乘法重建所有状态。最后一步的权重 <var>h<sub>i</sub></var>/<var>r<sub>i</sub></var> 等于 1，输出就是最后一个终点估计。更新中间状态的收益，要到后续轮次才体现出来。</p>
           </div></details>
 
-          <figure class="paper-fig"><a href="oneflow/method.webp" aria-label="查看原尺寸的论文方法图"><img src="oneflow/method.webp" width="1608" height="874" loading="lazy" alt="论文图 2。左边是连续三轮的滚动流水线，右上是流式对齐时窗口前移并补齐末尾，右下是由终点估计并行重建各阶段状态。"></a><figcaption><strong>论文图 2 原图。</strong>左侧每个灰底方框是一轮重规划，对应上面的三件事。右上是流式对齐，右下是并行重建。点击可放大。</figcaption></figure>
+          <details class="research-detail "><summary>查看论文图 2 中的滚动去噪、流式对齐和并行重建</summary>
+<figure class="paper-fig"><a href="oneflow/method.webp" aria-label="查看原尺寸的论文方法图"><img src="oneflow/method.webp" width="1608" height="874" loading="lazy" alt="论文图 2。左边是连续三轮的滚动流水线，右上是流式对齐时窗口前移并补齐末尾，右下是由终点估计并行重建各阶段状态。"></a><figcaption><strong>论文图 2 原图。</strong>左侧每个灰底方框是一轮重规划，对应上面的三件事。右上是流式对齐，右下是并行重建。点击可放大。</figcaption></figure>
+</details>
         </div>
       </div>
     </section>
@@ -352,80 +489,24 @@
           <h2 id="results-heading">一次批量调用，保住了多步采样的成功率吗</h2>
           <p class="chapter-lead">四组实验分别回答四件事：动作质量有没有保住，收益来自哪里，一次调用里还能加多少计算，实际省下多少时间。每轮的网络调用次数、回合成功率和实测耗时是三个不同的量，下面分开报告。</p>
 
-          <h3 id="simulation"><span id="simulation-heading">动作质量：同一个策略，四种采样配置</span></h3>
+          <h3 id="simulation"><span id="simulation-heading">同一个预训练策略换用四种采样配置，成功率如何变化？</span></h3>
           <div class="prose">
             <p>这里从三个仿真平台中选取四个策略，每个策略的各组对照都沿用相同的预训练权重。每个策略比较四种配置：原生一步、原生多步、OneFlow，以及再加上执行引擎的 OneFlow+。</p>
           </div>
-          <div class="fig" data-res-comparison>
-            <fieldset class="res-picker" hidden>
-              <legend>选择策略</legend>
-              <div class="res-options">
-                <label><input type="radio" name="of-result-model" value="fastwam" aria-controls="res-fastwam" checked><span>Fast-WAM</span></label>
-                <label><input type="radio" name="of-result-model" value="xiaomi" aria-controls="res-xiaomi"><span>Xiaomi Robotics 0</span></label>
-                <label><input type="radio" name="of-result-model" value="groot" aria-controls="res-groot"><span>GR00T N1.7</span></label>
-                <label><input type="radio" name="of-result-model" value="fm" aria-controls="res-fm"><span>流匹配策略</span></label>
-              </div>
-            </fieldset>
-            <section class="res-panel" id="res-fastwam" data-model="fastwam" aria-labelledby="res-fastwam-title">
-              <header><h4 id="res-fastwam-title">Fast-WAM</h4><p>世界动作模型 · RoboTwin 2.0 · 论文表 3</p></header>
-              <table class="res-table" aria-label="Fast-WAM 的采样配置与回合成功率">
-                <thead><tr><th scope="col">采样配置</th><th scope="col">去噪阶段</th><th scope="col">稳态每轮调用</th><th scope="col">回合成功率</th></tr></thead>
-                <tbody>
-                  <tr><th scope="row">原生一步</th><td>1</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:40.8"></span><b>40.8%</b></span></td></tr>
-                  <tr><th scope="row">原生十步</th><td>10</td><td>10</td><td><span class="tval"><span class="tbar" style="--v:89.4"></span><b>89.4%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow</th><td>10</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:91"></span><b>91.0%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow+</th><td>10</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:91.1"></span><b>91.1%</b></span></td></tr>
-                </tbody>
-              </table>
-              <p class="res-insight">把十步求解直接缩成一步，回合成功率降到 40.8%。把十个阶段摊到连续几轮重规划之后，OneFlow 稳态每轮只做一次批量调用，回合成功率为 91.0%，原生十步为 89.4%。例如，OneFlow 成功完成了 10,000 个测试回合中的 9,098 个。</p>
-              <p class="res-note">论文表 3 汇总全部 50 项任务，每项各测试 100 个标准场景和 100 个随机化场景，每种配置共 10,000 回合。每轮预测 32 步、执行 8 步。</p>
-            </section>
-            <section class="res-panel" id="res-xiaomi" data-model="xiaomi" aria-labelledby="res-xiaomi-title">
-              <header><h4 id="res-xiaomi-title">Xiaomi Robotics 0</h4><p>视觉语言动作模型 · SimplerEnv · 论文表 2</p></header>
-              <table class="res-table" aria-label="Xiaomi Robotics 0 的采样配置与平均成功率">
-                <thead><tr><th scope="col">采样配置</th><th scope="col">去噪阶段</th><th scope="col">稳态每轮调用</th><th scope="col">平均成功率</th></tr></thead>
-                <tbody>
-                  <tr><th scope="row">原生一步</th><td>1</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:72"></span><b>72.0%</b></span></td></tr>
-                  <tr><th scope="row">原生五步</th><td>5</td><td>5</td><td><span class="tval"><span class="tbar" style="--v:74"></span><b>74.0%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow</th><td>5</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:81.3"></span><b>81.3%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow+</th><td>5</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:79.2"></span><b>79.2%</b></span></td></tr>
-                </tbody>
-              </table>
-              <p class="res-insight">提升在不同机器人上并不均匀。以 WidowX 的胡萝卜摆盘任务为例，原生五步的成功率为 20.8%，OneFlow 为 63.9%，开启引擎后为 54.9%。</p>
-              <p class="res-note">论文表 2 对 Google Robot 的视觉匹配（VM）、变体聚合（VA）和 WidowX 三组平均成功率等权取平均。每轮预测 8 步、执行 1 步。</p>
-            </section>
-            <section class="res-panel" id="res-groot" data-model="groot" aria-labelledby="res-groot-title">
-              <header><h4 id="res-groot-title">GR00T N1.7</h4><p>视觉语言动作模型 · SimplerEnv · 论文表 2</p></header>
-              <table class="res-table" aria-label="GR00T N1.7 的采样配置与平均成功率">
-                <thead><tr><th scope="col">采样配置</th><th scope="col">去噪阶段</th><th scope="col">稳态每轮调用</th><th scope="col">平均成功率</th></tr></thead>
-                <tbody>
-                  <tr><th scope="row">原生一步</th><td>1</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:54.8"></span><b>54.8%</b></span></td></tr>
-                  <tr><th scope="row">原生四步</th><td>4</td><td>4</td><td><span class="tval"><span class="tbar" style="--v:59.9"></span><b>59.9%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow</th><td>4</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:62.5"></span><b>62.5%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow+</th><td>4</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:62.1"></span><b>62.1%</b></span></td></tr>
-                </tbody>
-              </table>
-              <p class="res-insight">平均值掩盖了很接近的对照。在 Google Robot 的视觉匹配设置中，原生四步为 77.3%，OneFlow 为 77.2%，两者成功概率之差的配对 95% 置信区间包含零。</p>
-              <p class="res-note">论文表 2 对 Google Robot 的视觉匹配、变体聚合和 WidowX 三组平均成功率等权取平均。每轮预测 8 步、执行 1 步。配对区间见补充材料表 8。</p>
-            </section>
-            <section class="res-panel" id="res-fm" data-model="fm" aria-labelledby="res-fm-title">
-              <header><h4 id="res-fm-title">流匹配策略（RGB）</h4><p>RGB 观测 · RoboMimic · 论文表 1</p></header>
-              <table class="res-table" aria-label="流匹配策略（RGB）的采样配置与平均成功率">
-                <thead><tr><th scope="col">采样配置</th><th scope="col">去噪阶段</th><th scope="col">稳态每轮调用</th><th scope="col">平均成功率</th></tr></thead>
-                <tbody>
-                  <tr><th scope="row">原生一步</th><td>1</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:43.6"></span><b>43.6%</b></span></td></tr>
-                  <tr><th scope="row">原生十步</th><td>10</td><td>10</td><td><span class="tval"><span class="tbar" style="--v:61.2"></span><b>61.2%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow</th><td>8</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:64.7"></span><b>64.7%</b></span></td></tr>
-                  <tr class="is-flow"><th scope="row">OneFlow+</th><td>8</td><td>1</td><td><span class="tval"><span class="tbar" style="--v:65.1"></span><b>65.1%</b></span></td></tr>
-                </tbody>
-              </table>
-              <p class="res-insight">五项任务并非同样困难。OneFlow 在 Lift 和 Can 上都达到 100%，在 Transport 上只有 14%。平均成功率上升，与个别任务仍然困难，可以同时成立。</p>
-              <p class="res-note">论文表 1 对五项任务等权取平均。每项固定 50 个初始场景，原生采样每个场景运行一次，两种 OneFlow 配置每个场景使用三组配对噪声。每轮预测 16 步、执行 4 步。</p>
-            </section>
-            <p class="res-note">“稳态每轮调用”统计初始化之后每轮的去噪网络调用次数。一个批次里即使有多个去噪阶段，也只计一次调用。OneFlow+ 表示同时启用 OneFlow 采样和执行引擎。</p>
-          </div>
+          <figure class="ev-figure ev-success" id="success-fig" data-evidence="success" aria-label="各策略的成功率与调用预算">
+  <div class="ev-toolbar ev-js" role="group" aria-label="选择策略" hidden><button type="button" data-policy-choice="fast" aria-pressed="true">Fast-WAM</button><button type="button" data-policy-choice="xiaomi" aria-pressed="false">Xiaomi Robotics 0</button><button type="button" data-policy-choice="n17" aria-pressed="false">GR00T N1.7</button><button type="button" data-policy-choice="fm" aria-pressed="false">流匹配策略（RGB）</button></div>
+  <figcaption class="ev-heading"><div><small data-platform-label>RoboTwin 2.0 · H = 32 · E = 8</small><strong data-policy-label>Fast-WAM</strong></div><label class="ev-metric-select ev-js" hidden>比较范围 <select aria-label="比较范围"><option>全部场景</option></select></label></figcaption>
+  <div class="ev-map-label"><b data-measure-label>回合成功率（%）</b><span><i></i> 原生多步水平</span></div>
+  <div class="ev-success-chart" role="img" aria-label="Fast-WAM 原生一步 40.8%，原生十步 89.4%，OneFlow 91.0%，OneFlow+ 91.1%。">
+    <div class="ev-grid"><i style="bottom:0%"><span>0</span></i><i style="bottom:25%"><span>25</span></i><i style="bottom:50%"><span>50</span></i><i style="bottom:75%"><span>75</span></i><i style="bottom:100%"><span>100</span></i></div><div class="ev-reference" style="bottom:89.4%"></div><div class="ev-columns"><div class="ev-configuration ev-c0" style="--value:40.8"><div class="ev-position"><b>40.8%</b><i></i></div></div><div class="ev-configuration ev-c1" style="--value:89.4"><div class="ev-position"><b>89.4%</b><i></i></div></div><div class="ev-configuration ev-c2" style="--value:91.0"><div class="ev-position"><b>91.0%</b><i></i></div></div><div class="ev-configuration ev-c3" style="--value:91.1"><div class="ev-position"><b>91.1%</b><i></i></div></div></div>
+  </div>
+  <div class="ev-budgets"><div class="ev-budget ev-c0"><strong>原生一步</strong><span><b>1</b> 个阶段</span><span>每轮 <b>1</b> 次调用</span></div><div class="ev-budget ev-c1"><strong>原生多步</strong><span><b>10</b> 个阶段</span><span>每轮 <b>10</b> 次调用</span></div><div class="ev-budget ev-c2"><strong>OneFlow</strong><span><b>10</b> 个阶段</span><span>稳态每轮 <b>1</b> 次调用</span></div><div class="ev-budget ev-c3"><strong>OneFlow+</strong><span><b>10</b> 个阶段</span><span>稳态每轮 <b>1</b> 次调用</span></div></div>
+  <p class="ev-takeaway" aria-live="polite">Fast-WAM 在全部场景中的回合成功率为 91.0%（OneFlow）和 89.4%（原生十步）。两者稳态每轮分别调用 1 次和 10 次。</p>
+  <p class="ev-note ev-reading" data-protocol>论文表 3 覆盖 50 项任务，每项各有 100 个标准场景和 100 个随机化场景。每种配置共 10,000 个回合。</p>
+  <details class="ev-data ev-reading"><summary>查看四个策略的数值与评测口径</summary><div id="res-fastwam" class="ev-table-wrap" data-policy="fast" data-policy-name="Fast-WAM" data-platform="RoboTwin 2.0" data-measure="回合成功率" data-setting="H = 32 · E = 8"><table><caption id="res-fastwam-title">Fast-WAM · RoboTwin 2.0 · H = 32 · E = 8。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">全部场景</th><th scope="col">标准场景</th><th scope="col">随机化场景</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>40.8</td><td>41.2</td><td>40.4</td></tr><tr><th scope="row">原生多步</th><td>10</td><td>10</td><td>89.4</td><td>89.7</td><td>89.1</td></tr><tr><th scope="row">OneFlow</th><td>10</td><td>1</td><td>91.0</td><td>91.1</td><td>90.8</td></tr><tr><th scope="row">OneFlow+</th><td>10</td><td>1</td><td>91.1</td><td>91.3</td><td>90.9</td></tr></tbody></table><p>论文表 3 覆盖 50 项任务，每项各有 100 个标准场景和 100 个随机化场景。每种配置共 10,000 个回合。</p><p class="res-insight">把十步求解直接缩成一步，回合成功率降到 40.8%。把十个阶段摊到连续几轮重规划之后，OneFlow 稳态每轮只做一次批量调用，回合成功率为 91.0%，原生十步为 89.4%。例如，OneFlow 成功完成了 10,000 个测试回合中的 9,098 个。</p></div><div id="res-xiaomi" class="ev-table-wrap" data-policy="xiaomi" data-policy-name="Xiaomi Robotics 0" data-platform="SimplerEnv" data-measure="平均成功率" data-setting="H = 8 · E = 1"><table><caption id="res-xiaomi-title">Xiaomi Robotics 0 · SimplerEnv · H = 8 · E = 1。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">三组设置平均</th><th scope="col">Google Robot · VM</th><th scope="col">Google Robot · VA</th><th scope="col">WidowX</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>72.0</td><td>84.2</td><td>69.9</td><td>62.0</td></tr><tr><th scope="row">原生多步</th><td>5</td><td>5</td><td>74.0</td><td>88.7</td><td>72.6</td><td>60.8</td></tr><tr><th scope="row">OneFlow</th><td>5</td><td>1</td><td>81.3</td><td>89.2</td><td>75.9</td><td>78.6</td></tr><tr><th scope="row">OneFlow+</th><td>5</td><td>1</td><td>79.2</td><td>88.6</td><td>75.5</td><td>73.4</td></tr></tbody></table><p>论文表 2 的总平均对三组成功率等权。VM 为 Google Robot 视觉匹配，VA 为变体聚合。WidowX 统计四项任务的完成率。</p><p class="res-insight">提升在不同机器人上并不均匀。以 WidowX 的胡萝卜摆盘任务为例，原生五步的成功率为 20.8%，OneFlow 为 63.9%，开启引擎后为 54.9%。</p></div><div id="res-groot" class="ev-table-wrap" data-policy="n17" data-policy-name="GR00T N1.7" data-platform="SimplerEnv" data-measure="平均成功率" data-setting="H = 8 · E = 1"><table><caption id="res-groot-title">GR00T N1.7 · SimplerEnv · H = 8 · E = 1。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">三组设置平均</th><th scope="col">Google Robot · VM</th><th scope="col">Google Robot · VA</th><th scope="col">WidowX</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>54.8</td><td>73.0</td><td>56.8</td><td>34.5</td></tr><tr><th scope="row">原生多步</th><td>4</td><td>4</td><td>59.9</td><td>77.3</td><td>63.0</td><td>39.2</td></tr><tr><th scope="row">OneFlow</th><td>4</td><td>1</td><td>62.5</td><td>77.2</td><td>67.3</td><td>42.9</td></tr><tr><th scope="row">OneFlow+</th><td>4</td><td>1</td><td>62.1</td><td>78.2</td><td>65.5</td><td>42.7</td></tr></tbody></table><p>论文表 2 的总平均对三组成功率等权。VM 为 Google Robot 视觉匹配，VA 为变体聚合。WidowX 统计四项任务的完成率。</p><p class="res-insight">平均值掩盖了很接近的对照。在 Google Robot 的视觉匹配设置中，原生四步为 77.3%，OneFlow 为 77.2%，两者成功概率之差的配对 95% 置信区间包含零。</p></div><div id="res-fm" class="ev-table-wrap" data-policy="fm" data-policy-name="流匹配策略（RGB）" data-platform="RoboMimic" data-measure="成功率" data-setting="H = 16 · E = 4"><table><caption id="res-fm-title">流匹配策略（RGB） · RoboMimic · H = 16 · E = 4。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">五项任务平均</th><th scope="col">Lift</th><th scope="col">Can</th><th scope="col">Square</th><th scope="col">Hang</th><th scope="col">Transport</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>43.6</td><td>4.0</td><td>100.0</td><td>86.0</td><td>18.0</td><td>10.0</td></tr><tr><th scope="row">原生多步</th><td>10</td><td>10</td><td>61.2</td><td>100.0</td><td>100.0</td><td>86.0</td><td>14.0</td><td>6.0</td></tr><tr><th scope="row">OneFlow</th><td>8</td><td>1</td><td>64.7</td><td>100.0</td><td>100.0</td><td>89.3</td><td>20.0</td><td>14.0</td></tr><tr><th scope="row">OneFlow+</th><td>8</td><td>1</td><td>65.1</td><td>100.0</td><td>100.0</td><td>88.0</td><td>18.0</td><td>19.3</td></tr></tbody></table><p>论文表 1 对五项任务等权。每项有 50 个固定初始场景，原生采样每个场景运行一次，两种 OneFlow 配置每个场景使用三组配对噪声。</p><p class="res-insight">五项任务并非同样困难。OneFlow 在 Lift 和 Can 上都达到 100%，在 Transport 上只有 14%。平均成功率上升，与个别任务仍然困难，可以同时成立。</p></div><p>H 为每轮预测动作数，E 为每轮执行动作数。调用统计初始化后每轮去噪网络的前向次数。OneFlow+ 同时启用 OneFlow 与执行引擎。</p></details>
+</figure>
 
-          <h3 id="continuation"><span id="continuation-heading">机制对照：起作用的是多看几次观测，还是接着修正同一段动作</span></h3>
+          <h3 id="continuation"><span id="continuation-heading">固定观测和计算预算，跨轮修正同一段动作有何收益？</span></h3>
           <div class="prose">
             <p>相邻动作窗口重叠，使 OneFlow 可以用连续几轮的观测修正同一段未来动作。这带来一个竞争解释：也许只要把历史观测拿出来用，从头求解也能得到同样的收益。论文用两组原生采样来区分。两组都依次用最近三次状态观测引导 3、4、3 步去噪，其中两次是历史观测，一次是当前观测。第一组在本轮从噪声出发，一次解完。第二组提前两轮开始，每执行四个动作就对齐窗口，接着修正尚未完成的那段动作。两组使用同一个原生网络和相同的源噪声，稳态下每轮都调用十次网络。</p>
           </div>
@@ -444,7 +525,7 @@
               <strong data-step="1">61.2%</strong>
             </div>
             <div class="ctrl-lane is-flow" data-step="2">
-              <b>OneFlow<small>每轮 1 次批量调用</small></b>
+              <b>OneFlow<small>稳态每轮 1 次批量调用</small></b>
               <span class="ctrl-slot"><i class="bt">批量</i></span><span class="ctrl-slot"><i class="bt">批量</i></span><span class="ctrl-slot"><i class="bt">批量</i></span>
               <strong>60.0%</strong>
             </div>
@@ -464,72 +545,38 @@
   </figure></div>
 </details>
 
-          <h3 id="scaling"><span id="scaling-heading">测试时计算：一次调用里多放几个阶段</span></h3>
+          <h3 id="scaling"><span id="scaling-heading">一次前向传播里可以放多少个去噪阶段？</span></h3>
           <div class="prose">
             <p>并行阶段数 <var>N</var> 决定一次调用里做多少去噪工作。在 Fast-WAM 的 Handover Block 任务上，把 <var>N</var> 从 1 增到 10，OneFlow 的成功率从 18% 升到 88%。同一组测量里，<var>N</var> 取 1 到 10 的全部设置，稳态时延中位数都落在 119.3–126.2 ms 之间。批次变大会增加计算量，但在这个测量范围内，等待时间几乎不随 <var>N</var> 变化。原生采样的调用次数等于 <var>N</var>，它的时延随 <var>N</var> 增长，见下方论文图 3 的灰色柱。</p>
           </div>
-          <figure class="fig scale" id="scaling-fig" aria-labelledby="scale-title">
-            <figcaption class="fig-head"><strong id="scale-title">Handover Block：并行阶段数从 1 到 10</strong><span>Fast-WAM · OneFlow · 未启用执行引擎 · 数据取自论文图 3</span></figcaption>
-            <div class="scale-body">
-              <div class="scale-plot"><svg viewBox="0 0 640 372" role="img" aria-label="Handover Block 任务上，OneFlow 的并行阶段数为 1、2、5、10 时，成功率依次为 18%、52%、84%、88%，稳态时延中位数依次为 126.2、119.3、122.9、123.1 毫秒。">
-                <text class="tt" x="70" y="20">成功率（%）</text>
-                <line class="gl" x1="70" y1="40" x2="610" y2="40"/><line class="gl" x1="70" y1="120" x2="610" y2="120"/><line class="gl" x1="70" y1="200" x2="610" y2="200"/>
-                <text class="ax" x="60" y="45" text-anchor="end">100</text><text class="ax" x="60" y="125" text-anchor="end">50</text><text class="ax" x="60" y="205" text-anchor="end">0</text>
-                <polyline class="ln" points="100,171.2 153.3,116.8 313.3,65.6 580,59.2"/>
-                <circle class="pt" cx="100" cy="171.2" r="6.5"/><circle class="pt" cx="153.3" cy="116.8" r="6.5"/><circle class="pt" cx="313.3" cy="65.6" r="6.5"/><circle class="pt" cx="580" cy="59.2" r="6.5"/>
-                <text class="vl" x="100" y="156" text-anchor="middle">18%</text><text class="vl" x="153.3" y="101" text-anchor="middle">52%</text><text class="vl" x="313.3" y="91" text-anchor="middle">84%</text><text class="vl" x="580" y="85" text-anchor="middle">88%</text>
-                <g data-step="1">
-                  <text class="tt" x="70" y="246">稳态时延中位数（ms）</text>
-                  <line class="gl" x1="70" y1="330" x2="610" y2="330"/>
-                  <text class="ax" x="60" y="335" text-anchor="end">0</text>
-                  <rect class="br" x="83" y="269.4" width="34" height="60.6"/><rect class="br" x="136.3" y="272.7" width="34" height="57.3"/><rect class="br" x="296.3" y="271" width="34" height="59"/><rect class="br" x="563" y="270.9" width="34" height="59.1"/>
-                  <text class="vl" x="100" y="263" text-anchor="middle">126.2</text><text class="vl" x="153.3" y="266" text-anchor="middle">119.3</text><text class="vl" x="313.3" y="264" text-anchor="middle">122.9</text><text class="vl" x="580" y="264" text-anchor="middle">123.1</text>
-                </g>
-                <text class="ax" x="100" y="356" text-anchor="middle">N = 1</text><text class="ax" x="153.3" y="356" text-anchor="middle">2</text><text class="ax" x="313.3" y="356" text-anchor="middle">5</text><text class="ax" x="580" y="356" text-anchor="middle">10</text>
-              </svg>
-                <table class="scale-values" aria-label="交接方块的阶段数、成功率和时延">
-                  <thead><tr><th scope="col">阶段数 N</th><th scope="col">成功率</th><th scope="col" data-step="1">时延 (ms)</th></tr></thead>
-                  <tbody>
-                    <tr><th scope="row">1</th><td>18%</td><td data-step="1">126.2</td></tr>
-                    <tr><th scope="row">2</th><td>52%</td><td data-step="1">119.3</td></tr>
-                    <tr><th scope="row">5</th><td>84%</td><td data-step="1">122.9</td></tr>
-                    <tr><th scope="row">10</th><td>88%</td><td data-step="1">123.1</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <dl class="reads">
-                <div><dt>成功率</dt><dd>18% → 88%</dd><dd class="sub">N 从 1 增到 10</dd></div>
-                <div data-step="1"><dt>稳态时延中位数</dt><dd>119.3–126.2 <small>ms</small></dd><dd class="sub">N = 1 到 10 的全部设置</dd></div>
-              </dl>
-            </div>
-            <p class="fig-note read-only">图中选取交接方块这一项任务的四个阶段数。每种设置评测 25 个标准场景和 25 个随机化场景，共 50 个回合。时延取 A100 预热后的中位数。</p>
-          </figure>
-          <figure class="paper-fig"><a href="oneflow/scaling.webp" aria-label="查看原尺寸的阶段数、成功率和时延曲线"><img src="oneflow/scaling.webp" width="1978" height="540" loading="lazy" alt="论文图 3。四个任务上，去噪阶段数从 1 增到 10 时的成功率折线和时延柱。原生采样的时延柱随阶段数明显升高，OneFlow 的时延柱高度变化很小。"></a><figcaption><strong>论文图 3 原图。</strong>四个任务依次是 Handover Block、Stamp Seal、Open Microwave 和 Stack Bowls Three。折线是成功率，柱形是预热后的动作生成时延，深蓝为 OneFlow，灰色为原生采样。两种方法都未启用执行引擎。</figcaption></figure>
+          <figure class="ev-figure ev-scaling" id="scaling-fig" data-evidence="scaling" aria-label="Handover Block 的阶段数、成功率与稳态时延">
+  <figcaption class="ev-heading"><div><small>Fast-WAM · RoboTwin 2.0 · 论文图 3</small><strong>Handover Block</strong></div><span class="ev-tag">两种采样器均未启用引擎</span></figcaption>
+  <div class="ev-trends"><section class="ev-trend-panel"><h4>回合成功率（%）</h4><div class="ev-readouts"><span><i class="ev-legend-native"></i>原生 <b>72%</b></span><span><i class="ev-legend-flow"></i>OneFlow <b>88%</b></span></div><svg class="ev-trend" data-limit="100" viewBox="0 0 350 178" role="img" aria-label="横坐标为阶段数一至十，纵坐标为回合成功率。虚线为原生，实线为 OneFlow。"><g class="ev-chart-grid"><line x1="39" x2="327" y1="145.0" y2="145.0"/><text x="31" y="149.0" text-anchor="end">0</text><line x1="39" x2="327" y1="114.0" y2="114.0"/><text x="31" y="118.0" text-anchor="end">25</text><line x1="39" x2="327" y1="83.0" y2="83.0"/><text x="31" y="87.0" text-anchor="end">50</text><line x1="39" x2="327" y1="52.0" y2="52.0"/><text x="31" y="56.0" text-anchor="end">75</text><line x1="39" x2="327" y1="21.0" y2="21.0"/><text x="31" y="25.0" text-anchor="end">100</text><text x="39" y="166" text-anchor="middle">1</text><text x="71" y="166" text-anchor="middle">2</text><text x="103" y="166" text-anchor="middle">3</text><text x="135" y="166" text-anchor="middle">4</text><text x="167" y="166" text-anchor="middle">5</text><text x="199" y="166" text-anchor="middle">6</text><text x="231" y="166" text-anchor="middle">7</text><text x="263" y="166" text-anchor="middle">8</text><text x="295" y="166" text-anchor="middle">9</text><text x="327" y="166" text-anchor="middle">10</text></g><line class="ev-cursor" x1="327" x2="327" y1="17" y2="146"/><g class="ev-series ev-s0"><polyline points="39,107.800 71,55.720 103,58.200 135,50.760 167,53.240 199,48.280 231,45.800 263,45.800 295,50.760 327,55.720"/><circle cx="39" cy="107.800" r="2.7"/><circle cx="71" cy="55.720" r="2.7"/><circle cx="103" cy="58.200" r="2.7"/><circle cx="135" cy="50.760" r="2.7"/><circle cx="167" cy="53.240" r="2.7"/><circle cx="199" cy="48.280" r="2.7"/><circle cx="231" cy="45.800" r="2.7"/><circle cx="263" cy="45.800" r="2.7"/><circle cx="295" cy="50.760" r="2.7"/><circle cx="327" cy="55.720" r="2.7"/></g><g class="ev-series ev-s1"><polyline points="39,122.680 71,80.520 103,50.760 135,53.240 167,40.840 199,40.840 231,40.840 263,40.840 295,38.360 327,35.880"/><circle cx="39" cy="122.680" r="2.7"/><circle cx="71" cy="80.520" r="2.7"/><circle cx="103" cy="50.760" r="2.7"/><circle cx="135" cy="53.240" r="2.7"/><circle cx="167" cy="40.840" r="2.7"/><circle cx="199" cy="40.840" r="2.7"/><circle cx="231" cy="40.840" r="2.7"/><circle cx="263" cy="40.840" r="2.7"/><circle cx="295" cy="38.360" r="2.7"/><circle cx="327" cy="35.880" r="2.7"/></g><circle class="ev-pick ev-s0" cx="327" cy="55.720" r="4.8"/><circle class="ev-pick ev-s1" cx="327" cy="35.880" r="4.8"/></svg></section><section class="ev-trend-panel"><h4>动作生成时延中位数（ms）</h4><div class="ev-readouts"><span><i class="ev-legend-native"></i>原生 <b>469.2 ms</b></span><span><i class="ev-legend-flow"></i>OneFlow <b>123.1 ms</b></span></div><svg class="ev-trend" data-limit="500" viewBox="0 0 350 178" role="img" aria-label="横坐标为阶段数一至十，纵坐标为稳态时延中位数。虚线为原生，实线为 OneFlow。"><g class="ev-chart-grid"><line x1="39" x2="327" y1="145.0" y2="145.0"/><text x="31" y="149.0" text-anchor="end">0</text><line x1="39" x2="327" y1="114.0" y2="114.0"/><text x="31" y="118.0" text-anchor="end">125</text><line x1="39" x2="327" y1="83.0" y2="83.0"/><text x="31" y="87.0" text-anchor="end">250</text><line x1="39" x2="327" y1="52.0" y2="52.0"/><text x="31" y="56.0" text-anchor="end">375</text><line x1="39" x2="327" y1="21.0" y2="21.0"/><text x="31" y="25.0" text-anchor="end">500</text><text x="39" y="166" text-anchor="middle">1</text><text x="71" y="166" text-anchor="middle">2</text><text x="103" y="166" text-anchor="middle">3</text><text x="135" y="166" text-anchor="middle">4</text><text x="167" y="166" text-anchor="middle">5</text><text x="199" y="166" text-anchor="middle">6</text><text x="231" y="166" text-anchor="middle">7</text><text x="263" y="166" text-anchor="middle">8</text><text x="295" y="166" text-anchor="middle">9</text><text x="327" y="166" text-anchor="middle">10</text></g><line class="ev-cursor" x1="327" x2="327" y1="17" y2="146"/><g class="ev-series ev-s0"><polyline points="39,114.685 71,104.689 103,96.059 135,87.142 167,76.076 199,66.714 231,59.298 263,49.984 295,37.908 327,28.635"/><circle cx="39" cy="114.685" r="2.7"/><circle cx="71" cy="104.689" r="2.7"/><circle cx="103" cy="96.059" r="2.7"/><circle cx="135" cy="87.142" r="2.7"/><circle cx="167" cy="76.076" r="2.7"/><circle cx="199" cy="66.714" r="2.7"/><circle cx="231" cy="59.298" r="2.7"/><circle cx="263" cy="49.984" r="2.7"/><circle cx="295" cy="37.908" r="2.7"/><circle cx="327" cy="28.635" r="2.7"/></g><g class="ev-series ev-s1"><polyline points="39,113.708 71,115.408 103,114.732 135,114.973 167,114.519 199,114.378 231,114.779 263,114.336 295,114.615 327,114.463"/><circle cx="39" cy="113.708" r="2.7"/><circle cx="71" cy="115.408" r="2.7"/><circle cx="103" cy="114.732" r="2.7"/><circle cx="135" cy="114.973" r="2.7"/><circle cx="167" cy="114.519" r="2.7"/><circle cx="199" cy="114.378" r="2.7"/><circle cx="231" cy="114.779" r="2.7"/><circle cx="263" cy="114.336" r="2.7"/><circle cx="295" cy="114.615" r="2.7"/><circle cx="327" cy="114.463" r="2.7"/></g><circle class="ev-pick ev-s0" cx="327" cy="28.635" r="4.8"/><circle class="ev-pick ev-s1" cx="327" cy="114.463" r="4.8"/></svg></section></div>
+  <div class="ev-slider-row"><label>去噪阶段数 <b>N = <span data-stage-value>10</span></b><input class="ev-js" hidden type="range" min="1" max="10" value="10" step="1" aria-label="两幅图共用的去噪阶段数" aria-valuetext="10 个阶段"></label></div>
+  <p class="ev-takeaway" aria-live="polite">N = 10 时，原生采样每轮依次调用 10 次网络。初始化后，OneFlow 将 10 个阶段合在一次批量调用里。</p>
+  <p class="ev-note ev-reading">每个配置评测 25 个标准场景和 25 个随机化场景。时延取 A100 预热后的中位数。每轮预测 32 步、执行 8 步。</p>
+  <details class="ev-data ev-reading"><summary>查看十个阶段数的原始读数</summary><div class="ev-table-wrap"><table><caption>论文图 3 的 Handover Block 数据</caption><thead><tr><th scope="col">N</th><th scope="col">原生（%）</th><th scope="col">OneFlow（%）</th><th scope="col">原生（ms）</th><th scope="col">OneFlow（ms）</th></tr></thead><tbody><tr><th scope="row">1</th><td>30</td><td>18</td><td>122.2</td><td>126.2</td></tr><tr><th scope="row">2</th><td>72</td><td>52</td><td>162.5</td><td>119.3</td></tr><tr><th scope="row">3</th><td>70</td><td>76</td><td>197.3</td><td>122.0</td></tr><tr><th scope="row">4</th><td>76</td><td>74</td><td>233.3</td><td>121.1</td></tr><tr><th scope="row">5</th><td>74</td><td>84</td><td>277.9</td><td>122.9</td></tr><tr><th scope="row">6</th><td>78</td><td>84</td><td>315.7</td><td>123.5</td></tr><tr><th scope="row">7</th><td>80</td><td>84</td><td>345.6</td><td>121.9</td></tr><tr><th scope="row">8</th><td>80</td><td>84</td><td>383.1</td><td>123.6</td></tr><tr><th scope="row">9</th><td>76</td><td>86</td><td>431.8</td><td>122.5</td></tr><tr><th scope="row">10</th><td>72</td><td>88</td><td>469.2</td><td>123.1</td></tr></tbody></table></div></details>
+</figure>
+          <details class="research-detail "><summary>展开论文图 3 的全部四项任务</summary>
+<figure class="paper-fig"><a href="oneflow/scaling.webp" aria-label="查看原尺寸的阶段数、成功率和时延曲线"><img src="oneflow/scaling.webp" width="1978" height="540" loading="lazy" alt="论文图 3。四个任务上，去噪阶段数从 1 增到 10 时的成功率折线和时延柱。原生采样的时延柱随阶段数明显升高，OneFlow 的时延柱高度变化很小。"></a><figcaption><strong>论文图 3 原图。</strong>四个任务依次是 Handover Block、Stamp Seal、Open Microwave 和 Stack Bowls Three。折线是成功率，柱形是预热后的动作生成时延，深蓝为 OneFlow，灰色为原生采样。两种方法都未启用执行引擎。</figcaption></figure>
+</details>
 
-          <h3 id="latency"><span id="latency-heading">实测耗时：先让两边用上同一个引擎</span></h3>
+          <h3 id="latency"><span id="latency-heading">在同一个执行引擎上能快多少？</span></h3>
           <div class="prose">
             <p>论文报告 Fast-WAM 上 30.3 倍的加速，比较的是未优化的原生十步（503.53 ms）和 OneFlow+（16.62 ms）。这个数字包含两部分。只改变采样方式、不启用引擎时，耗时从 503.53 ms 降到 103.20 ms。再启用执行引擎，降到 16.62 ms。</p>
             <p>要知道采样方式本身贡献了多少，应当给原生采样也用上同一个引擎。这时原生十步为 51.83 ms，OneFlow+ 相对它约快 3.1 倍。原生一步为 14.80 ms，OneFlow+ 同样每轮调用一次去噪网络，其动作生成总时延比原生一步高 12.3%。原生一步最快，可是它在 RoboTwin 上的回合成功率只有 40.8%。</p>
           </div>
-          <figure class="fig lat" id="latency-fig" aria-labelledby="lat-title">
-            <figcaption class="fig-head"><strong id="lat-title">Fast-WAM 生成一次动作的耗时</strong><span>A100 · 中位数 · 论文表 4、补充材料表 10</span></figcaption>
-            <div class="lat-body">
-              <div class="lat-bars">
-                <div class="lat-row is-raw"><span class="lat-name">原生十步<small>未启用引擎</small></span><span class="lat-track" aria-hidden="true"><i></i><i></i></span><b>503.53</b></div>
-                <div class="lat-row" data-step="1"><span class="lat-name">原生十步<small>同一引擎</small></span><span class="lat-track" aria-hidden="true"><i style="--v:86.38"></i></span><b>51.83</b></div>
-                <div class="lat-row is-flow"><span class="lat-name">OneFlow+<small>同一引擎</small></span><span class="lat-track" aria-hidden="true"><i style="--v:27.7"></i></span><b>16.62</b></div>
-                <div class="lat-row" data-step="2"><span class="lat-name">原生一步<small>同一引擎</small></span><span class="lat-track" aria-hidden="true"><i style="--v:24.67"></i></span><b>14.80</b></div>
-                <p class="lat-scale" aria-hidden="true"><span><i>0</i><i>20</i><i>40</i><i>60 ms</i></span></p>
-                <p class="lat-off"><span>第一行超出刻度，条形在断口处截短。</span></p>
-              </div>
-              <dl class="reads">
-                <div><dt>OneFlow+ 对未优化的原生十步</dt><dd>30.3 倍</dd></div>
-                <div data-step="1"><dt>对同一引擎的原生十步</dt><dd>约 3.1 倍</dd></div>
-                <div data-step="2"><dt>比同一引擎的原生一步</dt><dd>多 12.3%</dd></div>
-              </dl>
-            </div>
-          </figure>
-          <table class="plain-table">
+          <figure class="ev-figure ev-latency" id="latency-fig" data-evidence="latency" aria-label="Fast-WAM 时延与三种原生基线">
+  <figcaption class="ev-heading"><div><small>Fast-WAM · A100 · 论文表 4、补充材料表 10</small><strong>选择原生基线</strong></div><span class="ev-tag">共同参照 · OneFlow+ 16.62 ms</span></figcaption>
+  <div class="ev-toolbar ev-js" role="group" aria-label="选择原生采样基线" hidden><button type="button" data-base="0" aria-pressed="true">十步 · 无引擎 <b>30.3×</b></button><button type="button" data-base="1" aria-pressed="false">十步 · 同引擎 <b>3.1×</b></button><button type="button" data-base="2" aria-pressed="false">一步 · 同引擎 <b>+12.3%</b></button></div>
+  <div class="ev-lat-summary"><div class="ev-ratio"><strong data-ratio>30.3×</strong><span data-ratio-name>全栈加速比</span></div><div><b data-equation>503.53 ÷ 16.62</b><span data-lat-description>从未优化原生十步切换到 OneFlow+，同时改变了采样方法和执行引擎。</span></div></div>
+  <div class="ev-time-scale" role="img" aria-label="预热后中位数，原生十步无引擎 503.53 毫秒，OneFlow+ 16.62 毫秒。"><div class="ev-time-axis"><i style="left:0.000%"><span>10</span></i><i style="left:16.929%"><span>20</span></i><i style="left:39.309%"><span>50</span></i><i style="left:56.238%"><span>100</span></i><i style="left:73.168%"><span>200</span></i><i style="left:95.547%"><span>500</span></i></div><div class="ev-time-distance" style="--lo:12.408%;--hi:95.719%"></div><div class="ev-time-mark ev-time-base ev-align-end" style="left:95.719%"><span>原生 <b>503.53 ms</b></span></div><div class="ev-time-mark ev-time-flow" style="left:12.408%"><span>OneFlow+ <b>16.62 ms</b></span></div></div>
+  <p class="ev-time-caption">动作生成时延（ms） · 对数刻度 · 越短越快</p>
+  <p class="ev-note ev-reading">使用 Lift Pot 任务的输入，批大小为 1，从 CPU 上的观测计至解码后的动作返回 CPU，取预热后中位数。闭环成功率单独评测。</p>
+  <details class="ev-data ev-reading"><summary>查看各基线的时延与比值</summary><div class="ev-table-wrap"><table><caption>OneFlow+ 固定为十个并行阶段、16.62 ms</caption><thead><tr><th scope="col">原生基线</th><th scope="col">中位数</th><th scope="col">与 OneFlow+ 的比较</th></tr></thead><tbody><tr><th scope="row">十步，无引擎</th><td>503.53 ms</td><td>原生时延为 30.3 倍</td></tr><tr><th scope="row">十步，同引擎</th><td>51.83 ms</td><td>原生时延为 3.1 倍</td></tr><tr><th scope="row">一步，同引擎</th><td>14.80 ms</td><td>OneFlow+ 时延高 12.3%</td></tr></tbody></table></div></details>
+</figure>
+          <details class="research-detail "><summary>查看同一策略启用引擎前后的完整计时</summary>
+<table class="plain-table">
             <caption>Fast-WAM 动作生成时延中位数（ms）</caption>
             <thead><tr><th scope="col">采样配置</th><th scope="col">未启用引擎</th><th scope="col">启用引擎</th></tr></thead>
             <tbody>
@@ -538,6 +585,7 @@
               <tr class="is-flow"><th scope="row">OneFlow</th><td>103.20</td><td>16.62</td></tr>
             </tbody>
           </table>
+</details>
           <p class="res-note">论文表 4 与补充材料表 10。A100，预热后计时，批大小为 1，取中位数。Fast-WAM 使用 Lift Pot 任务的输入计时，从 CPU 上的观测到解码后返回 CPU 的动作。50 项任务的成功率由单独的闭环评测得到。</p>
         </div>
       </div>
@@ -549,6 +597,41 @@
         <div class="chapter-main">
           <h2 id="field-title">换到会动的目标，机械臂跟得上吗</h2>
           <p class="chapter-lead">回击冰球和抓滚动的瓶子，考验的是能否抓住短暂的接触时机。跟随小车和在传送带上叠碗，要求持续修正动作。四项任务都使用同一台 Franka 机械臂。研究者为每项任务收集 100 条示范来训练 GR00T N1.7，再固定该任务的策略权重比较采样方法。</p>
+
+          <div data-robot-observatory></div>
+<template id="robot-observatory-template">
+  <section class="ro-viewer" aria-label="四项实机任务的录像选帧与计分">
+    <div class="ro-picks" role="group" aria-label="选择实机任务">
+      <button type="button" data-task="hockey" aria-pressed="true">回击冰球</button>
+      <button type="button" data-task="bottle" aria-pressed="false">抓滚动瓶</button>
+      <button type="button" data-task="car" aria-pressed="false">跟随小车</button>
+      <button type="button" data-task="conveyor" aria-pressed="false">传送带叠碗</button>
+    </div>
+    <div class="ro-layout">
+      <figure class="ro-player">
+        <div class="ro-screen"><img class="ro-photo" width="1080" height="864" alt=""><span class="ro-clock"></span></div>
+        <figcaption class="ro-caption"><span class="ro-counter"></span><span class="ro-description"></span></figcaption>
+        <div class="ro-transport" role="group" aria-label="播放与逐帧控制">
+          <button type="button" class="ro-play" aria-pressed="false"><span class="ro-play-symbol" aria-hidden="true">▶</span><span class="ro-play-label"></span></button>
+          <button type="button" class="ro-prev" aria-label="上一张实拍画面">←</button>
+          <div class="ro-ticks" role="group" aria-label="按相对首帧的时间选择画面"></div>
+          <button type="button" class="ro-next" aria-label="下一张实拍画面">→</button>
+        </div>
+        <p class="ro-timenote"></p>
+      </figure>
+      <div class="ro-protocol">
+        <p class="ro-source"></p>
+        <h3 class="ro-title"></h3>
+        <p class="ro-rule"></p>
+        <div class="ro-scores">
+          <h4 class="ro-metric"></h4>
+          <dl class="ro-series"></dl>
+        </div>
+      </div>
+    </div>
+    <p class="ro-sr ro-status" role="status" aria-live="polite" aria-atomic="true"></p>
+  </section>
+</template>
 
           <div class="field-atlas" data-field-atlas>
             <fieldset class="field-picker" hidden>
@@ -709,6 +792,7 @@
             <h3 lang="en">Parallelizing Flows for One-Pass Action Generation</h3>
             <p>方法推导见论文第 3 节与补充材料算法 1。图 1 并列展示去噪调度与冰球回击。图 2 解释方法，图 3 检验计算预算，图 4 分析动作连续性，图 5 展示四项实机任务。主实验见表 1–6。补充材料的图 6 与图 8 分析显存和跨轮复用，表 8、10、11、14 分别给出置信区间、同引擎延迟、目标扰动及实机对照。</p>
             <p>本页的调度示意、动作窗口、流式对齐与并行重建图解依据论文图 1 和图 2 重绘。实验数据取自论文相应图表。论文图 2、图 3 和图 4 的原图附在对应小节。</p>
+            <p class="res-note">调用时序示意使用项目站的机械臂轨迹。Franka Panda 外观来自 <a href="https://github.com/google-deepmind/mujoco_menagerie/tree/main/franka_emika_panda">MuJoCo Menagerie</a>，此处重新渲染为可拖动的姿态序列。<a href="oneflow/robot-mesh-license.txt">模型许可</a></p>
             <h3>OneFlow 项目网站</h3>
             <p>交互示例沿用项目站每轮预测 8 步、执行 2 步的设置。Key insight 和 Method 栏目分别解释动作窗口重叠与跨轮去噪。<a href="https://github.com/ky-ji/paraflow/tree/project-page">项目站源码（需仓库权限）</a></p>
           </div>
@@ -724,20 +808,20 @@
         <div><button id="deck-notes-button" aria-controls="deck-notes" aria-pressed="false" type="button">讲者提示</button><button id="deck-full" type="button" hidden>全屏</button><button id="deck-exit" type="button">退出演讲</button></div>
       </div>
       <div class="deck-stage"><div class="deck-canvas">
-        <section class="slide is-dark slide-cover" data-section="main" data-title="OneFlow · 多步去噪，单次前向">
+        <section class="slide is-dark slide-cover" data-section="main" data-theme="cover" data-title="OneFlow · 多步去噪，单次前向">
           <div class="slide-body">
             <div>
               <p class="slide-label">2026.11.25 · 机器人学习</p>
-              <h2 class="slide-word" lang="en" tabindex="-1">OneFlow</h2>
+              <h2 class="slide-word" lang="en" tabindex="-1">One<i>Flow</i></h2>
               <p class="cover-sub">多步去噪，单次前向</p>
               <p class="cover-paper" lang="en">Parallelizing Flows for One-Pass Action Generation</p>
               <p class="cover-q">已有的预训练流策略，能否在一次前向传播的时延量级上，保留多步采样的动作质量？</p>
             </div>
-            <div class="slot" data-clone="cover-sched"></div>
+            <div class="slot cover-art-slot" data-clone="hero-art"></div>
           </div>
         </section>
 
-        <section class="slide s-loop" data-section="problem" data-title="从十步减到一步，成功率和闭环等待怎样变化？" hidden>
+        <section class="slide s-loop" data-section="problem" data-theme="problem" data-title="从十步减到一步，成功率和闭环等待怎样变化？" hidden>
           <header class="slide-head"><p class="slide-label">引言 · 串行去噪</p><h2 tabindex="-1">从十步减到一步，成功率和闭环等待怎样变化？</h2></header>
           <div class="slide-body">
             <div class="slot" data-clone="serial-loop" style="--fs:1.2"></div>
@@ -747,7 +831,7 @@
           <footer class="slide-foot">论文引言与公式 1 · 示例取自论文表 3：Fast-WAM，RoboTwin 2.0，回合成功率</footer>
         </section>
 
-        <section class="slide s-question" data-section="question" data-title="已有的加速路线，各付出了什么代价？" hidden>
+        <section class="slide s-question" data-section="question" data-theme="problem" data-title="已有的加速路线，各付出了什么代价？" hidden>
           <header class="slide-head"><p class="slide-label">引言 · 研究问题</p><h2 tabindex="-1">已有的加速路线，各付出了什么代价？</h2></header>
           <div class="slide-body">
             <div class="slot" data-clone="routes-fig"></div>
@@ -756,7 +840,7 @@
           <footer class="slide-foot">论文引言 · 三条路线的代价与研究问题均按引言的论证顺序排列</footer>
         </section>
 
-        <section class="slide s-axes" data-section="action-path" data-title="跟着动作 9 看四轮：位置 7、5、3、1" hidden>
+        <section class="slide s-axes" data-section="action-path" data-theme="method" data-title="跟着动作 9 看四轮：位置 7、5、3、1" hidden>
           <header class="slide-head"><p class="slide-label">方法 · 两条时间轴</p><h2 tabindex="-1">跟着动作 9 看四轮：位置 7、5、3、1</h2></header>
           <div class="slide-body">
             <div class="slot" data-clone="action-path" style="--fs:1.1"></div>
@@ -765,15 +849,15 @@
           <footer class="slide-foot">示意设置：预测 H = 8，每轮执行 E = 2，去噪阶段 N = 4 · 对应论文图 1、图 2</footer>
         </section>
 
-        <section class="slide s-walk" data-section="replanning-demo" data-title="稳态每轮一次批量调用，一次算四个阶段" data-steps="4" hidden>
-          <header class="slide-head"><p class="slide-label">方法 · 滚动流水线</p><h2 tabindex="-1">稳态每轮一次批量调用，一次算四个阶段</h2></header>
+        <section class="slide s-walk" data-section="replanning-demo" data-theme="method" data-title="同样五段动作，何时完成第五段？" data-steps="4" hidden>
+          <header class="slide-head"><p class="slide-label">方法 · 滚动流水线</p><h2 tabindex="-1">同样五段动作，何时完成第五段？</h2></header>
           <div class="slide-body">
-            <div class="slot" id="deck-demo-slot" data-clone="replanning-demo"></div>
+            <div class="slot" id="deck-demo-slot" data-clone="call-studio"></div>
           </div>
-          <footer class="slide-foot">示意设置同上 · 回合开始时的初始化仍使用原生多步采样 · 调用次数不等于耗时，实测见第 10 页</footer>
+          <footer class="slide-foot">根据论文第 3 节的调度规则绘制 · N = 4，含冷启动。机械臂姿态用于说明动作段何时可用，时间轴以网络调用为单位。</footer>
         </section>
 
-        <section class="slide s-mech" data-section="mechanics" data-title="一轮之内：对齐，一次批量调用，重建整条流水线" hidden>
+        <section class="slide s-mech" data-section="mechanics" data-theme="method" data-title="一轮之内：对齐，一次批量调用，重建整条流水线" hidden>
           <header class="slide-head"><p class="slide-label">方法 · 流式对齐与并行重建</p><h2 tabindex="-1">一轮之内：对齐，一次批量调用，重建整条流水线</h2></header>
           <div class="slide-body">
             <div class="slot" data-clone="mechanics-fig" style="--fs:.85"></div>
@@ -782,22 +866,13 @@
           <footer class="slide-foot">依据论文图 2 重绘 · 消融见论文表 6：Xiaomi Robotics 0，Google Robot 任务，两种配置每轮都只调用一次网络</footer>
         </section>
 
-        <section class="slide s-bars" data-section="simulation" data-title="一步采样丢掉的成功率，能找回来吗？" hidden>
+        <section class="slide s-bars" data-steps="1" data-section="simulation" data-theme="results" data-title="一步采样丢掉的成功率，能找回来吗？" hidden>
           <header class="slide-head"><p class="slide-label">实验 · 动作质量</p><h2 tabindex="-1">一步采样丢掉的成功率，能找回来吗？</h2></header>
-          <div class="slide-body">
-            <div class="bars big" style="font-size:1.15em">
-              <p class="bars-head"><span>同一个 Fast-WAM，四种采样配置</span><span>回合成功率</span></p>
-              <div class="bar"><span class="bar-name">原生一步<small>1 个阶段 · 每轮 1 次调用</small></span><span class="bar-track"><i style="--v:40.8"></i></span><b>40.8%</b></div>
-              <div class="bar"><span class="bar-name">原生十步<small>10 个阶段 · 每轮 10 次串行调用</small></span><span class="bar-track"><i style="--v:89.4"></i></span><b>89.4%</b></div>
-              <div class="bar is-flow"><span class="bar-name">OneFlow<small>10 个阶段 · 稳态每轮 1 次批量调用</small></span><span class="bar-track"><i style="--v:91" data-step="1"></i></span><span class="bar-val"><b data-until="1">?</b><b data-step="1">91.0%</b></span></div>
-              <div class="bar is-flow" data-step="1"><span class="bar-name">OneFlow+<small>同上，再启用执行引擎</small></span><span class="bar-track"><i style="--v:91.1"></i></span><b>91.1%</b></div>
-            </div>
-            <p class="claim" data-step="1">稳态每轮一次批量调用，回合成功率 91.0%，原生十步为 89.4%。</p>
-          </div>
-          <footer class="slide-foot">论文表 3 · RoboTwin 2.0 全部 50 项任务，标准与随机化场景，每种配置 10,000 回合 · 百分比是成功回合的比例</footer>
+          <div class="slide-body"><div class="slot" data-clone="success-fig"></div></div>
+          <footer class="slide-foot">论文表 1 至表 3 · 选择模型后，在同一策略与同一评测条件下比较。完整协议和原始表格见阅读版。</footer>
         </section>
 
-        <section class="slide s-ctrl" data-section="continuation" data-title="同样的观测和调用预算，接着改还是从头算？" hidden>
+        <section class="slide s-ctrl" data-section="continuation" data-theme="results" data-title="同样的观测和调用预算，接着改还是从头算？" hidden>
           <header class="slide-head"><p class="slide-label">实验 · 机制对照</p><h2 tabindex="-1">同样的观测和调用预算，接着改还是从头算？</h2></header>
           <div class="slide-body">
             <div class="slot" data-clone="continuation-fig" style="--fs:1.1"></div>
@@ -806,25 +881,23 @@
           <footer class="slide-foot">补充材料图 8(a) · RoboMimic 五项任务，状态输入，预测 16 步、执行 4 步，未启用引擎 · 配对差的 95% 同时置信区间 [0.032, 0.109]</footer>
         </section>
 
-        <section class="slide s-scale" data-section="scaling" data-title="阶段数从 1 加到 10，成功率和等待各变多少？" hidden>
+        <section class="slide s-scale" data-section="scaling" data-theme="results" data-title="阶段数从 1 加到 10，成功率和等待各变多少？" data-steps="1" hidden>
           <header class="slide-head"><p class="slide-label">实验 · 测试时计算</p><h2 tabindex="-1">阶段数从 1 加到 10，成功率和等待各变多少？</h2></header>
           <div class="slide-body">
             <div class="slot" data-clone="scaling-fig" style="--fs:1.1"></div>
-            <p class="claim" data-step="1">这个任务上，阶段数从 1 增至 10，成功率从 18% 升到 88%。所测各配置的稳态时延中位数为 119.3–126.2 ms。</p>
           </div>
           <footer class="slide-foot">论文图 3 · Fast-WAM，Handover Block，每个设置 50 个场景 · 未启用执行引擎，预热后的稳态中位数</footer>
         </section>
 
-        <section class="slide s-lat" data-section="latency" data-title="30.3 倍加速，用的是哪个基线？" hidden>
+        <section class="slide s-lat" data-section="latency" data-theme="results" data-title="30.3 倍加速，用的是哪个基线？" data-steps="2" hidden>
           <header class="slide-head"><p class="slide-label">实验 · 实测耗时</p><h2 tabindex="-1">30.3 倍加速，用的是哪个基线？</h2></header>
           <div class="slide-body">
             <div class="slot" data-clone="latency-fig" style="--fs:1.15"></div>
-            <p class="claim" data-step="2">使用同一引擎时，原生十步的耗时约为 OneFlow+ 的 3.1 倍。OneFlow+ 的耗时比原生一步高 12.3%。</p>
           </div>
           <footer class="slide-foot">论文表 4、补充材料表 10 · Fast-WAM，A100，预热后的中位数（ms）· 计时从 CPU 观测到解码后的 CPU 动作</footer>
         </section>
 
-        <section class="slide s-field" data-section="field" data-title="两种策略的推理耗时接近，回击率会怎样？" hidden>
+        <section class="slide s-field" data-section="field" data-theme="field" data-title="两种策略的推理耗时接近，回击率会怎样？" hidden>
           <header class="slide-head"><p class="slide-label">实机 · Franka × GR00T N1.7</p><h2 tabindex="-1">两种策略的推理耗时接近，回击率会怎样？</h2></header>
           <div class="slide-body">
             <div class="s-frames">
@@ -840,7 +913,7 @@
           <footer class="slide-foot">论文图 1、表 5、补充材料表 14 · RTX 4090 上的模型推理中位数，每种配置 500 次来球 · 口径与上一页的 A100 数字不同</footer>
         </section>
 
-        <section class="slide s-end" data-section="discussion" data-title="一次批量调用，靠的是此前几轮的工作" hidden>
+        <section class="slide s-end" data-section="discussion" data-theme="discussion" data-title="一次批量调用，靠的是此前几轮的工作" hidden>
           <header class="slide-head"><p class="slide-label">讨论 · 结论与边界</p><h2 tabindex="-1">一次批量调用，靠的是此前几轮的工作</h2></header>
           <div class="slide-body">
             <div>

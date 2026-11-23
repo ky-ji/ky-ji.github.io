@@ -1,0 +1,875 @@
+/* ==========================================================================
+   OneFlow 讲座页 · v3 外壳（在既有样式之后加载）
+   1 Tokens 与基础   2 顶栏   3 封面   4 阅读路线   5 分章长文
+   6 图版·图题·表格   7 投影（keynote）   8 动效   9 窄屏
+   10 减少动态与打印
+   约定：新外壳类名一律以 v3- 开头；对原稿 DOM 的改写只限定在 #main 与
+   #deck 之内，不写全局 svg / .cells 等会波及数据图与动图部件的规则。
+   ========================================================================== */
+
+/* 章首进入进度（0→1，由 frame.js 写在 .chapter 上）。注册为不继承，
+   这样滚动时只重算章首几个装饰元素，而不是整章子树；无 JS 时恒为 1。 */
+@property --v3-enter { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* ---------- 1 Tokens 与基础 ---------- */
+:root {
+  --v3-paper: #f6f3ec;        /* 暖近白：页面、封面 */
+  --v3-paper-cool: #eef1f8;   /* 方法章：蓝图纸 */
+  --v3-paper-data: #fffefa;   /* 实验章：数据纸 */
+  --v3-paper-deep: #ece7db;   /* 实机章、来源 */
+  --v3-ink: #0b1b3f;          /* 墨蓝：标题与正文 */
+  --v3-ink-2: #44516e;        /* 次级文字，对纸白约 7:1 */
+  --v3-ink-3: #5d6884;        /* 注记，对纸白约 5:1 */
+  --v3-cobalt: #244fe8;       /* 钴蓝：唯一强调色，对纸白 5.6:1 */
+  --v3-cobalt-soft: #9db8ff;  /* 深底上的钴蓝 */
+  --v3-night: #070d20;        /* 实机影像的暗场 */
+  --v3-line: rgba(11, 27, 63, .16);
+  --v3-line-strong: rgba(11, 27, 63, .42);
+  --v3-sans: "Inter", "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB",
+    "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  --v3-serif: Georgia, "Times New Roman", "Songti SC", "Noto Serif CJK SC",
+    "Source Han Serif SC", "STZhongsong", "SimSun", serif;
+  --v3-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --v3-wrap: 76rem;                           /* 版心 */
+  --v3-gutter: clamp(1.25rem, 4.2vw, 3.5rem); /* 版心两侧最小留白 */
+  --v3-header-h: 3.5rem;
+  --v3-ease: cubic-bezier(.2, .7, .2, 1);
+}
+
+html { scroll-padding-top: calc(var(--v3-header-h) + .75rem); -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--v3-paper);
+  color: var(--v3-ink);
+  font-family: var(--v3-sans);
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--v3-cobalt); color: #fff; }
+:is(.v3-header, .v3-cover, .v3-agenda) :focus-visible {
+  outline: 2px solid var(--v3-cobalt);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ---------- 2 顶栏 ---------- */
+.v3-header {
+  position: sticky; top: 0; z-index: 60;
+  height: var(--v3-header-h);
+  border-bottom: 1px solid transparent;
+  background: rgba(246, 243, 236, .9);
+  background: color-mix(in srgb, var(--v3-paper) 86%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  backdrop-filter: saturate(1.4) blur(14px);
+  color: var(--v3-ink);
+  font: 500 .875rem/1 var(--v3-sans);
+}
+.v3-header.is-scrolled { border-bottom-color: var(--v3-line); }
+.v3-header-in {
+  box-sizing: content-box;
+  height: 100%;
+  max-width: var(--v3-wrap);
+  margin: 0 auto;
+  padding: 0 var(--v3-gutter);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 1rem;
+}
+.v3-skip {
+  position: absolute; left: var(--v3-gutter); top: .5rem; z-index: 2;
+  padding: .55rem .9rem;
+  background: var(--v3-ink); color: #fff; text-decoration: none;
+  transform: translateY(-250%);
+}
+.v3-skip:focus { transform: none; }
+
+.v3-crumbs { display: flex; align-items: stretch; min-width: 0; white-space: nowrap; }
+.v3-crumbs a {
+  display: inline-flex; align-items: center;
+  color: var(--v3-ink-2); text-decoration: none;
+  transition: color .2s;
+}
+.v3-crumbs a + a::before { content: "/"; margin: 0 .55rem; color: var(--v3-line-strong); }
+.v3-crumbs a:hover { color: var(--v3-cobalt); }
+.v3-crumbs-mark { font-weight: 700; letter-spacing: -.02em; }
+.v3-crumbs a.v3-crumbs-mark { color: var(--v3-ink); transition: opacity .25s, visibility .25s, color .2s; }
+.v3-crumbs-mark i { font: italic 400 1.08em/1 var(--v3-serif); color: var(--v3-cobalt); }
+/* 封面大字标还在视口里时，顶栏不重复出现字标（仅在有 JS 时启用） */
+.v3-js .v3-header:not(.is-past-cover) .v3-crumbs-mark { opacity: 0; visibility: hidden; }
+
+.v3-nav { position: relative; display: flex; align-items: stretch; gap: clamp(.25rem, 1.4vw, 1.25rem); }
+.v3-nav a {
+  display: inline-flex; align-items: center;
+  padding: 0 .6rem;
+  color: var(--v3-ink-2); text-decoration: none; letter-spacing: .06em;
+  transition: color .2s;
+}
+.v3-nav a:hover, .v3-nav a[aria-current] { color: var(--v3-ink); }
+/* 当前章节标记：灰轨 = 当前章，钴蓝填充 = 章内阅读进度；位置由 frame.js 写入 */
+.v3-nav-ind {
+  position: absolute; left: 0; bottom: -1px;
+  width: 0; height: 2px;
+  background: var(--v3-line-strong);
+  opacity: 0; pointer-events: none;
+}
+.v3-nav-ind i { display: block; height: 100%; background: var(--v3-cobalt); transform: scaleX(0); transform-origin: left; }
+.v3-nav.has-current .v3-nav-ind { opacity: 1; }
+
+.v3-talk {
+  justify-self: end; align-self: center;
+  display: inline-flex; align-items: center; gap: .5rem;
+  height: 2.25rem; padding: 0 .95rem;
+  border: 1px solid var(--v3-ink); border-radius: 2px;
+  background: transparent; color: var(--v3-ink);
+  font: 600 .8125rem/1 var(--v3-sans); letter-spacing: .1em;
+  cursor: pointer;
+  transition: background-color .2s, border-color .2s, color .2s;
+}
+.v3-talk:hover { background: var(--v3-cobalt); border-color: var(--v3-cobalt); color: #fff; }
+
+/* 全文阅读进度：贴在顶栏下缘的一根钴蓝线 */
+.v3-read {
+  position: absolute; left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--v3-cobalt);
+  transform: scaleX(0); transform-origin: left;
+  pointer-events: none;
+}
+
+/* ---------- 3 封面 ---------- */
+/* 四列：左留白｜文字（版心左 46%）｜图版（版心右 54%）｜右留白。
+   图版跨后两列，出血到视口右缘，占屏宽约 52–55%。 */
+.v3-cover {
+  position: relative; isolation: isolate;
+  display: grid;
+  grid-template-columns:
+    minmax(var(--v3-gutter), 1fr) minmax(0, 35rem) minmax(0, 41rem) minmax(var(--v3-gutter), 1fr);
+  min-height: clamp(34rem, calc(100vh - var(--v3-header-h) - 5.75rem), 54rem);
+  min-height: clamp(34rem, calc(100svh - var(--v3-header-h) - 5.75rem), 54rem); /* 首屏底部露出阅读路线 */
+}
+.v3-cover-text {
+  grid-column: 2; min-width: 0; z-index: 1;
+  display: grid; grid-template-rows: auto 1fr auto;
+  padding: clamp(1.5rem, 3.5vh, 2.5rem) clamp(1.5rem, 3vw, 3rem) clamp(1.75rem, 4.5vh, 3rem) 0;
+}
+.v3-cover-kicker {
+  display: flex; align-items: center; gap: .9rem;
+  margin: 0;
+  font: 600 .75rem/1.2 var(--v3-sans); letter-spacing: .16em; text-transform: uppercase;
+  color: var(--v3-ink-2);
+}
+.v3-cover-kicker span::after {
+  content: ""; display: inline-block; vertical-align: middle;
+  width: 2.5rem; height: 1px; margin-left: .9rem;
+  background: var(--v3-line-strong);
+}
+.v3-cover-kicker time { font-family: var(--v3-mono); letter-spacing: .06em; color: var(--v3-ink); }
+
+.v3-cover-head { align-self: end; padding-bottom: clamp(1.75rem, 5vh, 3.25rem); }
+/* 字标：One 用重磅无衬线，Flow 用钴蓝衬线斜体——一刚一流 */
+.v3-title {
+  margin: 0 0 0 -.05em;
+  font: 800 clamp(4.25rem, 9vw, 8rem)/.9 var(--v3-sans);
+  letter-spacing: -.055em;
+  color: var(--v3-ink);
+  white-space: nowrap;
+}
+.v3-title i {
+  margin-left: .02em;
+  font: italic 400 1.06em/.9 var(--v3-serif);
+  letter-spacing: -.035em;
+  color: var(--v3-cobalt);
+}
+.v3-cover-thesis {
+  margin: clamp(1.25rem, 3.2vh, 2rem) 0 0;
+  font: 600 clamp(1.35rem, 2.25vw, 1.95rem)/1.45 var(--v3-sans);
+  letter-spacing: .01em;
+}
+.v3-cover-paper {
+  margin: .9rem 0 0; max-width: 26em;
+  font: italic 400 clamp(1rem, 1.35vw, 1.2rem)/1.45 var(--v3-serif);
+  color: var(--v3-ink-2);
+}
+
+.v3-cover-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.75rem; }
+.v3-btn {
+  display: inline-flex; align-items: center; gap: .65rem;
+  min-height: 3rem;
+  font: 600 .9375rem/1 var(--v3-sans); letter-spacing: .08em;
+  text-decoration: none; cursor: pointer;
+}
+.v3-btn-primary {
+  padding: 0 1.5rem 0 1.25rem;
+  border: 0; border-radius: 2px;
+  background: var(--v3-cobalt); color: #fff;
+  transition: background-color .2s var(--v3-ease);
+}
+.v3-btn-primary:hover { background: var(--v3-ink); }
+.v3-btn-text {
+  padding: 0 .1rem; color: var(--v3-ink);
+  background: linear-gradient(currentColor, currentColor) 0 calc(100% - .7rem) / 100% 1px no-repeat;
+  transition: color .2s;
+}
+.v3-btn-text::after { content: "↓"; transition: transform .25s var(--v3-ease); }
+.v3-btn-text:hover { color: var(--v3-cobalt); }
+.v3-btn-text:hover::after { transform: translateY(.2em); }
+
+/* 图版：#hero-art 占满，下缘一行片边字（noise → action），四角取景标记 */
+.v3-plate {
+  grid-column: 3 / -1; position: relative;
+  display: grid; grid-template-rows: minmax(0, 1fr) auto;
+  margin: 0; min-width: 0; overflow: hidden;
+  --v3-mark: var(--v3-line-strong); --v3-mark-l: 1.1rem; --v3-mark-w: 1px; --v3-mark-i: 0px;
+}
+#hero-art { position: relative; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+.v3-plate::after {
+  content: ""; position: absolute; pointer-events: none;
+  inset: clamp(.75rem, 1.4vw, 1.25rem);
+  bottom: calc(2.4rem + clamp(.75rem, 1.4vw, 1.25rem));
+}
+.v3-plate-cap {
+  display: flex; align-items: center; gap: .9rem;
+  padding: .8rem clamp(1rem, 2vw, 1.75rem);
+  border-top: 1px solid var(--v3-line);
+  background: var(--v3-paper);
+  font: 600 .6875rem/1 var(--v3-mono); letter-spacing: .18em; text-transform: uppercase;
+  color: var(--v3-ink-2);
+}
+.v3-plate-cap span:last-child { color: var(--v3-cobalt); }
+.v3-plate-cap i {
+  position: relative; flex: 1; height: 1px;
+  background: linear-gradient(90deg, var(--v3-line-strong), var(--v3-cobalt));
+  transform-origin: left;
+}
+.v3-plate-cap i::after {
+  content: ""; position: absolute; right: -1px; top: -3.5px;
+  border-left: 7px solid var(--v3-cobalt);
+  border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+}
+
+/* 取景角标：四角各一对短线。封面图版、实机图版与实机投影页共用，
+   用 --v3-mark（颜色）/-l（长）/-w（粗）/-i（内缩）四个变量调节。 */
+.v3-plate::after,
+#main #field .chapter-main > :is(figure, .fig, .paper-fig):has(> :is(img, video, picture)),
+#deck:not(.is-flow) .slide[data-theme="field"] {
+  background-image:
+    linear-gradient(var(--v3-mark), var(--v3-mark)), linear-gradient(var(--v3-mark), var(--v3-mark)),
+    linear-gradient(var(--v3-mark), var(--v3-mark)), linear-gradient(var(--v3-mark), var(--v3-mark)),
+    linear-gradient(var(--v3-mark), var(--v3-mark)), linear-gradient(var(--v3-mark), var(--v3-mark)),
+    linear-gradient(var(--v3-mark), var(--v3-mark)), linear-gradient(var(--v3-mark), var(--v3-mark));
+  background-repeat: no-repeat;
+  background-size:
+    var(--v3-mark-l) var(--v3-mark-w), var(--v3-mark-w) var(--v3-mark-l),
+    var(--v3-mark-l) var(--v3-mark-w), var(--v3-mark-w) var(--v3-mark-l),
+    var(--v3-mark-l) var(--v3-mark-w), var(--v3-mark-w) var(--v3-mark-l),
+    var(--v3-mark-l) var(--v3-mark-w), var(--v3-mark-w) var(--v3-mark-l);
+  background-position:
+    var(--v3-mark-i) var(--v3-mark-i), var(--v3-mark-i) var(--v3-mark-i),
+    calc(100% - var(--v3-mark-i)) var(--v3-mark-i), calc(100% - var(--v3-mark-i)) var(--v3-mark-i),
+    var(--v3-mark-i) calc(100% - var(--v3-mark-i)), var(--v3-mark-i) calc(100% - var(--v3-mark-i)),
+    calc(100% - var(--v3-mark-i)) calc(100% - var(--v3-mark-i)),
+    calc(100% - var(--v3-mark-i)) calc(100% - var(--v3-mark-i));
+}
+
+/* ---------- 4 阅读路线 ---------- */
+/* 一条按分钟数分配宽度的时间线：段越长，讲得越久。 */
+.v3-agenda {
+  box-sizing: content-box;
+  max-width: var(--v3-wrap);
+  margin: 0 auto;
+  padding: 1.5rem var(--v3-gutter) clamp(3.5rem, 8vw, 6.5rem);
+}
+.v3-agenda-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem 1rem;
+  margin: 0 0 1rem;
+}
+.v3-agenda-head h2 { margin: 0; font: 700 1rem/1.4 var(--v3-sans); letter-spacing: .14em; color: var(--v3-ink); }
+.v3-agenda-head h2 span { margin-left: .5rem; font: italic 400 1rem/1.4 var(--v3-serif); letter-spacing: 0; color: var(--v3-ink-2); }
+.v3-agenda-head p { margin: 0; font: 500 .75rem/1.4 var(--v3-mono); letter-spacing: .06em; color: var(--v3-ink-2); }
+
+.v3-route { display: flex; margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--v3-ink); }
+.v3-route > li { flex: var(--v3-min, 1) 1 6.25rem; min-width: 0; border-left: 1px solid var(--v3-line); }
+.v3-route > li:first-child { border-left: 0; }
+.v3-route a {
+  position: relative;
+  display: flex; flex-direction: column; gap: .35rem;
+  height: 100%; box-sizing: border-box;
+  padding: .8rem .85rem 1.1rem;
+  color: var(--v3-ink); text-decoration: none;
+}
+.v3-route > li:first-child a { padding-left: 0; }
+/* 悬停 / 聚焦：该段的时间轴被钴蓝画过 */
+.v3-route a::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -2px; height: 2px;
+  background: var(--v3-cobalt);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .3s var(--v3-ease);
+}
+.v3-route a:hover::before, .v3-route a:focus-visible::before { transform: scaleX(1); }
+.v3-route-time { font: 500 .75rem/1.3 var(--v3-mono); letter-spacing: .02em; color: var(--v3-ink-2); white-space: nowrap; }
+.v3-route-name { margin-top: .5rem; font: 700 clamp(1.35rem, 2.2vw, 1.85rem)/1.2 var(--v3-sans); transition: color .2s; }
+.v3-route-name i { display: block; margin-top: .2rem; font: italic 400 .8125rem/1.3 var(--v3-serif); color: var(--v3-ink-3); }
+.v3-route-note { font: 400 .875rem/1.5 var(--v3-sans); color: var(--v3-ink-2); }
+.v3-route a:hover .v3-route-name { color: var(--v3-cobalt); }
+
+/* ---------- 5 分章长文 ---------- */
+/* 原稿是「窄标签｜宽正文」两列。这里改为：通栏章首行（.rail）→ 宽幅章题 →
+   12 栏网格里的窄文与通栏图版；各章文字落在不同栏位，形成各自的节奏。 */
+#main .chapter {
+  position: relative; isolation: isolate;
+  margin: 0; padding: clamp(3.5rem, 8vw, 7rem) 0 clamp(4rem, 9vw, 8rem);
+  border: 0; background: none;
+  scroll-margin-top: var(--v3-header-h);
+}
+#main .chapter-inner {
+  --v3-enter: inherit;
+  display: block; box-sizing: content-box;
+  width: auto; max-width: var(--v3-wrap);
+  margin: 0 auto; padding: 0 var(--v3-gutter);
+}
+
+/* 纸面转场：方法、实验、实机、来源各换一张纸（只是背景层，文字始终可读）。
+   方法与实验的纸缘在进入视口时是斜的，随 --v3-enter 压平。 */
+#method::before, #results::before, #field::before, #sources::before {
+  --v3-enter: inherit;
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+}
+#method::before {
+  background: var(--v3-paper-cool);
+  clip-path: polygon(0 calc((1 - var(--v3-enter)) * 7vw), 100% 0, 100% 100%, 0 100%);
+}
+#results::before {
+  background: var(--v3-paper-data);
+  clip-path: polygon(0 0, 100% calc((1 - var(--v3-enter)) * 7vw), 100% 100%, 0 100%);
+}
+#field::before, #sources::before { background: var(--v3-paper-deep); }
+
+/* 章首行：章名在左、建议时段在右；上方的线随进入进度从左画出 */
+#main .rail {
+  --v3-enter: inherit;
+  position: relative; inset: auto;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  width: auto; max-width: none;
+  margin: 0 0 clamp(1.75rem, 4.5vw, 3.5rem); padding: .9rem 0 0;
+  border: 0; background: none;
+  color: var(--v3-ink);
+  font: 600 .8125rem/1.3 var(--v3-sans);
+  text-align: left; writing-mode: horizontal-tb; transform: none;
+}
+#main .rail::before {
+  --v3-enter: inherit;
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px;
+  background: currentColor;
+  transform: scaleX(var(--v3-enter)); transform-origin: left;
+}
+#main .rail b { font-size: .9375rem; font-weight: 700; letter-spacing: .22em; }
+#main .rail small { font: 500 .75rem/1.3 var(--v3-mono); letter-spacing: .06em; color: var(--v3-ink-2); }
+
+/* 方法：一根带箭头的钴蓝流线 */
+#method .rail { color: var(--v3-cobalt); }
+#method .rail small { color: inherit; }
+#method .rail::before { height: 2px; }
+#method .rail::after {
+  content: ""; position: absolute; right: -1px; top: -4px;
+  border-left: 10px solid currentColor;
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+}
+/* 实验：一把坐标刻度尺，从左向右显影 */
+#results .rail { padding-top: 1.35rem; }
+#results .rail::before {
+  height: 9px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 2.5%);
+  transform: none;
+  clip-path: inset(0 calc((1 - var(--v3-enter)) * 100%) 0 0);
+}
+/* 实机：场记板式的墨色通栏 */
+#field .rail { padding: .8rem 1rem; background: var(--v3-ink); color: var(--v3-paper); }
+#field .rail::before { content: none; }
+#field .rail small { color: #c9d1e6; }
+/* 讨论：双细线；来源：单细线 */
+#discussion .rail::before {
+  height: 5px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 100% 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+}
+#sources .rail::before { height: 1px; }
+
+/* 正文网格 */
+#main .chapter-main {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: clamp(1rem, 2vw, 1.75rem); align-items: start;
+  min-width: 0; max-width: none; margin: 0; padding: 0;
+}
+#main .chapter-main > * { grid-column: 1 / -1; min-width: 0; }
+
+#main .chapter-main > h2 {
+  max-width: 16em; margin: 0; padding: 0; border: 0;
+  font: 700 clamp(2.1rem, 5.6vw, 4.6rem)/1.14 var(--v3-sans);
+  letter-spacing: -.02em; color: var(--v3-ink);
+  text-wrap: balance;
+}
+#method .chapter-main > h2 { color: var(--v3-cobalt); }
+#discussion .chapter-main > h2 { font-family: var(--v3-serif); font-weight: 600; letter-spacing: 0; }
+#sources .chapter-main > h2 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); }
+
+#main .chapter-main > :is(.prose, p, ul, ol, blockquote) { max-width: 39em; margin: clamp(1.5rem, 3vw, 2.5rem) 0 0; }
+#main .prose { font: 400 1.0625rem/1.9 var(--v3-sans); color: #17264b; }
+#main .prose > :first-child { margin-top: 0; }
+#main .prose > :last-child { margin-bottom: 0; }
+#main .prose p { margin: 0 0 1.2em; }
+#main .prose :is(ul, ol) { margin: 0 0 1.2em; padding-left: 1.4em; }
+#main .prose li + li { margin-top: .4em; }
+#main .prose a {
+  color: var(--v3-cobalt);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .22em;
+}
+#main .prose a:hover { text-decoration-thickness: 2px; }
+#main .prose strong { font-weight: 700; color: var(--v3-ink); }
+#main .prose blockquote {
+  margin: 1.8em 0; padding: 0 0 0 1.2em;
+  border-left: 2px solid var(--v3-cobalt);
+  font: 400 1.2em/1.7 var(--v3-serif); color: var(--v3-ink);
+}
+/* 章首导语：衬线、大一号 */
+#main .chapter-main > .chapter-lead {
+  max-width: 32em; margin: clamp(1.25rem, 3vw, 2.25rem) 0 0;
+  font: 400 clamp(1.2rem, 2vw, 1.6rem)/1.7 var(--v3-serif);
+  color: var(--v3-ink);
+}
+#main .chapter-lead p { margin: 0 0 .8em; }
+
+#main .chapter-main > h3 {
+  margin: clamp(2.5rem, 5vw, 4rem) 0 0; padding: 1rem 0 0;
+  border: 0; border-top: 1px solid var(--v3-line-strong);
+  font: 700 clamp(1.2rem, 1.8vw, 1.45rem)/1.4 var(--v3-sans);
+  letter-spacing: 0; color: var(--v3-ink);
+}
+#main .chapter-main > h3 + :is(.prose, p, ul, ol) { margin-top: 1rem; }
+#method .chapter-main > h3 { padding-top: 0; border-top: 0; color: var(--v3-cobalt); }
+#method .chapter-main > h3::before { content: "→"; margin-right: .5em; font-weight: 400; }
+#results .chapter-main > h3 {
+  padding-top: 1.4rem; border-top: 0;
+  background:
+    linear-gradient(var(--v3-line-strong), var(--v3-line-strong)) 0 0 / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, var(--v3-line-strong) 0 1px, transparent 1px 2.5%) 0 0 / 100% 6px no-repeat;
+}
+
+/* 来源：小字双栏，像刊末的参考文献 */
+#sources .chapter-main > :is(.prose, ul, ol) {
+  max-width: none; columns: 2 22rem; column-gap: 3rem;
+  font-size: .875rem; line-height: 1.75; color: var(--v3-ink-2);
+}
+#sources .chapter-main :is(li, p) { break-inside: avoid; }
+
+@media (min-width: 64rem) {
+  /* 问题、讨论——随笔式：小题挂在左侧四栏，正文靠右七栏，同一行共用顶线 */
+  :is(#problem, #discussion) .chapter-main > :is(.prose, p, ul, ol, blockquote) { grid-column: 5 / span 7; }
+  :is(#problem, #discussion) .chapter-main > .chapter-lead { grid-column: 1 / span 9; }
+  :is(#problem, #discussion) .chapter-main > h3 { grid-column: 1 / span 4; }
+  :is(#problem, #discussion) .chapter-main > h3 + :is(.prose, p, ul, ol) {
+    margin-top: clamp(2.5rem, 5vw, 4rem); padding-top: 1rem;
+    border-top: 1px solid var(--v3-line-strong);
+  }
+  /* 方法——推导式：文字整体右移两栏，图版通栏 */
+  #method .chapter-main > :is(.prose, p, ul, ol, blockquote, h3) { grid-column: 3 / span 7; }
+  #method .chapter-main > .chapter-lead { grid-column: 1 / span 9; }
+  /* 实验——数据式：文字贴左，右侧留白让给图表 */
+  #results .chapter-main > :is(.prose, p, ul, ol, blockquote) { grid-column: 1 / span 7; }
+  /* 实机——影像式：短文居中，影像通栏 */
+  #field .chapter-main > :is(.prose, p, ul, ol, blockquote, h3) { grid-column: 4 / span 6; }
+  #field .chapter-main > .chapter-lead { grid-column: 1 / span 9; }
+}
+
+/* ---------- 6 图版·图题·表格 ---------- */
+/* 只管图版在版面里的位置与图题；图内部（动图、交互图、svg）由各自的样式负责。 */
+#main .chapter-main > :is(figure, .fig, .paper-fig) {
+  grid-column: 1 / -1; max-width: none;
+  margin: clamp(2.25rem, 5.5vw, 4.5rem) 0 0;
+}
+#main .chapter-main > :is(figure, .fig, .paper-fig) + :is(.prose, p, ul, ol) { margin-top: clamp(2.25rem, 5vw, 3.5rem); }
+/* 图题：细线之下的窄栏说明，开头的加粗词作题签 */
+#main .chapter-main > .paper-fig > figcaption {
+  max-width: 46em; margin: 1rem 0 0; padding: .75rem 0 0;
+  border-top: 1px solid var(--v3-line);
+  font: 400 .875rem/1.7 var(--v3-sans); color: var(--v3-ink-2); text-align: left;
+}
+#main .chapter-main > .paper-fig > figcaption > :is(b, strong):first-child {
+  margin-right: .5em; font-weight: 700; letter-spacing: .04em; color: var(--v3-ink);
+}
+
+/* 实机影像：直接放着图片 / 视频的图版进暗场，四角取景标记（规则见 §3 末尾） */
+#main #field .chapter-main > :is(figure, .fig, .paper-fig):has(> :is(img, video, picture)) {
+  padding: clamp(.9rem, 2.2vw, 1.75rem);
+  background-color: var(--v3-night);
+  --v3-mark: rgba(255, 255, 255, .5); --v3-mark-l: .9rem; --v3-mark-w: 1px; --v3-mark-i: .35rem;
+}
+#main #field .chapter-main > :is(figure, .fig, .paper-fig):has(> :is(img, video, picture)) > :is(img, video) {
+  display: block; width: 100%; height: auto;
+}
+#main #field .chapter-main > :is(figure, .fig, .paper-fig):has(> :is(img, video, picture)) > figcaption {
+  border-top-color: rgba(255, 255, 255, .22); color: #c9d1e6;
+}
+#main #field .chapter-main > :is(figure, .fig, .paper-fig):has(> :is(img, video, picture)) > figcaption > :is(b, strong):first-child {
+  color: #fff;
+}
+
+/* 表格：三线表。无竖线、无底色块；数字等宽右对齐，行悬停只加一道钴蓝起始线。 */
+#main .chapter-main table.plain-table {
+  width: 100%; border-collapse: collapse; border: 0;
+  border-top: 2px solid var(--v3-ink); border-bottom: 2px solid var(--v3-ink);
+  background: none; color: var(--v3-ink);
+  font: 400 .9375rem/1.5 var(--v3-sans);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+#main .chapter-main table.plain-table caption {
+  caption-side: top; padding: 0 0 .7rem; text-align: left;
+  font: 600 .875rem/1.5 var(--v3-sans); color: var(--v3-ink);
+}
+#main .chapter-main table.plain-table :is(th, td) {
+  padding: .7rem .9rem; border: 0; border-bottom: 1px solid var(--v3-line);
+  background: none; text-align: right; vertical-align: baseline;
+}
+#main .chapter-main table.plain-table :is(th, td):first-child { text-align: left; }
+#main .chapter-main table.plain-table thead th {
+  border-bottom: 1px solid var(--v3-ink); vertical-align: bottom; white-space: nowrap;
+  font: 600 .75rem/1.4 var(--v3-sans); letter-spacing: .08em; color: var(--v3-ink-2);
+}
+#main .chapter-main table.plain-table tbody th { font-weight: 600; }
+#main .chapter-main table.plain-table tbody tr:last-child > * { border-bottom: 0; }
+#main .chapter-main table.plain-table tbody tr { transition: background-color .15s; }
+#main .chapter-main table.plain-table tbody tr:hover { background: rgba(36, 79, 232, .06); }
+#main .chapter-main table.plain-table tbody tr:hover > :first-child { box-shadow: inset 2px 0 0 var(--v3-cobalt); }
+#main .chapter-main table.plain-table td :is(b, strong) { font-weight: 700; color: var(--v3-cobalt); }
+
+/* ---------- 7 投影（keynote） ---------- */
+/* 兼容约定：.slide 的 display / position、.deck-canvas 的尺寸与缩放仍由既有样式和
+   脚本掌管（切页、fit、全屏、讲者提示照旧）；这里只改纸面、字体、层级与章节记号。
+   画布内用 px（1280×720 设计稿）；.deck.is-flow 的纵向重排见 §9。 */
+#deck {
+  --d-paper: var(--v3-paper); --d-ink: var(--v3-ink); --d-ink-2: var(--v3-ink-2);
+  --d-line: var(--v3-line); --d-accent: var(--v3-cobalt);
+  background-color: var(--d-paper); color: var(--d-ink);
+  font-family: var(--v3-sans);
+}
+#deck::backdrop { background: var(--v3-paper); }
+/* 实机章：整个放映环境熄灯，影像之外不留亮边 */
+#deck[data-v3-section="field"]:not(.is-flow) {
+  --d-paper: var(--v3-night); --d-ink: #eef0f6; --d-ink-2: #b9c3dc;
+  --d-line: rgba(255, 255, 255, .2); --d-accent: var(--v3-cobalt-soft);
+}
+#deck[data-v3-section="field"]:not(.is-flow)::backdrop { background: var(--v3-night); }
+#deck .deck-shell { background-color: var(--d-paper); color: inherit; }
+#deck .deck-stage { background: transparent; }
+
+#deck .deck-top {
+  border-bottom: 1px solid var(--d-line);
+  background-color: transparent; color: var(--d-ink-2);
+  font: 600 12px/1 var(--v3-sans); letter-spacing: .12em;
+  /* 放映进度：下缘一根线，长度 = 当前页 / 总页数（frame.js 写 --v3-deck-p） */
+  background-image: linear-gradient(var(--d-accent), var(--d-accent));
+  background-repeat: no-repeat; background-position: 0 100%;
+  background-size: calc(var(--v3-deck-p, 0) * 100%) 2px;
+}
+#deck .deck-controls {
+  border-top: 1px solid var(--d-line);
+  background-color: transparent; color: var(--d-ink-2);
+  font: 500 13px/1.4 var(--v3-sans); font-variant-numeric: tabular-nums;
+}
+#deck :is(.deck-top, .deck-controls) button {
+  min-height: 34px; padding: 0 14px;
+  border: 1px solid var(--d-line); border-radius: 2px;
+  background: transparent; color: var(--d-ink);
+  font: inherit; letter-spacing: .06em; cursor: pointer;
+  transition: border-color .2s, color .2s;
+}
+#deck :is(.deck-top, .deck-controls) button:hover { border-color: var(--d-accent); color: var(--d-accent); }
+#deck :is(.deck-top, .deck-controls) :focus-visible { outline: 2px solid var(--d-accent); outline-offset: 2px; }
+
+#deck:not(.is-flow) .deck-canvas {
+  overflow: clip;                       /* 翻页位移不会溢出画布 */
+  background-color: var(--d-paper);
+  box-shadow: 0 0 0 1px var(--d-line);
+}
+
+/* 每页的纸与墨：按章节换纸 */
+#deck .slide {
+  --s-paper: var(--v3-paper); --s-ink: var(--v3-ink); --s-ink-2: var(--v3-ink-2);
+  --s-line: var(--v3-line); --s-accent: var(--v3-cobalt);
+  box-sizing: border-box;
+  background-color: var(--s-paper); color: var(--s-ink);
+  font-family: var(--v3-sans);
+}
+#deck .slide[data-theme="problem"] { --s-accent: var(--v3-ink); }
+#deck .slide[data-theme="method"] { --s-paper: var(--v3-paper-cool); }
+#deck .slide[data-theme="results"] { --s-paper: var(--v3-paper-data); --s-accent: var(--v3-ink); }
+#deck .slide[data-theme="field"] {
+  --s-paper: var(--v3-night); --s-ink: #f3f1ea; --s-ink-2: #b9c3dc;
+  --s-line: rgba(255, 255, 255, .22); --s-accent: var(--v3-cobalt-soft);
+}
+#deck:not(.is-flow) .slide {
+  min-height: 100%;
+  padding: 60px 76px 44px;
+  font-size: 26px; line-height: 1.5;
+  transition: none;                     /* 旧页立刻让位，不滞留 */
+}
+
+/* 页眉：小标签在上、标题在下（DOM 顺序是 h2 → .slide-label，所以反向排列） */
+#deck .slide-head {
+  display: flex; flex-direction: column-reverse; align-items: flex-start;
+  margin: 0; padding: 0; border: 0;
+}
+#deck:not(.is-flow) .slide-head { gap: 16px; margin-bottom: 30px; }
+#deck .slide-head h2 { margin: 0; color: inherit; text-wrap: balance; }
+#deck:not(.is-flow) .slide-head h2 { max-width: 21em; font: 700 50px/1.16 var(--v3-sans); letter-spacing: -.02em; }
+#deck .slide-label {
+  position: static;
+  display: inline-flex; align-items: center; gap: .7em;
+  margin: 0; padding: 0; border: 0; background: none;
+  color: var(--s-accent);
+  font: 600 15px/1 var(--v3-sans); letter-spacing: .16em; text-transform: uppercase;
+}
+
+/* 章节阅读记号（标签前的小形）：问题=空心圆，方法=箭头，实验=升序三柱，实机=靶点，讨论=双斜线 */
+#deck .slide:is([data-theme="problem"], [data-theme="method"], [data-theme="results"],
+  [data-theme="field"], [data-theme="discussion"]) .slide-label::before { content: ""; flex: none; }
+#deck .slide[data-theme="problem"] .slide-label::before {
+  width: 9px; height: 9px; border: 2px solid currentColor; border-radius: 50%;
+}
+#deck .slide[data-theme="method"] .slide-label::before {
+  width: 28px; height: 10px; background: currentColor;
+  clip-path: polygon(0 40%, 70% 40%, 70% 0, 100% 50%, 70% 100%, 70% 60%, 0 60%);
+}
+#deck .slide[data-theme="results"] .slide-label::before {
+  width: 15px; height: 13px;
+  background:
+    linear-gradient(currentColor, currentColor) 0 100% / 3px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) 6px 100% / 3px 9px no-repeat,
+    linear-gradient(currentColor, currentColor) 12px 100% / 3px 13px no-repeat;
+}
+#deck .slide[data-theme="field"] .slide-label::before {
+  width: 7px; height: 7px; margin: 0 4px; border-radius: 50%; background: currentColor;
+  box-shadow: 0 0 0 3px var(--s-paper), 0 0 0 4.5px currentColor;
+}
+#deck .slide[data-theme="discussion"] .slide-label::before {
+  width: 14px; height: 13px;
+  background: linear-gradient(115deg, transparent 22%, currentColor 22% 36%, transparent 36% 58%, currentColor 58% 72%, transparent 72%);
+}
+
+/* 正文与页脚 */
+#deck .slide-body { flex: 1 1 auto; min-width: 0; min-height: 0; }
+#deck .slide-body > :is(p, ul, ol), #deck .slide-body > div > :is(p, ul, ol) { margin: 0 0 .7em; }
+#deck .slide-body > :is(ul, ol), #deck .slide-body > div > :is(ul, ol) { padding-left: 1.2em; }
+#deck .slide-body li + li { margin-top: .35em; }
+#deck .slide-body li::marker { color: var(--s-accent); }
+#deck .slide-body strong { font-weight: 700; color: var(--s-accent); }
+#deck .slide-body figure { margin: 0; }
+#deck .slide-body figcaption { margin-top: .6em; font-size: .62em; line-height: 1.5; color: var(--s-ink-2); }
+#deck .slide-foot {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1.5em;
+  margin: auto 0 0; padding: 0; border: 0;
+  color: var(--s-ink-2);
+}
+#deck:not(.is-flow) .slide-foot {
+  padding-top: 14px; border-top: 1px solid var(--s-line);
+  font: 500 15px/1.4 var(--v3-sans); letter-spacing: .02em;
+}
+
+/* 各章页面的纸面记号：直接画在 .slide 的背景层上，不占伪元素，也不依赖其定位。 */
+#deck:not(.is-flow) .slide[data-theme="problem"] {      /* 问题：页顶垂下一段墨条 */
+  background-image: linear-gradient(var(--s-ink), var(--s-ink));
+  background-repeat: no-repeat; background-size: 104px 8px; background-position: 76px 0;
+}
+#deck:not(.is-flow) .slide[data-theme="method"] {       /* 方法：页顶一根通栏流线，止于箭头 */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1128' height='12'%3E%3Cpath d='M0 6h1116' stroke='%23244fe8' stroke-width='2'/%3E%3Cpath d='M1128 6l-13-6v12z' fill='%23244fe8'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-size: 1128px 12px; background-position: 76px 24px;
+}
+#deck:not(.is-flow) .slide[data-theme="results"] {      /* 实验：页底一把坐标尺；标题收小，面积让给图 */
+  padding-bottom: 60px;
+  background-image:
+    linear-gradient(var(--s-ink), var(--s-ink)),
+    repeating-linear-gradient(90deg, var(--s-ink) 0 1px, transparent 1px 28.2px);
+  background-repeat: no-repeat;
+  background-size: 1128px 1px, 1129px 8px;
+  background-position: left 76px bottom 29px, left 76px bottom 30px;
+}
+#deck:not(.is-flow) .slide[data-theme="results"] .slide-head {
+  flex-direction: row; align-items: baseline; justify-content: space-between; gap: 32px;
+  margin-bottom: 24px;
+}
+#deck:not(.is-flow) .slide[data-theme="results"] .slide-head h2 { font-size: 40px; }
+#deck:not(.is-flow) .slide[data-theme="results"] .slide-label { flex: none; }
+#deck:not(.is-flow) .slide[data-theme="results"] .slide-body { font-variant-numeric: tabular-nums lining-nums; }
+#deck:not(.is-flow) .slide[data-theme="results"] .slide-foot { border-top: 0; }
+#deck:not(.is-flow) .slide[data-theme="field"] {        /* 实机：暗场 + 四角取景标记（规则见 §3 末尾） */
+  padding: 64px 80px 52px;
+  --v3-mark: rgba(255, 255, 255, .6); --v3-mark-l: 26px; --v3-mark-w: 2px; --v3-mark-i: 26px;
+}
+#deck:not(.is-flow) .slide[data-theme="field"] .slide-head h2 { font-size: 38px; font-weight: 600; }
+#deck:not(.is-flow) .slide[data-theme="discussion"] {   /* 讨论：页顶双细线，衬线标题 */
+  background-image: linear-gradient(var(--s-ink), var(--s-ink)), linear-gradient(var(--s-ink), var(--s-ink));
+  background-repeat: no-repeat; background-size: 1128px 1px, 1128px 1px;
+  background-position: 76px 26px, 76px 32px;
+}
+#deck:not(.is-flow) .slide[data-theme="discussion"] .slide-head h2 { font: 600 54px/1.24 var(--v3-serif); letter-spacing: 0; }
+
+/* 封面页：左侧字标 + 中心句（.slide-body 第一个子元素，首段为中心句），
+   右侧 56% 由 hero 视觉出血占满（.slide-body 第二个子元素，或任意位置的 .slide-art）。 */
+#deck:not(.is-flow) .slide-cover { padding: 64px 76px 52px; }
+#deck:not(.is-flow) .slide-cover .slide-body { display: block; }
+#deck:not(.is-flow) .slide-cover .slide-head,
+#deck:not(.is-flow) .slide-cover .slide-body > :first-child { max-width: 468px; }
+#deck:not(.is-flow) .slide-cover :is(h1, h2) {
+  max-width: none; margin: 0 0 28px -6px;
+  font: 800 112px/.9 var(--v3-sans); letter-spacing: -.055em; white-space: nowrap;
+}
+#deck:not(.is-flow) .slide-cover .slide-body > :first-child > p {
+  margin: 0 0 14px;
+  font: italic 400 21px/1.45 var(--v3-serif); color: var(--s-ink-2);
+}
+#deck:not(.is-flow) .slide-cover .slide-body > :first-child > p:first-of-type {
+  font: 600 32px/1.4 var(--v3-sans); color: var(--s-ink);
+}
+#deck:not(.is-flow) .slide-cover :is(.slide-art, .slide-body > :nth-child(2)) {
+  position: absolute; top: 0; right: 0; bottom: 0; left: auto;
+  width: 56%; height: auto; margin: 0; overflow: hidden;
+}
+
+/* ---------- 8 动效 ---------- */
+/* 初次加载不播放位移：下列过渡只在 frame.js 完成首帧测量、给 <html> 加上
+   .v3-ready 之后才启用。章首线、纸缘、阅读进度是滚动直驱的，不走过渡。 */
+.v3-ready .v3-nav-ind { transition: transform .45s var(--v3-ease), width .45s var(--v3-ease), opacity .2s; }
+.v3-ready #deck .deck-top { transition: background-size .35s var(--v3-ease); }
+.v3-ready #deck,
+.v3-ready #deck .deck-shell,
+.v3-ready #deck:not(.is-flow) .deck-canvas { transition: background-color .35s, color .35s; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+
+  /* 封面：片边上的 noise → action 轴线画出一次 */
+  .v3-plate-cap i { animation: v3-draw .9s .25s var(--v3-ease) backwards; }
+
+  /* 投影翻页：进入页的页眉、正文、页脚顺着翻页方向滑入 44px（小于页边距 76px，
+     且画布 overflow: clip）。只动进入页——旧页由既有脚本即时隐藏。
+     data-v3-enter 由 frame.js 加在进入页上，动画结束后移除，不残留 transform。 */
+  #deck:not(.is-flow) .slide[data-v3-enter="fwd"] { --v3-shift: 44px; }
+  #deck:not(.is-flow) .slide[data-v3-enter="back"] { --v3-shift: -44px; }
+  #deck:not(.is-flow) .slide[data-v3-enter] > * { animation: v3-slide-in .34s var(--v3-ease) backwards; }
+  #deck:not(.is-flow) .slide[data-v3-enter] > .slide-body { animation-delay: .04s; }
+  #deck:not(.is-flow) .slide[data-v3-enter] > .slide-foot { animation-delay: .08s; }
+  /* 封面页的正文容器不位移（transform 会改变出血视觉的定位基准）：文字块滑入，视觉只淡入 */
+  #deck:not(.is-flow) .slide-cover[data-v3-enter] > .slide-body { animation: none; }
+  #deck:not(.is-flow) .slide-cover[data-v3-enter] > .slide-body > :first-child {
+    animation: v3-slide-in .34s .04s var(--v3-ease) backwards;
+  }
+  #deck:not(.is-flow) .slide-cover[data-v3-enter] :is(.slide-art, .slide-body > :nth-child(2)) {
+    animation: v3-fade-in .34s ease-out backwards;
+  }
+}
+@keyframes v3-draw { from { transform: scaleX(0); } }
+@keyframes v3-slide-in { from { opacity: 0; transform: translate3d(var(--v3-shift, 0), 0, 0); } }
+@keyframes v3-fade-in { from { opacity: 0; } }
+
+/* ---------- 9 窄屏 ---------- */
+/* 64rem 以下，§5 的分栏不生效：章题、导语、正文、图版都回到单栏通读。 */
+
+/* 封面改为上图下文：图版先占 44% 屏高，字标、中心句与按钮仍在首屏内 */
+@media (max-width: 54rem) {
+  .v3-cover { display: flex; flex-direction: column; min-height: 0; }
+  .v3-plate { order: -1; height: clamp(15rem, 44vh, 26rem); height: clamp(15rem, 44svh, 26rem); }
+  .v3-cover-text { display: block; padding: 1.5rem var(--v3-gutter) 2.25rem; }
+  .v3-cover-head { padding: 1.1rem 0 1.5rem; }
+  .v3-title { font-size: clamp(3.5rem, 21vw, 7.5rem); }
+}
+
+/* 阅读路线改为纵向：左侧一根时间轴，每段一行（时段｜章名与内容） */
+@media (max-width: 45rem) {
+  .v3-route { display: block; border-top: 0; border-left: 2px solid var(--v3-ink); }
+  .v3-route > li { border-left: 0; border-top: 1px solid var(--v3-line); }
+  .v3-route > li:first-child { border-top: 0; }
+  .v3-route a, .v3-route > li:first-child a {
+    display: grid; grid-template-columns: 6.25rem minmax(0, 1fr); align-items: baseline; gap: .15rem 1rem;
+    padding: .9rem 0 .9rem 1rem;
+  }
+  .v3-route a::before {
+    left: -2px; right: auto; top: 0; bottom: 0; width: 2px; height: auto;
+    transform: scaleY(0); transform-origin: top;
+  }
+  .v3-route a:hover::before, .v3-route a:focus-visible::before { transform: scaleY(1); }
+  .v3-route-time { grid-row: 1 / span 2; }
+  .v3-route-name { margin-top: 0; font-size: 1.25rem; }
+  .v3-route-name i { display: inline; margin: 0 0 0 .4rem; }
+  .v3-route-note { grid-column: 2; }
+
+  #main .chapter-main > :is(figure, .fig, .paper-fig):has(> table) { overflow-x: auto; }
+  #main .chapter-main table.plain-table { font-size: .875rem; }
+  #main .chapter-main table.plain-table :is(th, td) { padding: .6rem; }
+}
+
+/* 顶栏收成一行：主页 / 讲座｜四章｜演讲（仅图标，名称仍可被读屏读到） */
+@media (max-width: 40rem) {
+  :root { --v3-header-h: 3.25rem; }
+  .v3-header-in { padding: 0 1rem; gap: .5rem; }
+  .v3-crumbs-mark { display: none; }
+  .v3-crumbs a + a::before { margin: 0 .4rem; }
+  .v3-nav { gap: 0; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .v3-nav::-webkit-scrollbar { display: none; }
+  .v3-nav a { padding: 0 .5rem; letter-spacing: .02em; }
+  .v3-nav-ind { bottom: 0; }
+  .v3-talk { justify-content: center; width: 2.5rem; height: 2.5rem; padding: 0; }
+  .v3-talk span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+/* 投影的窄屏纵向重排（.deck.is-flow）：每页是一段短文，章节靠顶线颜色与标签记号区分 */
+#deck.is-flow .slide {
+  padding: 1.75rem 1.25rem 1.5rem;
+  border-top: 3px solid var(--s-accent);
+  font-size: 1rem; line-height: 1.7;
+}
+#deck.is-flow .slide-head { gap: .6rem; margin-bottom: 1rem; }
+#deck.is-flow .slide-head h2 { font: 700 1.5rem/1.25 var(--v3-sans); letter-spacing: -.01em; }
+#deck.is-flow .slide-label { font-size: .6875rem; }
+#deck.is-flow .slide-foot {
+  margin-top: 1rem; padding-top: .7rem;
+  border-top: 1px solid var(--s-line);
+  font-size: .8125rem;
+}
+#deck.is-flow .slide-cover { border-top: 0; }
+#deck.is-flow .slide-cover .slide-body { display: block; }
+#deck.is-flow .slide-cover :is(h1, h2) {
+  font: 800 clamp(3.25rem, 19vw, 5.5rem)/.9 var(--v3-sans); letter-spacing: -.055em;
+}
+#deck.is-flow .slide-cover :is(.slide-art, .slide-body > :nth-child(2)) {
+  position: relative; width: auto; aspect-ratio: 4 / 3;
+  margin: 1.25rem -1.25rem -1.5rem; overflow: hidden;
+}
+
+/* ---------- 10 减少动态与打印 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .v3-header *, .v3-cover *, .v3-agenda *,
+  #deck, #deck .deck-shell, #deck .deck-top, #deck .deck-canvas { transition: none !important; }
+  #main .chapter { --v3-enter: 1 !important; }
+}
+
+@media print {
+  .v3-header, .v3-skip, .v3-cover-actions, .v3-plate { display: none !important; }
+  html, body { background: #fff !important; }
+  .v3-cover { display: block; min-height: 0; }
+  .v3-cover-text { display: block; padding: 0 0 1.5rem; }
+  .v3-title { font-size: 64pt; }
+  .v3-agenda, #main .chapter-inner { max-width: none; padding-left: 0; padding-right: 0; }
+  .v3-agenda { padding-top: 0; padding-bottom: 2rem; }
+  #main .chapter { --v3-enter: 1 !important; padding: 2rem 0; break-before: page; }
+  #main .chapter::before { display: none !important; }
+  #main .chapter-main > :is(h2, h3) { break-after: avoid; }
+  #main .chapter-main > :is(figure, .fig, .paper-fig), #main .chapter-main tr { break-inside: avoid; }
+  /* 暗场与场记板在纸上还原为黑字白底 */
+  #field .rail { padding: .9rem 0 0; border-top: 3px solid #000; background: none; color: #000; }
+  #field .rail small { color: #333; }
+  #main #field .chapter-main > :is(figure, .fig, .paper-fig) { padding: 0 !important; background: none !important; }
+  #main #field .chapter-main > .paper-fig > figcaption { border-top-color: #999 !important; color: #333 !important; }
+  #main #field .chapter-main > .paper-fig > figcaption > :is(b, strong):first-child { color: #000 !important; }
+}

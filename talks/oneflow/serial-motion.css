@@ -1,0 +1,17 @@
+.loop.sm-enhanced .loop-track { display:block; }
+.loop.sm-enhanced .loop-track > :not(.sm-lane) { display:none; }
+.sm-lane { display:block; width:100%; height:80px; overflow:visible; }
+.sm-lane text { font-family:Inter,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; font-variant-numeric:tabular-nums; }
+.sm-control { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.35rem .65rem; border-top:1px solid #c9d7e1; padding-top:.63rem; margin-top:.75rem; color:#213d56; }
+.sm-control .sm-state { font-size:clamp(.87rem,1.38vw,1.06rem); line-height:1.5; }
+.sm-buttons { display:flex; gap:.32rem; }
+.sm-buttons button { padding:.32rem .64rem; min-height:30px; border:1px solid #9fafbe; border-radius:3px; color:#183d61; background:#fff; cursor:pointer; font:600 .82rem/1.35 Inter,-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif; }
+.sm-buttons button:first-child { color:#fff; background:#1d5697; border-color:#1d5697; }
+.sm-buttons button:hover { border-color:#1a5fb5; }
+.sm-buttons button:focus-visible { outline:2px solid #2764ae; outline-offset:2px; }
+@media print {
+  .loop.sm-enhanced .loop-track { display:flex; }
+  .loop.sm-enhanced .loop-track > .flowchips { display:flex; }
+  .loop.sm-enhanced .loop-track > .loop-io { display:inline-block; }
+  .sm-lane,.sm-control { display:none; }
+}
