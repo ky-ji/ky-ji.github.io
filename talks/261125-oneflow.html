@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="从一次机器人冰球回击出发，介绍 OneFlow 如何跨重规划轮次并行去噪，以及它在仿真与实机上的表现。">
+  <title>OneFlow · 让机器人来得及回击 | Kangye Ji</title>
+  <link rel="icon" href="../assets/img/Tsinghua_University_Logo.svg">
+  <link rel="stylesheet" href="oneflow/talk.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到正文</a>
+  <header class="masthead">
+    <nav class="wrap mast-inner" aria-label="页面导航">
+      <div class="crumb"><a href="../">Kangye Ji</a><span aria-hidden="true">/</span><a href="./index.html">Talks</a></div>
+      <div class="contents"><a href="#method">方法</a><a href="#results">实验</a><a href="#sources">资料</a></div>
+    </nav>
+  </header>
+  <main id="main">
+    <div class="hero wrap">
+      <div class="intro">
+        <p class="meta"><time datetime="2026-11-25">2026.11.25</time><span class="divider"></span>机器人学习</p>
+        <h1 lang="en">OneFlow</h1>
+        <p class="subtitle">让机器人来得及回击</p>
+        <p class="lead">冰球还在滑行，机器人却要等多步去噪完成才能出手。OneFlow 把这些步骤分摊到连续几轮重规划中。初始化后，每次收到新观测，只需一次前向传播就能给出下一段动作。</p>
+        <p class="paper-name" lang="en">Parallelizing Flows for One-Pass Action Generation</p>
+      </div>
+      <figure class="replay" aria-labelledby="replay-title">
+        <div class="photo">
+          <img id="hockey-frame" src="oneflow/hockey-03.webp" width="1080" height="864" alt="俯视冰球桌，机械臂的红色球拍在中线附近接触来球。">
+          <span class="timecode" aria-hidden="true">+<span id="timecode">133</span> ms</span>
+        </div>
+        <figcaption>
+          <strong id="replay-title">一次真实的冰球回击</strong>
+          <span>逐帧查看 · 相对时间（ms）</span>
+        </figcaption>
+        <div class="frames" aria-label="选择录像帧">
+          <a href="oneflow/hockey-01.webp" aria-label="查看 0 毫秒的画面" data-alt="来球滑向中线，机械臂准备迎球。">0</a>
+          <a href="oneflow/hockey-02.webp" aria-label="查看 67 毫秒的画面" data-alt="机械臂移动球拍，迎向来球。">67</a>
+          <a href="oneflow/hockey-03.webp" aria-label="查看 133 毫秒的画面" aria-current="true" data-alt="俯视冰球桌，机械臂的红色球拍在中线附近接触来球。">133</a>
+          <a href="oneflow/hockey-04.webp" aria-label="查看 200 毫秒的画面" data-alt="触球后，机械臂的球拍继续向前移动。">200</a>
+          <a href="oneflow/hockey-05.webp" aria-label="查看 267 毫秒的画面" data-alt="冰球与球拍分开，向对侧滑动。">267</a>
+          <a href="oneflow/hockey-06.webp" aria-label="查看 333 毫秒的画面" data-alt="回击后的冰球继续远离机械臂。">333</a>
+        </div>
+      </figure>
+    </div>
+
+    <section class="chapter" id="method" aria-labelledby="method-heading">
+      <div class="wrap chapter-grid">
+        <div class="chapter-head">
+          <p class="eyebrow" lang="en">Method</p>
+          <h2 id="method-heading">把多步去噪分摊到<br class="wide">多轮重规划</h2>
+        </div>
+        <div class="body">
+          <p>机器人每次会预测一整段动作，但通常只执行开头几步，随后就用新观测重新规划。假设一次预测 8 步，只执行前 2 步，那么下一轮仍要规划原来的第 3 至第 8 步。OneFlow 利用这段重叠，保留上一轮在各个噪声水平下的动作估计。</p>
+          <figure class="horizon">
+            <div class="horizon-grid" role="img" aria-label="本轮预测动作 1 到 8，执行 1 和 2。下一轮的动作 3 到 8 与本轮重叠，9 和 10 是新增位置。">
+              <div class="row-label">本轮</div>
+              <div class="cells"><b class="used">1</b><b class="used">2</b><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b></div>
+              <div class="row-label">下一轮</div>
+              <div class="cells next"><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b><b class="fresh">9</b><b class="fresh">10</b></div>
+            </div>
+            <figcaption class="legend"><span><i class="used"></i>已执行</span><span><i></i>两轮重叠</span><span><i class="fresh"></i>新增位置</span></figcaption>
+          </figure>
+          <h3>流式对齐 <small lang="en">Streaming alignment</small></h3>
+          <p>机器人执行两步后，OneFlow 将各噪声水平的动作块同步前移两格，保留重叠部分。对新出现的末尾两格，它延伸原有的末端动作估计，并按当前阶段的噪声水平补入新噪声。</p>
+          <h3>并行重建 <small lang="en">Parallel reconstruction</small></h3>
+          <p>对齐后的动作块仍带着上一轮的观测信息。OneFlow 把它们组成一个批次，用最新观测一次预测所有阶段的速度，再据此重建中间状态和可执行的动作块。这样，较早的观测参与形成动作，较新的观测还能修正即将执行的部分。整个过程沿用预训练策略的权重。</p>
+          <details class="method-figure">
+            <summary>查看论文中的完整方法图</summary>
+            <figure>
+              <a href="oneflow/method.webp" aria-label="打开完整尺寸的方法图"><img src="oneflow/method.webp" width="1608" height="874" loading="lazy" alt="论文图 2，左侧展示连续三轮重规划，右侧展开流式对齐和并行重建。"></a>
+              <figcaption>论文图 2。不同深浅表示不同噪声水平，横向的每一排方格表示一整段动作。</figcaption>
+            </figure>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter results" id="results" aria-labelledby="results-heading">
+      <div class="wrap chapter-grid">
+        <div class="chapter-head">
+          <p class="eyebrow" lang="en">Results</p>
+          <h2 id="results-heading">一次前向传播，<br class="wide">任务成功率如何？</h2>
+        </div>
+        <div class="body">
+          <p>在 RoboTwin 2.0 的 50 个任务上，Fast-WAM 使用原生采样器时，从十步去噪减到一步，平均成功率从 89.4% 降到 40.8%。OneFlow 保留十个去噪阶段，每轮只做一次批量前向传播，平均成功率达到 91.0%。</p>
+          <figure class="bars">
+            <figcaption>Fast-WAM 平均任务成功率</figcaption>
+            <div class="bar-row"><span>原生一步</span><div class="track"><i style="--value:40.8%"></i></div><strong>40.8%</strong></div>
+            <div class="bar-row"><span>原生十步</span><div class="track"><i style="--value:89.4%"></i></div><strong>89.4%</strong></div>
+            <div class="bar-row highlight"><span>OneFlow</span><div class="track"><i style="--value:91%"></i></div><strong>91.0%</strong></div>
+            <p class="note">论文表 3。每个任务分别在标准场景和随机化场景测试 100 次，取两种设置的平均成功率。</p>
+          </figure>
+          <h3>一次前向传播需要多久？</h3>
+          <p>OneFlow+ 在并行去噪的基础上加入执行引擎，通过 CUDA Graphs、算子融合等优化进一步缩短等待时间。在 A100 上，Fast-WAM 的动作生成耗时从原生十步的 503.53 ms 降到 16.62 ms。</p>
+          <table>
+            <caption>动作生成延迟中位数（ms）</caption>
+            <thead><tr><th scope="col">策略</th><th scope="col">原生多步</th><th scope="col">OneFlow</th><th scope="col">OneFlow+</th></tr></thead>
+            <tbody><tr><th scope="row">GR00T N1.7</th><td>111.73</td><td>57.95</td><td>9.77</td></tr><tr><th scope="row">Fast-WAM</th><td>503.53</td><td>103.20</td><td>16.62</td></tr></tbody>
+          </table>
+          <p class="note">论文表 4。在 A100 上预热后按单样本计时，从读取 CPU 上的观测到返回解码后的 CPU 动作。机器人通信和机械执行另计。</p>
+          <h3>回到真实的冰球桌</h3>
+          <p>同一个 GR00T N1.7 策略在 Franka 机械臂上迎击来球。使用原生采样时，机器人回击了 6% 的来球。使用 OneFlow 后，回击率达到 34%，加入执行引擎后达到 66%。每种方法各测试 50 轮，每轮 10 个来球，只有把球击回发球一侧才计入回击。</p>
+          <p class="note">论文表 5。实机使用 RTX 4090，三种方法的模型推理延迟中位数依次为 46.99、27.98 和 11.97 ms。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter sources" id="sources" aria-labelledby="source-heading">
+      <div class="wrap chapter-grid">
+        <div class="chapter-head"><p class="eyebrow" lang="en">References</p><h2 id="source-heading">资料来源</h2></div>
+        <div class="body">
+          <h3 lang="en">Parallelizing Flows for One-Pass Action Generation</h3>
+          <p>冰球录像帧取自论文图 1，方法示意见图 2。论文表 3 至表 5 分别给出仿真成功率、动作生成延迟与实机结果。</p>
+          <h3>OneFlow 项目网站</h3>
+          <p>动作窗口示例参考项目站 Method 栏目中每次预测 8 步、执行 2 步的演示。Key insight 栏目展示了去噪如何跨轮次推进。<a href="https://github.com/ky-ji/paraflow/tree/project-page">项目站源码（需仓库权限）</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="wrap"><a href="./index.html">全部讲座</a><a href="../">Kangye Ji · 个人主页</a></footer>
+  <script>
+    const frameImage = document.getElementById('hockey-frame');
+    const timecode = document.getElementById('timecode');
+    const frames = document.querySelectorAll('.frames a');
+    for (const frame of frames) {
+      frame.addEventListener('click', (event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        frameImage.src = frame.href;
+        frameImage.alt = frame.dataset.alt;
+        timecode.textContent = frame.textContent;
+        for (const other of frames) other.removeAttribute('aria-current');
+        frame.setAttribute('aria-current', 'true');
+      });
+    }
+  </script>
+</body>
+</html>

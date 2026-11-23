@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Research talks by Kangye Ji.">
+  <title>Talks | Kangye Ji</title>
+  <link rel="icon" href="../assets/img/Tsinghua_University_Logo.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://ky-ji.github.io/talks/">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --paper: #fff;
+      --ink: #043361;
+      --muted: #566675;
+      --line: #cdd7e0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --paper: #20212b; --ink: #afd7fa; --muted: #bbc5d0; --line: #4a5260; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font: 1rem/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { max-width: 52rem; margin: 0 auto; padding: clamp(2rem, 7vw, 5rem) 1.5rem; }
+    a { color: inherit; text-underline-offset: .2em; }
+    a:hover { text-decoration: underline; }
+    a:focus-visible { outline: 2px solid currentColor; outline-offset: .25rem; }
+    .home { font-size: .95rem; text-decoration: none; }
+    h1 { margin: 3rem 0 1.25rem; font-size: clamp(2.25rem, 6vw, 3rem); line-height: 1.1; }
+    ul { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+    li {
+      display: grid;
+      grid-template-columns: 8rem 1fr;
+      gap: 1.5rem;
+      align-items: baseline;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+    time, .language { color: var(--muted); font-size: .93rem; }
+    .title { font-size: 1.25rem; font-weight: 600; text-decoration: none; }
+    .language { margin: .25rem 0 0; }
+    @media (max-width: 36rem) {
+      li { grid-template-columns: 1fr; gap: .35rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="home" href="../index.html"><span aria-hidden="true">←</span> Kangye Ji</a>
+    <h1>Talks</h1>
+    <ul>
+      <li>
+        <time datetime="2026-11-25">25 Nov 2026</time>
+        <div>
+          <a class="title" href="261125-oneflow.html">OneFlow: Parallelizing Flows for One-Pass Action Generation</a>
+          <p class="language">In Chinese</p>
+        </div>
+      </li>
+    </ul>
+  </main>
+</body>
+</html>
