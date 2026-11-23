@@ -1,9 +1,11 @@
+/* Simulation results: show one policy at a time. Without JavaScript all four
+   panels stay visible one after another. */
 (() => {
-  const comparison = document.querySelector('.of-res-comparison');
+  const comparison = document.querySelector('[data-res-comparison]');
   if (!comparison) return;
 
-  const picker = comparison.querySelector('.of-res-picker');
-  const panels = comparison.querySelectorAll('.of-res-panel');
+  const picker = comparison.querySelector('.res-picker');
+  const panels = comparison.querySelectorAll('.res-panel');
 
   function showSelectedModel() {
     const selected = picker.querySelector('input:checked').value;
