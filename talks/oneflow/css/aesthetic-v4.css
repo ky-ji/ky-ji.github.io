@@ -140,6 +140,7 @@ var {
   border-color: rgba(15, 29, 46, 0.22);
   padding: 0 1.05rem;
   letter-spacing: 0.06em;
+  text-decoration: none;
 }
 .v3-talk:hover {
   background: var(--of-blue);
