@@ -42,8 +42,8 @@
       const ctx = cv.getContext('2d');
       const end = slide.dataset.variant === 'end';
       const W = 1920, H = 1080;
-      const x0 = end ? 1000 : 960, x1 = 1960;
-      const cy = end ? 600 : 560, band = end ? 300 : 330;
+      const x0 = end ? 1000 : 1040, x1 = 1960;
+      const cy = end ? 600 : 540, band = end ? 300 : 340;
       const K = 7, SPAN = 1.12;
       let seed = end ? 7 : 20261125;
       const rand = () => { seed = (seed + 0x6D2B79F5) | 0; let x = Math.imul(seed ^ (seed >>> 15), 1 | seed); x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x; return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
