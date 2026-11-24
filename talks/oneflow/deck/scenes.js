@@ -139,7 +139,7 @@
         const T = 3.6, f = clamp(t / T);
         const k = Math.floor(f * 10);
         slide._steps.forEach((d, i) => { d.classList.toggle('done', i < k || f >= 1); d.classList.toggle('active', i === k && f < 1); });
-        slide._ms.textContent = Math.round(503.5 * f);
+        slide._ms.textContent = Math.floor(503.53 * f);
         if (f >= 1) { slide.classList.add('chain-done'); slide._l.stop(); }
       });
     },

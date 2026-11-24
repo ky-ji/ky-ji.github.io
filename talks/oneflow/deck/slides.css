@@ -195,7 +195,7 @@
 .s-insight .body { justify-content: flex-start; padding-top: 18px; }
 .ins-svg .cell { transition: fill .3s; }
 .ins-svg .arr { fill: none; stroke-width: 3.2; stroke-linecap: round; }
-.ins-svg .ring { fill: none; stroke: var(--gold); stroke-width: 5; filter: drop-shadow(0 0 10px rgba(224, 163, 58, .8)); transition: all .25s var(--ease); }
+.ins-svg .ring { fill: rgba(224, 163, 58, .08); stroke: var(--gold); stroke-width: 5; filter: drop-shadow(0 0 10px rgba(224, 163, 58, .8)); }
 .ins-svg .axl { font: 600 20px var(--sans); fill: var(--d-ink-3); }
 
 /* ---------- 09 overlap ---------- */
@@ -241,9 +241,9 @@
 .pipe-note b { color: var(--teal); }
 .pipe-loop { position: relative; width: 640px; height: 640px; justify-self: center; }
 .loop-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.ring-bg { fill: none; stroke: #e3e8ee; stroke-width: 18; }
-.ring { fill: none; stroke: url(#loopg); stroke-width: 18; stroke-linecap: round; stroke-dasharray: var(--ring, 0) 100; transform: rotate(-90deg); transform-origin: 320px 320px; transition: stroke-dasharray 1s var(--ease); }
-.runner { fill: #fff; stroke: var(--teal); stroke-width: 5; opacity: 0; transition: opacity .6s; }
+.loop-svg .ring-bg { fill: none; stroke: #e3e8ee; stroke-width: 18; }
+.loop-svg .ring { fill: none; stroke: url(#loopg); stroke-width: 18; stroke-linecap: round; stroke-dasharray: var(--ring, 0) 100; transform: rotate(-90deg); transform-origin: 320px 320px; transition: stroke-dasharray 1s var(--ease); }
+.loop-svg .runner { fill: #fff; stroke: var(--teal); stroke-width: 5; opacity: 0; transition: opacity .6s; }
 .s-pipe[data-step="4"] .runner { opacity: 1; }
 .loop-center { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; }
 .loop-center b { font: 800 40px/1 var(--head); }
