@@ -34,11 +34,11 @@
 
   /* Suggested time and speaker cue for each page, keyed by data-section. */
   const cues = {
-    "main": ["00:00–01:00", "机器人刚收到一次观测。要把这条新信息变成动作，还要等多久？封面用一束流线示意从源噪声到动作的去噪过程。接下来要看清一个具体依赖：原生求解器先预测速度、更新估计，再把结果交给下一步。整串计算走完才有基于本次观测的动作。在物体移动或接触状态变化时，观测与响应之间的这段时间格外重要。如果缩短这条计算链，动作质量会怎样？"],
+    "main": ["00:00–01:00", "机器人刚收到一次观测。要把这条新信息变成动作，还要等多久？沿封面从左向右看。分散的粒子逐渐聚成几条平滑的动作曲线，这是从源噪声到动作的示意。接下来要看清一个具体依赖：原生求解器先预测速度、更新估计，再把结果交给下一步。整串计算走完才有基于本次观测的动作。在物体移动或接触状态变化时，观测与响应之间的这段时间格外重要。如果缩短这条计算链，动作质量会怎样？"],
     "problem": ["01:00–03:00", "从专用流策略到部分视觉语言动作模型和世界动作模型，许多预训练策略都通过多步去噪生成一段动作。沿左边的原生十步读，每增加一格，就多等一次串行网络调用。现在揭示同一个 Fast-WAM 的测试结果：从十步减到一步，50 项任务的平均成功率从 89.4% 降到 40.8%。这里先看任务表现，毫秒数稍后在同一硬件上比较。还有哪些办法能缩短机器人等待新动作的时间？"],
     "question": ["03:00–05:30", "先看三条已有的路。少步求解能减少网络调用，步数很少时，离散化误差可能影响任务成功率。蒸馏可把多步压缩到少数几次前向，但需要针对具体策略训练。缓存中间特征或动作状态也能节省计算，复用过多则会引入近似误差。请翻出研究问题，停一下。我们的出发点是固定预训练策略的权重，在一次前向里并行求多个阶段的速度。要做到这一点，调用网络之前就得备齐各阶段的输入。从哪里找？请看动作 9。"],
     "action-path": ["05:30–08:30", "先看左图的动作 9。机器人执行第 3、4 步后，新的窗口从第 5 步开始，动作 9 从第 7 格移到第 5 格。每按一次键多显示一轮，接下来是第 3、第 1 格。动作 9 指同一个执行时刻，届时发什么指令可以逐轮修正。现在看右图：一列是同一次重规划，四个噪声阶段共用新观测。沿橙色对角线读，才是跨轮传递的一条修正路径。接下来逐轮数网络调用。"],
-    "replanning-demo": ["08:30–11:30", "两条轨道共用一条取放轨迹。横轴数网络调用，姿态代表已经拿到的动作段。初始化需要四次调用，两种方法同时交出第一段。推进到第 8 次，OneFlow 的五段已经全部可用，原生四步只交出两段。再到第 20 次，原生采样才交出第五段。也可以拖动横轴，请听众指出两条轨道第一次分开的时刻。这里比较的是顺序依赖，稍后我们会直接比较同一硬件上的毫秒数。"],
+    "replanning-demo": ["08:30–11:30", "两条轨道共用一条取放轨迹。横轴数网络调用，姿态代表已经拿到的动作段。初始化需要四次调用，两种方法同时交出第一段。推进到第 8 次，OneFlow 的五段已经全部可用，原生四步只交出两段。再到第 20 次，原生采样才交出第五段。在这里停一下，让听众指出两条轨道第一次分开的时刻。如果听众想看这一次调用更新了什么，切到“一轮内部”，停在“执行”，请大家找出交给机器人的两步。这里比较的是顺序依赖，稍后我们会直接比较同一硬件上的毫秒数。"],
     "mechanics": ["11:30–15:30", "接着刚才四个阶段的例子。机器人向前走了两步，先把各段动作和对应的源噪声一起前移。补齐末尾时，要先扣除旧的噪声分量，把末端余量延伸到新增位置，再按各阶段的噪声水平加上同一份新噪声。四个对齐后的候选共用最新观测，在一个批次里预测速度、估计各自的终点，再用预先算好的权重重建各阶段。机器人只执行最终动作段的前两步，其余中间状态还会参与下一轮规划。为什么不能只更新最后的动作？在 Google Robot 的变体聚合测试中，Xiaomi Robotics 0 采用完整方法时成功率为 75.9%，只更新输出端时降到 8.7%。下一步，我们把完整方法放回一个多步采样本来就很强的策略里，看它能保留多少任务表现。"],
     "simulation": ["15:30–17:30", "这里看 RoboTwin 2.0 的全部 50 项任务。每项任务有 100 个标准场景和 100 个随机化场景，每种采样配置一共跑 10,000 个回合。刚才看到，直接把十步压成一步，平均成功率从 89.4% 掉到 40.8%。现在把十个去噪阶段保留下来，每轮只做一次批量前向。可以先猜一下结果。（停顿）OneFlow 是 91.0%，加上执行引擎是 91.1%。这两个百分比表示测试回合中完成任务的比例。为什么跨轮更新能够保留这样的表现？接下来的对照把观测、噪声和前向传播次数都固定下来，专门考察中间预测该不该留下。"],
     "continuation": ["17:30–19:30", "这里换到用状态作为输入的流匹配策略。两组原生采样使用配对的源噪声，最早一次观测用三步，接着一次用四步，当前观测再用三步。第一组等到当前轮次才开始，一次取出三份观测记录，把十步全部从头算完。第二组提前两轮开始。机器人每执行四步，就把尚未完成的动作段向前对齐，在新观测下继续计算。稳态时，两组每轮都调用网络十次。平均成功率从 54.1% 到 61.2%，说明在这些任务上，让新观测继续修正同一批未来动作确实有用。作为参照，OneFlow 每轮一次批量前向达到 60.0%。接下来把批次里的阶段数逐渐加大，看看成功率和等待时间各自怎么变。"],
@@ -126,7 +126,7 @@
     });
     select.value = String(current);
     position.textContent = (current + 1) + ' / ' + slides.length;
-    reading.hash = slide.dataset.section;
+    reading.hash = slide.dataset.readingTarget || slide.dataset.section;
     renderNotes();
     applyStep();
     stage.scrollTop = 0;
@@ -194,6 +194,27 @@
   }
   for (const hint of document.querySelectorAll('[data-talk-hint]')) hint.hidden = false;
 
+  const demo = dialog.querySelector('.s-walk');
+  const demoTitle = demo.querySelector('h2');
+  const demoFoot = demo.querySelector('.slide-foot');
+  const callsFoot = demoFoot.textContent;
+  for (const button of demo.querySelectorAll('[data-demo-view]')) {
+    button.addEventListener('click', () => {
+      const stream = button.dataset.demoView === 'stream';
+      for (const option of demo.querySelectorAll('[data-demo-view]')) {
+        const selected = option === button;
+        option.setAttribute('aria-pressed', String(selected));
+        document.getElementById(option.getAttribute('aria-controls')).hidden = !selected;
+      }
+      demoTitle.textContent = stream ? '一次重规划，怎样把新观测变成两步动作？' : demo.dataset.title;
+      demoFoot.textContent = stream
+        ? '项目站 Method 动画 · 上方为实机示范观测，动作曲线为示意。每次按下一步，依次查看四个阶段和下一轮观测。'
+        : callsFoot;
+      demo.dataset.readingTarget = stream ? 'stream-clock' : demo.dataset.section;
+      reading.hash = demo.dataset.readingTarget;
+      applyStep();
+    });
+  }
   previous.addEventListener('click', back);
   next.addEventListener('click', forward);
   select.addEventListener('change', () => showSlide(Number(select.value), false));
@@ -201,7 +222,7 @@
   document.getElementById('deck-exit').addEventListener('click', () => dialog.close());
   reading.addEventListener('click', event => {
     event.preventDefault();
-    readingTarget = document.getElementById(slides[current].dataset.section);
+    readingTarget = document.getElementById(slides[current].dataset.readingTarget || slides[current].dataset.section);
     dialog.close();
   });
   /* A figure inside the current slide may choose a step itself (round tabs). */

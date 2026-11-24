@@ -1,222 +1,297 @@
-/* One focus per step of a steady-state replanning round, with H=8, E=2, N=4. */
+// One steady-state replanning update. Its three views share a scene and a clock.
+// Trajectory cells, source texture, batch outline, travelling rows and observation
+// are adapted from the OneFlow project page's fig-mechanism.js and common.js.
 (() => {
+  const art=window.OneFlowTrajectoryArt;
+  if(!art) return;
   const NS='http://www.w3.org/2000/svg';
+  const observation=new URL('stream/obs-03.webp',document.currentScript.src).href;
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const clamp=v=>Math.max(0,Math.min(1,v));
   const ease=v=>{const t=clamp(v);return t*t*(3-2*t);};
-  const colors=['#c4d8eb','#9abce3','#5b91cd','#2e65ac'];
-  const phases=[
-    {tab:'流式对齐',heading:'旧窗口左移两格，尾部补入新位置',body:'动作 3、4 已执行。保留 5–10，各阶段在尾部 11、12 加入同一份新噪声，并按各自的噪声水平缩放。'},
-    {tab:'一次批量调用',heading:'四个候选共享新观测，只调用一次网络',body:'网络一次给出四组速度 Vᵢ。每组速度与该阶段的剩余去噪时间一起，给出终点估计 Dᵢ。'},
-    {tab:'并行重建',heading:'一次矩阵运算重建各阶段，执行输出的前两步',body:'权重由去噪网格预先确定。最终动作块的 5、6 交给机器人，源噪声与更新的中间状态留给下一轮。'}
-  ];
-  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
-  const players=[];
-  let seq=0;
-  function el(name,cls,text) {
-    const n=document.createElement(name);
-    if(cls)n.className=cls;if(text)n.textContent=text;return n;
-  }
-  function svg(name,parent,attrs={}) {
-    const n=document.createElementNS(NS,name);attr(n,attrs);if(parent)parent.append(n);return n;
-  }
-  function attr(node, attrs){for(const [k,v] of Object.entries(attrs))node.setAttribute(k,String(v));}
-  function txt(g,x,y,s,opts={}){
-    const n=svg('text',g,{x,y,fill:'#314e68','font-size':13,'dominant-baseline':'middle',...opts});n.textContent=s;return n;
-  }
-  function rect(g,x,y,w,h,fill,stroke='none',radius=3) {return svg('rect',g,{x,y,width:w,height:h,rx:radius,fill,stroke});}
-  function link(g,d,color='#a9bfd3') {return svg('path',g,{d,fill:'none',stroke:color,'stroke-width':1.45,'stroke-linecap':'round'});}
-  function token(g,color,r=3) {return svg('circle',g,{r,fill:color,stroke:'#fff','stroke-width':.8});}
-  function onPath(dot,p,fraction,opacity=1){
-    const t=clamp(fraction), xy=p.getPointAtLength(p.getTotalLength()*t);
-    attr(dot,{cx:xy.x,cy:xy.y,opacity:opacity*ease(t*11)*ease((1-t)*11)});
-  }
+  const mix=(a,b,t)=>a+(b-a)*t;
   const subs=['₀','₁','₂','₃','₄'];
-  function alignScene(g,dim,id) {
-    const {W,mobile:w}=dim, left=w?37:76,right=w?10:33,top=61,rh=28,cw=(W-left-right)/8;
-    const clip=svg('clipPath',svg('defs',g),{id});rect(clip,left-1,top-22,8*cw+2,rh*4+24,'white');
-    txt(g,left,15,'窗口内位置',{'font-size':w?11:14});
-    for(let j=0;j<8;j++)txt(g,left+(j+.5)*cw,37,String(j+1),{'text-anchor':'middle','font-size':w?12:15,'font-weight':600});
-    const moving=[];
-    for(let r=0;r<4;r++){
-      const yy=top+r*rh;
-      txt(g,left-7,yy+9,'t'+subs[r],{'font-size':w?13:17,'font-style':'italic','text-anchor':'end'});
-      const rail=svg('g',g,{'clip-path':'url(#'+id+')'}),strip=svg('g',rail),old=[],fresh=[];
-      for(let j=0;j<10;j++){
-        const px=left+j*cw+1, newTail=j>=8, executed=j<2, cell=svg('g',strip);
-        rect(cell,px,yy-2,cw-3,23,newTail?'#eaf3ff':executed?'#e8ecee':colors[r],newTail?'#2164b0':'none');
-        txt(cell,px+(cw-3)/2,yy+10,String(j+3),{'text-anchor':'middle','font-size':w?11:14,'font-weight':600,fill:r>1&&!newTail&&!executed?'#fff':'#1c3853'});
-        if(executed)link(cell,'M'+(px+3)+' '+(yy+18)+' l'+(cw-9)+' -16','#8c9da9');
-        if(executed)old.push(cell);if(newTail)fresh.push(cell);
-      }
-      moving.push({strip,old,fresh});
-    }
-    const endTxt=txt(g,W-right,184,'',{'text-anchor':'end','font-size':w?12:15,'font-weight':650,fill:'#1755a3'});
-    return p=>{
-      const moved=ease((p-.12)/.55), tail=ease((p-.52)/.34);
-      for(const {strip,old,fresh} of moving){
-        strip.setAttribute('transform','translate('+(-2*cw*moved)+' 0)');
-        old.forEach(n=>n.setAttribute('opacity',1-.65*moved));fresh.forEach(n=>n.setAttribute('opacity',tail));
-      }
-      endTxt.textContent=moved>.97?'本轮窗口 5–12':'上一轮窗口 3–10';
-    };
+  const phases=[
+    {tab:'流式对齐',heading:'窗口前移两步，保留六个位置的动作与源噪声',body:'每行是一段八步轨迹。5–10 连同各自的源噪声一起前移。11、12 延伸旧窗口的末端残差，并叠加同一份按阶段缩放的新噪声。'},
+    {tab:'一次批量调用',heading:'四个候选沿同一批次进入冻结策略',body:'四条候选轨迹共用观测 oₖ。冻结策略一次给出全部速度 Vᵢ，各阶段据此得到终点估计 Dᵢ = Cᵢ + (1 − tᵢ)Vᵢ。'},
+    {tab:'并行重建',heading:'同时重建四段轨迹，交付末段的前两步',body:'预计算的权重把源噪声和四个终点估计组合为新状态。中间状态写回左侧供下一轮使用，最终轨迹的动作 5、6 交付执行。'}
+  ];
+  const lengths=[3.3,3.8,4.2];
+  const palette=['#e4e9ee','#c3d4e4','#91b0cd','#5e85af','#345f8b'];
+  function element(tag,cls,value){
+    const e=document.createElement(tag);if(cls)e.className=cls;if(value)e.textContent=value;return e;
   }
-  function batchScene(g,dim){
-    const {W,mobile:m}=dim,cx=W/2, start=m?59:112,end=W-start,top=57,gap=34;
-    txt(g,start,17,'候选 Cᵢ',{ 'text-anchor':'middle','font-weight':650,'font-size':m?12:15});
-    txt(g,end,17,'速度 Vᵢ',{ 'text-anchor':'middle','font-weight':650,'font-size':m?12:15});
-    const nw=m?65:111,nh=m?48:58,ny=103;
-    const flows=[];
-    for(let i=0;i<4;i++){
-      const y=top+i*gap,portY=ny+(i-1.5)*6, ix=cx-nw/2, ox=cx+nw/2;
-      const pathIn=link(g,'M'+(start+20)+' '+y+' C'+(ix-18)+' '+y+' '+(ix-26)+' '+portY+' '+ix+' '+portY);
-      const pathOut=link(g,'M'+ox+' '+portY+' C'+(ox+26)+' '+portY+' '+(end-40)+' '+y+' '+(end-19)+' '+y);
-      rect(g,start-20,y-10,40,21,colors[i]);txt(g,start,y+1,'C'+subs[i],{'text-anchor':'middle','font-size':m?12:15,'font-weight':650,fill:i>=2?'white':'#183651'});
-      const out=svg('g',g);
-      rect(out,end-20,y-10,40,21,'#e5effa','#78a0cc');
-      txt(out,end,y+1,'V'+subs[i],{'text-anchor':'middle','font-size':m?12:15,'font-weight':650,fill:'#194e88'});
-      flows.push({a:pathIn,b:pathOut,out,dotA:token(g,'#145bc4',m?3.3:4.2),dotB:token(g,'#145bc4',m?3.3:4.2)});
-    }
-    const net=rect(g,cx-nw/2,ny-nh/2,nw,nh,'#e2edf7','#4472a4',7);
-    const symbol=txt(g,cx,ny,'v',{'text-anchor':'middle','font-size':m?21:28,'font-weight':650, 'font-style':'italic'});
-    svg('tspan',symbol,{'baseline-shift':'sub','font-size':'65%'}).textContent='θ';
-    txt(g,cx,26,'新观测 oₖ',{'text-anchor':'middle','font-size':m?12:15,'font-weight':650});
-    link(g,'M'+cx+' 38 V'+(ny-nh/2-5),'#7c92a7');
-    txt(g,cx,177,'1 次前向传播',{'text-anchor':'middle','font-size':m?12:16,'font-weight':650,fill:'#195392'});
-    return p=>{
-      const strength=ease((p-.36)/.10)*(1-ease((p-.69)/.14));
-      net.setAttribute('fill',strength>.45?'#225b9c':'#e2edf7');symbol.setAttribute('fill',strength>.45?'#fff':'#164576');
-      for(const f of flows){
-        onPath(f.dotA,f.a,(p-.04)/.4);onPath(f.dotB,f.b,(p-.51)/.37);
-        f.out.setAttribute('opacity',.32+.68*ease((p-.57)/.27));
-      }
-    };
+  function create(tag,parent,attrs={}){
+    const e=document.createElementNS(NS,tag);
+    for(const [key,value] of Object.entries(attrs))e.setAttribute(key,value);
+    parent.append(e);return e;
   }
-  function rebuildScene(g,dim){
-    const {W,mobile:m}=dim, left=m?40:76, mid=m?103:184, right=m?161:320, gap=(W-right-(m?9:32))/8, top=56,rh=29;
-    txt(g,left,15,'输入',{'text-anchor':'middle','font-size':m?12:15,'font-weight':650});
-    txt(g,mid,15,'权重',{'text-anchor':'middle','font-size':m?12:15,'font-weight':650});
-    txt(g,right,15,'重建后的窗口 5–12',{'font-size':m?12:15,'font-weight':650});
-    const nodes=[],outgoing=[];
-    for(let i=0;i<5;i++){
-      const yy=43+i*29;rect(g,left-18,yy-9,36,20,i?'#dce9f8':'#e9e6dd','#afbfcc');
-      txt(g,left,yy+1,i?'D'+subs[i-1]:'X′₀',{'text-anchor':'middle','font-size':m?12:15,'font-weight':620});
-      const p=link(g,'M'+(left+18)+' '+yy+' Q'+(mid-22)+' '+yy+' '+(mid-15)+' '+(98+(i-2)*5));
-      nodes.push({p,d:token(g,'#3166a0')});
-    }
-    rect(g,mid-15,77,30,42,'#e8eff6','#7295b5',3);
-    for(let a=0;a<3;a++)for(let b=0;b<3;b++)rect(g,mid-9+b*6,88+a*7,4,5,b<=a?'#486e9b':'#d2dee8','none',.6);
-    const cells=[];
+  function set(node,k,v){
+    const s=String(v);if(node.getAttribute(k)!==s)node.setAttribute(k,s);
+  }
+  function text(g,x,y,content,attrs={}){
+    const n=create('text',g,{x,y,fill:'#314a60','font-size':14,'dominant-baseline':'middle',...attrs});n.textContent=content;return n;
+  }
+  function rename(el,content){if(el.textContent!==content)el.textContent=content;}
+  function stroke(g,d,attrs={}){
+    return create('path',g,{d,fill:'none',stroke:'#aabcca','stroke-width':1.35,'stroke-linecap':'round',...attrs});
+  }
+  function setPose(node,x,y,scale=1){set(node,'transform','translate('+x.toFixed(2)+' '+y.toFixed(2)+') scale('+scale.toFixed(3)+')');}
+  function fade(node,opacity){set(node,'opacity',clamp(opacity).toFixed(3));}
+
+  // For the schematic one-dimensional action coordinate, reuse the paper's
+  // residual extension and unrolled affine update with a uniform denoising grid.
+  const previousEstimate=a=>art.signal(a)+.1*Math.sin(.7*a+.3);
+  const noiseAt=a=>art.noise(a,a<10.5?3:11);
+  const oldState=(i,a)=>mix(previousEstimate(a),art.noise(a,3),1-i/4);
+  const candidate=(i,a)=>mix(previousEstimate(Math.min(a,10.47)),noiseAt(a),1-i/4);
+  const endpoint=(i,a)=>art.signal(a)+(.13-.023*i)*Math.sin(1.08*a+.66*i);
+  const weights=Array.from({length:5},()=>Array(5).fill(0));
+  weights[0][0]=1;
+  for(let i=0;i<4;i++){
+    const retained=(3-i)/(4-i);
+    weights[i+1]=weights[i].map(weight=>retained*weight);
+    weights[i+1][i+1]=1-retained;
+  }
+  function updated(i,a){
+    return weights[i].reduce((sum,w,j)=>sum+(w?w*(j?endpoint(j-1,a):noiseAt(a)):0),0);
+  }
+  function createScene(root,narrow){
+    root.replaceChildren();
+    const d=art.palette(root);
+    const W=narrow?360:860,H=narrow?320:235;
+    const cellStep=narrow?24.4:31,cw=cellStep-2.5,ch=narrow?15.5:21.5,rh=narrow?20:28;
+    const gx=narrow?37:48,gy=narrow?47:56,rx=narrow?91:565,ry=narrow?205:56;
+    const groupW=cellStep*8-2.5, groupH=3*rh+ch;
+    const cx=narrow?171:426,cy=narrow?149:110,bw=narrow?97:128,bh=narrow?38:62;
+    const photo={x:narrow?271:cx-33,y:narrow?53:9,w:narrow?53:66,h:narrow?30:37};
+    const f=narrow?11.5:14;
+    set(root,'viewBox','0 0 '+W+' '+H);
+    const titleAttrs={'font-size':narrow?13:17,'font-weight':690,fill:'#203f58'};
+    const inputTitle=text(root,gx,narrow?15:16,'',titleAttrs);
+    const outputTitle=text(root,rx,narrow?178:16,'',titleAttrs);
+    const byAction=Array.from({length:8},(_,j)=>text(root,gx+(j+.5)*cellStep,narrow?36:39,'',{'text-anchor':'middle','font-size':f-1}));
+    for(let j=0;j<8;j++)text(root,rx+(j+.5)*cellStep,narrow?194:39,String(j+5),{'text-anchor':'middle','font-size':f-1});
+    const clip=create('clipPath',d.defs,{id:d.id+'-window'});
+    create('rect',clip,{x:gx-1,y:gy-1,width:groupW+2,height:groupH+2,rx:2});
+    const clipped=create('g',root,{'clip-path':'url(#'+d.id+'-window)'});
+    const inputRows=[],outputRows=[],inLabels=[],outLabels=[],ghostRows=[];
+    const pastColor=i=>i<3?'#405f7e':'#f7fbff';
+    const slots=create('g',root,{'aria-hidden':'true',stroke:'#d4dfe6',fill:'none'});
     for(let i=0;i<4;i++){
-      const yy=top+i*rh;
-      const path=link(g,'M'+(mid+16)+' '+(98+(i-1.5)*4)+' Q'+(right-34)+' '+yy+' '+(right-22)+' '+yy);
-      outgoing.push({p:path,d:token(g,'#2a6fcb')});
-      txt(g,right-2,yy,'X′'+subs[i+1],{'text-anchor':'end','font-size':m?10:14,fill:'#274764'});
-      const row=[];
+      const y=ry+i*rh;
+      create('rect',slots,{x:rx,y,width:groupW,height:ch,rx:3,fill:'#f5f7f7','stroke-width':.75});
+      for(let j=1;j<8;j++)stroke(slots,'M'+(rx+j*cellStep-1)+' '+(y+3)+'v'+(ch-6),{stroke:'#dde5e9','stroke-width':.7});
+    }
+    for(let i=0;i<4;i++){
+      const row=create('g',clipped,{class:'mx-state-row','data-noise-level':i});
+      const cells=Array.from({length:10},(_,j)=>{
+        const cell=art.cell(row,j*cellStep,0,cw,ch,d);
+        art.ink(cell,palette[i],pastColor(i),j>=8?'#356ea6':'none',(1-i/4)*.60);
+        if(j>=8)set(cell.bg,'stroke-dasharray','2 2');
+        art.wave(cell,j+3,(a)=>j>=8?candidate(i,a):oldState(i,a));
+        return cell;
+      });
+      inputRows.push({row,cells});
+      inLabels.push(text(root,gx-5,gy+i*rh+ch/2,'',{'font-size':f,'text-anchor':'end','font-style':'italic'}));
+      const out=create('g',root,{class:'mx-out-row'});
+      const outCells=Array.from({length:8},(_,j)=>art.cell(out,j*cellStep,0,cw,ch,d));
+      for(let j=0;j<8;j++) {
+        const c=outCells[j];
+        art.ink(c,'#4477a6','#fff');art.wave(c,j+5,a=>endpoint(i,a));
+      }
+      outputRows.push({row:out,cells:outCells});
+      outLabels.push(text(root,rx-5,ry+i*rh+ch/2,'',{'font-size':f,'text-anchor':'end','font-style':'italic'}));
+    }
+    const tail=stroke(root,'',{'stroke-width':1.3,stroke:'#2869ac'});
+    const tailLabel=text(root,gx+groupW,gy+groupH+13,'新增尾部 11、12',{'text-anchor':'end','font-size':f-1,fill:'#275d91'});
+    const ring=create('rect',root,{x:gx-4,y:gy-4,width:groupW+8,height:groupH+8,rx:5,fill:'none',stroke:d.pass,'stroke-width':2,'stroke-dasharray':'8 5'});
+    const cx0=cx-bw/2,cy0=cy-bh/2;
+    const outBracket=stroke(root,'',{'stroke-width':1.4,stroke:'#32699f'});
+    const outputNote=text(root,rx+groupW,ry+groupH+15,'',{'font-size':f,'text-anchor':'end',fill:'#255881','font-weight':650});
+    const centerTrack=stroke(root,narrow?'M'+(gx+groupW/2)+' '+(gy+groupH+3)+' Q'+(gx+groupW/2)+' '+(cy-13)+' '+cx0+' '+cy
+      :'M'+(gx+groupW+5)+' '+cy+' H'+(cx0-2),{'stroke-dasharray':'2 3'});
+    const returnTrack=stroke(root,narrow?'M'+(cx+bw/2)+' '+cy+' Q'+(rx+groupW/2)+' '+cy+' '+(rx+groupW/2)+' '+(ry-5)
+      :'M'+(cx+bw/2+2)+' '+cy+' H'+(rx-23),{'stroke-dasharray':'2 3'});
+    const lines=[centerTrack,returnTrack];
+    const picture=create('image',root,{href:observation,x:photo.x,y:photo.y,width:photo.w,height:photo.h,preserveAspectRatio:'xMidYMid slice'});
+    create('rect',root,{x:photo.x,y:photo.y,width:photo.w,height:photo.h,fill:'none',stroke:'#708699','stroke-width':1,rx:1});
+    text(root,narrow?photo.x+photo.w/2:cx+40,narrow?photo.y-10:photo.y+photo.h/2,'观测 oₖ',{'font-size':f,'text-anchor':narrow?'middle':'start','font-weight':650});
+    const obsTrack=stroke(root,narrow?'M'+(photo.x+photo.w/2)+' '+(photo.y+photo.h+3)+' Q'+(photo.x+photo.w/2)+' '+(cy-12)+' '+(cx+bw/2-5)+' '+(cy0+2)
+      :'M'+cx+' '+(photo.y+photo.h+1)+'V'+(cy0-3));
+    const obsDot=create('circle',root,{r:3,fill:'#325c8b'});
+    const ghostLayer=create('g',root,{'aria-hidden':'true'});
+    for(let i=0;i<4;i++){
+      const g=create('g',ghostLayer,{class:'mx-batch-copy'});
       for(let j=0;j<8;j++){
-        const x=right+j*gap+2,cell=svg('g',g),exec=(i===3&&j<2);
-        rect(cell,x,yy-10,gap-3,20,exec?'#1b58a7':colors[i],exec?'#164c95':'none');
-        txt(cell,x+(gap-3)/2,yy+.3,String(j+5),{'text-anchor':'middle','font-size':m?10:13,fill:i>1?'#fff':'#1d3e5b','font-weight':600});
-        row.push(cell);
+        const c=art.cell(g,j*cellStep,0,cw,ch,d);
+        art.ink(c,palette[i],pastColor(i),'none',.6*(1-i/4));art.wave(c,j+5,a=>candidate(i,a));
       }
-      cells.push(row);
+      ghostRows.push(g);
     }
-    const footer=txt(g,W-(m?10:32),185,'',{'text-anchor':'end','font-size':m?12:15,'font-weight':650,fill:'#1755a3'});
-    return p=>{
-      for(const v of nodes)onPath(v.d,v.p,(p-.01)/.3);
-      for(const v of outgoing)onPath(v.d,v.p,(p-.27)/.29);
-      for(const row of cells)row.forEach((n,j)=>n.setAttribute('opacity',.18+.82*ease((p-.46-j*.035)/.12)));
-      footer.textContent=p>.77?'输出动作 5、6 · 中间状态留给下一轮':'四个状态同时由预先计算的权重重建';
+    const policy=create('g',root,{class:'mx-policy'});
+    const box=create('rect',policy,{x:cx0,y:cy0,width:bw,height:bh,rx:narrow?6:10,fill:'#eff3f6',stroke:'#748da4','stroke-width':1.5});
+    const boxRing=create('rect',policy,{x:cx0-3,y:cy0-3,width:bw+6,height:bh+6,rx:narrow?8:12,fill:'none',stroke:d.pass,'stroke-width':2,'stroke-dasharray':'8 5'});
+    const netLabel=text(policy,cx,cy-(narrow?6:9),'冻结策略',{ 'text-anchor':'middle','font-size':narrow?12:18,'font-weight':680});
+    const model=text(policy,cx,cy+(narrow?9:13),'vθ(Cᵢ, tᵢ, oₖ)',{'text-anchor':'middle','font-size':narrow?10:14,'font-style':'italic'});
+    const hintY=narrow?309:218;
+    const stageHint=text(root,narrow?W/2:gx,hintY,'',{'text-anchor':narrow?'middle':'start','font-size':f,'font-weight':600,fill:'#315671'});
+    let previousWrite=-1,previousReconstruct=-1,previousExecution=false;
+
+    return (scene,p)=>{
+      const shift=scene===0?ease((p-.12)/.53):1;
+      const fly=scene===1?ease((p-.06)/.42):scene>1?1:0;
+      const active=scene===1?ease((p-.20)/.15)*(1-ease((p-.78)/.16)):0;
+      const out=scene===1?ease((p-.56)/.35):scene>1?1:0;
+      const reconstruct=scene===2?ease((p-.13)/.30):0;
+      const write=scene===2?ease((p-.55)/.33):0;
+      const execute=scene===2?ease((p-.77)/.19):0;
+      const newInput=write>.99;
+      rename(inputTitle,newInput?'留给下一轮':shift>.94?'已对齐的候选':'上轮保留的轨迹');
+      rename(outputTitle,scene===2&&reconstruct>.43?'本轮重建的轨迹':'本轮终点估计');
+      byAction.forEach((n,j)=>{rename(n,String(j+(shift>.5?5:3)));fade(n,.45+.55*Math.abs(2*shift-1));});
+      for(let i=0;i<4;i++){
+        const iy=gy+i*rh,oy=ry+i*rh;
+        setPose(inputRows[i].row,gx-2*cellStep*shift,iy);
+        rename(inLabels[i],newInput?'X′'+subs[i]:shift>.98?'C'+subs[i]:'X'+subs[i]);
+        for(let j=0;j<10;j++){
+          const c=inputRows[i].cells[j];
+          if(j<2)fade(c.group,1-.7*shift);
+          if(j>=8)fade(c.group,ease((shift-.16)/.84));
+          if(j>=2&&write!==previousWrite){
+            art.wave(c,j+3,a=>mix(candidate(i,a),updated(i,a),write));
+            if(j>=8)set(c.bg,'stroke-opacity',1-write);
+          }
+        }
+        const gy0=gy+i*rh;
+        const scale=mix(1,.16,fly);
+        setPose(ghostRows[i],mix(gx,cx-.16*groupW/2,fly),mix(gy0,cy+(i-1.5)*3,fly),scale);
+        fade(ghostRows[i],scene===1?ease(p/.09)*(1-ease((fly-.72)/.28)):0);
+        const outScale=mix(.18,1,out);
+        let ox=mix(cx-.18*groupW/2,rx,out),yy=mix(cy+(i-1.5)*3,oy,out);
+        // Copy the three intermediate outputs back to the slots that the next
+        // round will use. The final output stays on the right for the robot.
+        if(i<3){ox=mix(ox,gx,write);yy=mix(yy,gy+(i+1)*rh,write);}
+        setPose(outputRows[i].row,ox,yy,outScale);
+        fade(outputRows[i].row,scene===0?0:out*(i<3?1-ease((write-.77)/.23):1));
+        fade(outLabels[i],out*(i<3?1-ease(write*3):1));
+        rename(outLabels[i],reconstruct>.5?'X′'+subs[i+1]:'D'+subs[i]);
+        if(reconstruct!==previousReconstruct||(execute>.45)!==previousExecution){
+          const cells=outputRows[i].cells;
+          for(let j=0;j<8;j++){
+            const c=cells[j],exec=i===3&&j<2&&execute>.45;
+            art.ink(c,exec?'#1e4976':reconstruct>.48?palette[i+1]:'#4477a6',
+              i<2&&reconstruct>.48?'#375578':'#fff','none',reconstruct*(1-(i+1)/4)*.58);
+            art.wave(c,j+5,a=>mix(endpoint(i,a),updated(i+1,a),reconstruct));
+          }
+        }
+      }
+      previousWrite=write;previousReconstruct=reconstruct;previousExecution=execute>.45;
+      const xt=gx+6*cellStep;
+      set(tail,'d','M'+xt+' '+(gy+groupH+3)+'v3h'+(2*cellStep-2.5)+'v-3');
+      const tails=shift*(1-write)*(scene===0?1:.25);fade(tail,tails);fade(tailLabel,tails);
+      const xb=rx, yb=ry+groupH+3;
+      set(outBracket,'d','M'+xb+' '+yb+'v4h'+(2*cellStep-2.5)+'v-4');
+      fade(outBracket,execute);fade(outputNote,execute);
+      rename(outputNote,'执行前两步 5、6');
+      fade(ring,active);fade(boxRing,active);
+      set(ring,'stroke-dashoffset',-p*52);set(boxRing,'stroke-dashoffset',-p*63);
+      set(box,'fill',active>.4?'#284d73':'#eff3f6');
+      set(netLabel,'fill',active>.4?'#fff':'#27445e');set(model,'fill',active>.4?'#d7e6f6':'#446079');
+      fade(picture,.68+.32*(scene===1?1:0));
+      fade(obsTrack,.38+.62*active);lines.forEach(line=>fade(line,.27+.65*active));
+      const op=clamp((p-.11)/.39);
+      if(scene===1&&op>0&&op<1){
+        const pt=obsTrack.getPointAtLength(obsTrack.getTotalLength()*op);
+        set(obsDot,'cx',pt.x);set(obsDot,'cy',pt.y);fade(obsDot,Math.sin(Math.PI*op));
+      }else fade(obsDot,0);
+      const note=scene===0?(shift<.02?'上轮已执行 3、4':shift<.98?'动作 5–10 与源噪声同步前移':'新窗口 5–12 · 六个位置沿用上轮的估计')
+        :scene===1?(out<.9?'四段轨迹与同一观测送入一个批次':'一次前向给出四个速度，得到四条终点估计')
+        :write<.35?'源噪声与终点按固定权重组合':'保留 X′₀–X′₃ · 执行 X′₄ 的前两步';
+      rename(stageHint,note);
     };
   }
   function mount(figure){
     const source=figure.querySelector(':scope > .mech-flow, :scope > .mech-grid');
     if(!source||figure.querySelector(':scope > .mx-lab'))return;
-    const shell=el('div','mx-lab'),nav=el('div','mx-nav'),summary=el('div','mx-summary'),foot=el('div','mx-foot'),body=el('div','mx-explain'),controls=el('div','mx-controls');
+    const shell=element('div','mx-lab'),nav=element('div','mx-nav'),summary=element('div','mx-summary');
+    const canvas=element('div','mx-stage'),foot=element('div','mx-foot'),body=element('div','mx-explain'),controls=element('div','mx-controls');
     nav.setAttribute('role','group');nav.setAttribute('aria-label','本轮重规划的运算');
-    const tabs=phases.map(({tab})=>{const b=el('button','',tab);b.type='button';nav.append(b);return b;});
-    const svgRoot=svg('svg',null,{role:'img'}),play=el('button','', '播放'),replay=el('button','','重播本步');
-    play.type='button';replay.type='button';controls.append(play,replay);foot.append(body,controls);
-    const final=el('div','mx-final','如果只写回最终动作，下一轮还能从修正后的中间状态出发吗？');
-    shell.append(nav,summary,svgRoot,foot,final);figure.insertBefore(shell,source);
-    const slide=figure.closest('.slide'), id='of-mx-clip-'+ ++seq;
-    let scene=-1,position=0,draw=()=>{}, mobile=false,visible=false,playWanted=!reduced.matches;
-    let raf=0,previous=0,publishOwn=false;
-    const duration=4.4,hold=.95;
-    function visibleNow(){return visible&&!document.hidden&&(slide?!slide.hidden&&!!slide.closest('dialog[open]'):!document.documentElement.classList.contains('presenting'));}
-    function updateControls(){
-      tabs.forEach((b,i)=>b.setAttribute('aria-pressed',String(i===scene)));
-      play.textContent=playWanted?'暂停':position>=duration?'重播':'播放';
+    const tabs=phases.map(({tab})=>{const b=element('button','',tab);b.type='button';nav.append(b);return b;});
+    const svgRoot=create('svg',canvas,{role:'img'});
+    const play=element('button','','播放'),replay=element('button','','重播本步');
+    for(const b of [play,replay]){b.type='button';controls.append(b);}
+    foot.append(body,controls);
+    const final=element('div','mx-final','如果只写回最终动作，下一轮还能从修正后的中间状态出发吗？');
+    shell.append(nav,summary,canvas,foot,final);figure.insertBefore(shell,source);
+    const slide=figure.closest('.slide');
+    let scene=0,position=0,draw,compact,visible=false,wanted=!reduced.matches,raf=0,previous=0,publishing=false;
+    function active(){return visible&&!document.hidden&&(slide?!slide.hidden&&!!slide.closest('dialog[open]'):!document.documentElement.classList.contains('presenting'));}
+    function controlsState(){
+      tabs.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===scene)));
+      play.textContent=wanted?'暂停':position>=lengths[scene]?'重播':'播放';
       play.setAttribute('aria-label',play.textContent+'推演');
     }
-    function paint(){draw(clamp(position/duration));}
-    function redraw(){
-      mobile=(shell.clientWidth||700)<520;
-      const W=mobile?358:690;
-      svgRoot.replaceChildren();svgRoot.setAttribute('viewBox','0 0 '+W+' 200');
-      draw=[alignScene,batchScene,rebuildScene][scene](svgRoot,{W,mobile},id);
-      paint();
+    function paint(){
+      const p=clamp(position/lengths[scene]);
+      draw?.(scene,p);
+      tabs[scene].style.setProperty('--mx-progress',(p*100).toFixed(2)+'%');
     }
-    function open(index, animate, publish=false){
-      index=Math.max(0,Math.min(index,2));
-      const changed=index!==scene;scene=index;shell.dataset.mechanismStage=String(index);
-      position=animate?0:duration;playWanted=animate;previous=0;
-      if(changed){
-        summary.textContent=phases[index].heading;body.textContent=phases[index].body;
-        svgRoot.setAttribute('aria-label',phases[index].heading+'。'+phases[index].body);
-        redraw();
-      }else paint();
-      updateControls();
-      if(publish&&slide&&Number(slide.dataset.at)!==index){
-        publishOwn=true;
-        shell.dispatchEvent(new CustomEvent('stepselect',{bubbles:true,detail:{step:index}}));publishOwn=false;
+    function resize(){
+      if(!shell.clientWidth)return;
+      const narrow=shell.clientWidth<550;
+      if(narrow===compact&&draw)return;
+      compact=narrow;draw=createScene(svgRoot,narrow);paint();
+    }
+    function open(index,animate,publish=false){
+      scene=Math.max(0,Math.min(index,2));shell.dataset.mechanismStage=String(scene);
+      position=animate?0:lengths[scene];wanted=animate;previous=0;
+      summary.textContent=phases[scene].heading;body.textContent=phases[scene].body;
+      svgRoot.setAttribute('aria-label',phases[scene].heading+'。示意轨迹。'+phases[scene].body);
+      resize();paint();controlsState();
+      if(publish&&slide&&Number(slide.dataset.at)!==scene){
+        publishing=true;
+        shell.dispatchEvent(new CustomEvent('stepselect',{bubbles:true,detail:{step:scene}}));publishing=false;
       }
       sync();
     }
-    function frame(ts){
-      raf=0;
-      if(!visibleNow() || !playWanted)return;
-      const dt=previous?Math.min((ts-previous)/1000,.12):0;previous=ts;
-      position+=dt;paint();
-      if(position>=duration+hold){
+    function frame(now){
+      raf=0;if(!active()||!wanted)return;
+      if(previous)position+=Math.min((now-previous)/1000,.1);previous=now;
+      paint();
+      if(position>=lengths[scene]+.65){
         if(!slide&&scene<2){open(scene+1,true);return;}
-        playWanted=false;updateControls();return;
+        wanted=false;controlsState();return;
       }
       raf=requestAnimationFrame(frame);
     }
     function sync(){
-      const run=visibleNow()&&playWanted;
+      const run=active()&&wanted;
       if(run&&!raf){previous=0;raf=requestAnimationFrame(frame);}
       if(!run&&raf){cancelAnimationFrame(raf);raf=0;previous=0;}
     }
-    tabs.forEach((b,i)=>b.addEventListener('click',()=>open(i,!reduced.matches,true)));
+    tabs.forEach((button,i)=>button.addEventListener('click',()=>open(i,!reduced.matches,true)));
     play.addEventListener('click',()=>{
-      if(playWanted){playWanted=false;updateControls();sync();}
-      else if(position>=duration){open(!slide&&scene===2?0:scene,true,true);}
-      else{playWanted=true;updateControls();sync();}
+      if(wanted){wanted=false;controlsState();sync();}
+      else if(position>=lengths[scene])open(!slide&&scene===2?0:scene,true,true);
+      else{wanted=true;controlsState();sync();}
     });
     replay.addEventListener('click',()=>open(scene,true,true));
-    if(slide)slide.addEventListener('deckstep',e=>{
-      if(publishOwn)return;
-      const next=e.detail.step;
-      if(next>=3){playWanted=false;position=duration;paint();updateControls();sync();}
-      else open(next,!reduced.matches);
+    slide?.addEventListener('deckstep',e=>{
+      if(publishing)return;
+      const step=e.detail.step;
+      if(step>=3){wanted=false;position=lengths[scene];paint();controlsState();sync();}
+      else open(step,!reduced.matches);
     });
-    // Space/Enter on a button invokes that button, instead of advancing the deck.
     shell.addEventListener('keydown',e=>{if(e.target.tagName==='BUTTON'&&(e.key===' '||e.key==='Enter'))e.stopPropagation();});
-    new ResizeObserver(()=>{if(shell.clientWidth>0&&(shell.clientWidth<520)!==mobile)redraw();}).observe(shell);
-    new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;sync();}).observe(shell);
-    players.push({sync,freeze:()=>open(scene,false)});
+    new ResizeObserver(resize).observe(shell);
+    new IntersectionObserver(([entry])=>{visible=entry.isIntersecting;resize();sync();}).observe(shell);
+    const modal=document.getElementById('deck');
+    if(modal)new MutationObserver(sync).observe(modal,{attributes:true,subtree:true,attributeFilter:['open','hidden']});
+    new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
+    document.addEventListener('visibilitychange',sync);
+    reduced.addEventListener('change',e=>{if(e.matches)open(scene,false);});
     open(0,!reduced.matches);
   }
-  function findFigures(){
-    document.querySelectorAll('#mechanics-fig, [data-clone="mechanics-fig"] .mech').forEach(mount);
-  }
-  findFigures();
-  const modal=document.getElementById('deck');
-  // Existing slides clone the reading figures when talk.js starts.
-  if(modal)new MutationObserver(()=>players.forEach(p=>p.sync())).observe(modal,{attributes:true,subtree:true,attributeFilter:['open','hidden']});
-  const resync=()=>players.forEach(p=>p.sync());
-  new MutationObserver(resync).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
-  document.addEventListener('visibilitychange',resync);
-  reduced.addEventListener('change',e=>{if(e.matches)players.forEach(p=>p.freeze());});
+  document.querySelectorAll('#mechanics-fig, [data-clone="mechanics-fig"] .mech').forEach(mount);
 })();

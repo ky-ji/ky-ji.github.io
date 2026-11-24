@@ -76,3 +76,18 @@
   #deck.is-flow .ev-lat-summary { grid-template-columns:minmax(0,1fr); gap:.6rem; }
   #deck.is-flow .ev-lat-summary > div + div { border-top:1px solid var(--ev-rule); padding-top:.4rem; }
 }
+
+#deck .s-walk .slide-head { position:relative; }
+#deck .demo-views {
+  display:inline-flex; align-self:flex-start; gap:2px; padding:2px;
+  border:1px solid #acbfcf; border-radius:6px; background:#f8fafb;
+}
+#deck:not(.is-flow) .demo-views { position:absolute; top:-7px; right:0; }
+#deck .demo-views button {
+  border:none; border-radius:3px; padding:6px 12px; background:transparent;
+  color:#3b546a; font:550 14px/1.3 var(--v3-sans); cursor:pointer;
+}
+#deck .demo-views button[aria-pressed="true"] { background:#244969; color:white; }
+#deck .demo-views button:focus-visible { outline:2px solid #ad581a; outline-offset:2px; }
+#deck.is-flow .demo-views button { min-height:34px; }
+#deck .s-walk .slot[hidden] { display:none; }

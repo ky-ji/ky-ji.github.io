@@ -12,27 +12,32 @@
   <link rel="stylesheet" href="oneflow/field.css?v=20261124.2">
   <link rel="stylesheet" href="oneflow/deck.css?v=20261124.2">
   <link rel="stylesheet" href="oneflow/frame.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/motion-lab.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/call-studio.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/motion-lab.css?v=20261124.4">
+  <link rel="stylesheet" href="oneflow/call-studio.css?v=20261124.4">
   <link rel="stylesheet" href="oneflow/evidence-view.css?v=20261124.3">
   <link rel="stylesheet" href="oneflow/robot-observatory.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/mechanism-motion.css?v=20261124.2">
+  <link rel="stylesheet" href="oneflow/mechanism-motion.css?v=20261124.4">
   <link rel="stylesheet" href="oneflow/serial-motion.css?v=20261124.2">
   <link rel="stylesheet" href="oneflow/continuation-view.css?v=20261124.2">
   <link rel="stylesheet" href="oneflow/routes-figure.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/publication.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/projector-fit.css?v=20261124.3">
-  <script defer src="oneflow/talk.js?v=20261124.2"></script>
+  <link rel="stylesheet" href="oneflow/publication.css?v=20261124.4">
+  <link rel="stylesheet" href="oneflow/projector-fit.css?v=20261124.4">
+  <link rel="stylesheet" href="oneflow/stream-figure.css?v=20261124.4">
+  <link rel="stylesheet" href="oneflow/dependency-motion.css?v=20261124.4">
+  <script defer src="oneflow/talk.js?v=20261124.4"></script>
   <script defer src="oneflow/pipeline.js?v=20261124.2"></script>
   <script defer src="oneflow/field.js?v=20261124.2"></script>
   <script defer src="oneflow/frame.js?v=20261124.2"></script>
-  <script defer src="oneflow/motion-lab.js?v=20261124.2"></script>
-  <script defer src="oneflow/call-studio.js?v=20261124.2"></script>
+  <script defer src="oneflow/motion-lab.js?v=20261124.4"></script>
+  <script defer src="oneflow/call-studio.js?v=20261124.4"></script>
   <script defer src="oneflow/evidence-view.js?v=20261124.2"></script>
   <script defer src="oneflow/robot-observatory.js?v=20261124.2"></script>
-  <script defer src="oneflow/mechanism-motion.js?v=20261124.2"></script>
+  <script defer src="oneflow/mechanism-motion.js?v=20261124.4"></script>
   <script defer src="oneflow/serial-motion.js?v=20261124.2"></script>
   <script defer src="oneflow/continuation-view.js?v=20261124.2"></script>
+  <script defer src="oneflow/project-motion-core.js?v=20261124.4"></script>
+  <script defer src="oneflow/dependency-motion.js?v=20261124.4"></script>
+  <script defer src="oneflow/stream-figure.js?v=20261124.4"></script>
 </head>
 <body>
 
@@ -173,7 +178,7 @@
             </div>
             <p class="fig-note read-only">每个箭头形色块是一次网络调用，链条的长度就是机器人拿到新动作之前要等的调用次数。右侧是 Fast-WAM 在 50 项任务的标准和随机化场景中的平均成功率。调用次数不等于毫秒数，实测耗时还取决于硬件和实现，见<a href="#latency">实测耗时</a>一节。</p>
           </figure>
-          <details class="research-detail schedule-detail"><summary>查看原生求解公式与论文中的调度图</summary>
+          <details class="research-detail schedule-detail"><summary>展开公式，播放原生采样与 OneFlow 的依赖路径</summary>
 <div class="equation"><span lang="en">X<sub>i+1</sub> = X<sub>i</sub> + h<sub>i</sub> v<sub>θ</sub>(X<sub>i</sub>, t<sub>i</sub>, o<sub>k</sub>)</span><small>原生 Euler 采样，论文公式 1。第 i + 1 步要用到第 i 步刚算出的动作估计，所以一轮之内的 N 次调用无法并行。</small></div><figure class="sched" id="cover-sched" aria-labelledby="sched-title">
           <div class="sched-panels">
             <div class="sched-panel">
@@ -387,6 +392,28 @@
 </details></div>
 
           <h3 id="mechanics">一次重规划怎样更新所有去噪阶段</h3>
+          <figure class="sf-figure" id="stream-clock" data-stream-figure aria-label="一次重规划中的观测、状态更新与动作执行">
+            <figcaption class="sf-head">
+              <strong>从一帧新观测，到两步可执行的动作</strong>
+              <span>稳态示意 · 预测 8 步 · 每轮执行 2 步 · 4 个去噪阶段</span>
+            </figcaption>
+            <div class="sf-stage">
+              <picture class="sf-still">
+                <source media="(max-width: 720px)" srcset="oneflow/stream/still-narrow.webp">
+                <img src="oneflow/stream/still.webp" width="1120" height="468" loading="lazy" alt="在一个重规划窗口中，新观测引导四个噪声阶段。每条曲线随对齐而向前移动，完成去噪的前两格进入下方执行流。">
+              </picture>
+            </div>
+            <div class="sf-controls" hidden>
+              <div class="sf-player">
+                <button class="sf-toggle" type="button">播放</button>
+                <label><span>重规划进度</span><input class="sf-seek" type="range" min="0" max="139.99" step=".01" value="4.95" aria-label="拖动重规划进度"></label>
+                <output class="sf-phase-count">第 1 / 14 轮</output>
+                <button class="sf-reset" type="button">重置</button>
+              </div>
+              <p class="sf-explain"><strong data-sf-phase>并行去噪</strong><span data-sf-hint>一次批量前向评估四个阶段。重建后，每条保留的估计向下一噪声水平推进。</span></p>
+            </div>
+            <p class="sf-caption">上方是项目站机械臂示范的 14 帧观测。沿同一列向下看，可以追踪同一个动作时刻。曲线是示意值。<span class="sf-interact-hint">可点选环上的四个阶段，逐步查看更新。</span></p>
+          </figure>
           <div class="prose">
             <p><strong>流式对齐</strong>处理的是物理时间。执行两步后，每个候选去掉开头两格，保留的六格连同各自的噪声一起前移。尾部空出的两格这样补上：先从末端状态扣去它原有的源噪声分量，把余量延伸到新位置，再按这个候选所处阶段的噪声水平加入新噪声。各阶段共用同一份新噪声。对齐之后，所有候选描述的是同一段未来。</p>
             <p><strong>并行重建</strong>处理的是去噪时间。对齐后的候选组成一个批次，共享本轮的新观测。网络一次给出每个候选的速度 <var>V<sub>i</sub></var>，也就给出各自对最终动作的估计 <var>D<sub>i</sub></var>。再用只取决于去噪网格的权重，将源噪声与这些终点估计组合成全部新状态。最后一个状态就是本轮输出的动作块，机器人执行它的前 <var>E</var> 步。其余状态全部保留，下一轮从它们出发。</p>
@@ -792,9 +819,9 @@
             <h3 lang="en">Parallelizing Flows for One-Pass Action Generation</h3>
             <p>方法推导见论文第 3 节与补充材料算法 1。图 1 并列展示去噪调度与冰球回击。图 2 解释方法，图 3 检验计算预算，图 4 分析动作连续性，图 5 展示四项实机任务。主实验见表 1–6。补充材料的图 6 与图 8 分析显存和跨轮复用，表 8、10、11、14 分别给出置信区间、同引擎延迟、目标扰动及实机对照。</p>
             <p>本页的调度示意、动作窗口、流式对齐与并行重建图解依据论文图 1 和图 2 重绘。实验数据取自论文相应图表。论文图 2、图 3 和图 4 的原图附在对应小节。</p>
-            <p class="res-note">调用时序示意使用项目站的机械臂轨迹。Franka Panda 外观来自 <a href="https://github.com/google-deepmind/mujoco_menagerie/tree/main/franka_emika_panda">MuJoCo Menagerie</a>，此处重新渲染为可拖动的姿态序列。<a href="oneflow/robot-mesh-license.txt">模型许可</a></p>
+            <p class="res-note">调用时序演示沿用项目站的机械臂关节轨迹与取放场景，可切换全景和夹爪特写。Franka Panda 外观来自 <a href="https://github.com/google-deepmind/mujoco_menagerie/tree/main/franka_emika_panda">MuJoCo Menagerie</a>，支持实时三维渲染，设备也可使用预渲染画面。<a href="oneflow/robot-mesh-license.txt">模型许可</a></p>
             <h3>OneFlow 项目网站</h3>
-            <p>交互示例沿用项目站每轮预测 8 步、执行 2 步的设置。Key insight 和 Method 栏目分别解释动作窗口重叠与跨轮去噪。<a href="https://github.com/ky-ji/paraflow/tree/project-page">项目站源码（需仓库权限）</a></p>
+            <p>交互示例沿用项目站每轮预测 8 步、执行 2 步的设置。讲稿的依赖路径、观测时间轴和动作曲线改编自项目站的 Key insight 与 Method 动画。上方观测来自机械臂示范，曲线、阶段时长和播放速度用于说明计算过程。<a href="https://github.com/ky-ji/paraflow/tree/project-page">项目站源码（需仓库权限）</a></p>
           </div>
         </div>
       </div>
@@ -849,10 +876,16 @@
           <footer class="slide-foot">示意设置：预测 H = 8，每轮执行 E = 2，去噪阶段 N = 4 · 对应论文图 1、图 2</footer>
         </section>
 
-        <section class="slide s-walk" data-section="replanning-demo" data-theme="method" data-title="同样五段动作，何时完成第五段？" data-steps="4" hidden>
-          <header class="slide-head"><p class="slide-label">方法 · 滚动流水线</p><h2 tabindex="-1">同样五段动作，何时完成第五段？</h2></header>
+        <section class="slide s-walk" data-section="replanning-demo" data-stream-steps data-theme="method" data-title="同样五段动作，何时完成第五段？" data-steps="4" hidden>
+          <header class="slide-head"><p class="slide-label">方法 · 滚动流水线</p><h2 tabindex="-1">同样五段动作，何时完成第五段？</h2>
+            <div class="demo-views" role="group" aria-label="选择演示视角">
+              <button type="button" data-demo-view="calls" aria-pressed="true" aria-controls="deck-demo-slot">调用时序</button>
+              <button type="button" data-demo-view="stream" aria-pressed="false" aria-controls="deck-stream-slot">一轮内部</button>
+            </div>
+          </header>
           <div class="slide-body">
             <div class="slot" id="deck-demo-slot" data-clone="call-studio"></div>
+            <div class="slot" id="deck-stream-slot" data-clone="stream-clock" hidden></div>
           </div>
           <footer class="slide-foot">根据论文第 3 节的调度规则绘制 · N = 4，含冷启动。机械臂姿态用于说明动作段何时可用，时间轴以网络调用为单位。</footer>
         </section>

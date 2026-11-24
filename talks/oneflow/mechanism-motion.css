@@ -29,3 +29,21 @@
   .mx-lab { display:none; }
   .mech:has(> .mx-lab) > :is(.mech-flow,.mech-grid) { display:grid; }
 }
+/* The trajectory board retains the same coordinate system through all three operations. */
+.mx-lab { background:#fcfcf9; }
+.mx-nav button {
+  position:relative;
+  border-bottom-color:transparent;
+}
+.mx-nav button[aria-pressed="true"] { border-bottom-color:#d5e1ef; }
+.mx-nav button[aria-pressed="true"]::after {
+  content:""; position:absolute; bottom:-2px; left:0; width:var(--mx-progress,0%); height:2px; background:#315e95;
+}
+.mx-stage { margin:.5rem 0 .3rem; padding:.2rem 0 0; }
+.mx-stage svg { width:100%; height:auto; max-height:clamp(14rem,29vw,20rem); }
+.mx-stage svg text { font-family:inherit; font-variant-numeric:tabular-nums; }
+@container (max-width:549px) {
+  .mx-stage svg { max-height:none; }
+  .mx-stage { margin:.2rem 0; }
+  .mx-nav button { white-space:nowrap; font-size:clamp(.73rem,4.5cqw,.92rem); }
+}

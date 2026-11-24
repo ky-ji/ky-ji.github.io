@@ -1,0 +1,9 @@
+Franka Emika Panda visual meshes and kinematics from Google DeepMind MuJoCo Menagerie, franka_emika_panda.
+Source: https://github.com/google-deepmind/mujoco_menagerie/tree/main/franka_emika_panda
+Revision: 62ab00f2bc44f6f20c1c9b7a13f3fb1dd41a4e35. Retrieved 2026-10-17.
+Derived from frankaemika/franka_ros visual geometry (Apache-2.0). Original license retained in ../robot-mesh-license.txt.
+OBJ visual geometry repacked without geometric simplification, then quantized by scripts/project-page/quantize_robot.py (uint16 positions per mesh bounding box, int8 normals, uint16 indices; maximum position error about 2.4 um) and stored gzip-compressed as panda-q.gz.
+SHA256 of the lossless float32 repack: ea069c7f76d19d159996bc77bc9db62d20d14bdaadde50944d5088cdf404358d
+SHA256 of panda-q.gz: 8aa1fe9a37672261744928ace7eba4463b61a34c9efa3039ebc4fa89b0ef844c
+
+The motion samples are the illustrative pick-and-place trajectory from the OneFlow project page. Three.js is distributed under its MIT license in three.LICENSE.

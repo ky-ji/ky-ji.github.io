@@ -157,6 +157,53 @@
     toggle.addEventListener('click',()=>player.set(!player.playing));
   }
 
+  // A cell is one action vector. The curve represents one schematic coordinate.
+  // Keep the project page's continuous signal, seeded source and per-cell sampling
+  // so an action remains recognisable when it is shifted or copied into a batch.
+  const trajectoryArt = (() => {
+    const signal = a => .5 + .27 * Math.sin(.78 * a + .6) + .11 * Math.sin(1.93 * a + 1.4);
+    const noise = (a, seed = 0) => {
+      const hash = Math.sin(seed * 127.1 + Math.round(a * 4) * 311.7 + 12.9898) * 43758.5453;
+      return .06 + .88 * (hash - Math.floor(hash));
+    };
+    let sequence = 0;
+    function palette(root) {
+      const id = 'of-trace-' + ++sequence;
+      const defs = svg('defs', root);
+      const grain = svg('pattern', defs, {id: id + '-grain', patternUnits:'userSpaceOnUse', width:13, height:13});
+      for (const [cx, cy, r] of [[1.4,2.1,.8],[6.2,1.1,.6],[10.6,3.2,.9],[3.9,5.6,.65],[8.3,6.9,.8],[1.9,9.3,.9],[5.7,11.2,.7],[10.1,11.6,.6]])
+        svg('circle', grain, {cx,cy,r,fill:'#8999a5'});
+      const pass = svg('linearGradient', defs, {id:id+'-pass',x1:'0%',y1:'0%',x2:'100%',y2:'100%'});
+      svg('stop',pass,{offset:'0%','stop-color':'#94afcb'});
+      svg('stop',pass,{offset:'100%','stop-color':'#205291'});
+      return {id,defs,grain:'url(#'+id+'-grain)',pass:'url(#'+id+'-pass)'};
+    }
+    function cell(parent,x,y,w,h,palette) {
+      const group = svg('g', parent);
+      const bg = svg('rect', group, {x,y,width:w,height:h,rx:Math.min(3,w*.12),'stroke-width':.8});
+      const texture = svg('rect', group, {x,y,width:w,height:h,rx:Math.min(3,w*.12),fill:palette.grain,opacity:0});
+      const trace = svg('path', group, {fill:'none','stroke-width':1.45,'stroke-linecap':'round','stroke-linejoin':'round'});
+      return {group,bg,texture,trace,x,y,w,h};
+    }
+    function wave(cell,action,value) {
+      const {x,y,w,h}=cell;
+      let d='';
+      for(let j=0;j<=8;j++){
+        const u=j/8, v=clamp(value(action+(u-.5)*.94));
+        d+=(j?'L':'M')+(x+.5+u*(w-1)).toFixed(2)+' '+(y+2+(1-v)*(h-4)).toFixed(2);
+      }
+      if(cell.trace.getAttribute('d')!==d)cell.trace.setAttribute('d',d);
+    }
+    function ink(cell,fill,line,edge='none',grain=0) {
+      cell.bg.setAttribute('fill',fill);
+      cell.bg.setAttribute('stroke',edge);
+      cell.texture.setAttribute('opacity',grain);
+      cell.trace.setAttribute('stroke',line);
+    }
+    return {signal,noise,palette,cell,wave,ink};
+  })();
+  window.OneFlowTrajectoryArt = trajectoryArt;
+
   function overlap(root) {
     root.classList.add('of-motion','om-overlap');
     const head=html('div','om-overlap-head');
@@ -174,57 +221,100 @@
     root.append(head,diagram,summary,controls);
     const slide=root.closest('.slide');
     const stageCells=Array.from(root.closest('.axes-body')?.querySelectorAll('.kxi td.on')||[]);
-    let value=1, lastRound=0, published=0, selfChange=false, atEnd=0;
-    let rows=[], locator, line, band, geom, player;
+    let value=1, lastRound=0, published=0, selfChange=false, atEnd=0, tween=null;
+    let rows=[], execution=[], locator, cursor, guide, transfers, brace, geom, player;
+    // Consecutive plans differ slightly under each new observation. All rows use
+    // physical action time, so retained estimates occupy the same horizontal coordinate.
+    const estimate=(round,a)=>trajectoryArt.signal(a)+.13*Math.sin(.67*a+.85*round)*Math.cos(.29*a+.21*round);
     function build() {
-      const narrow=(diagram.clientWidth || 720)<550, W=narrow?380:760, H=narrow?236:294;
-      const left=narrow?45:77, step=(W-left-(narrow?9:18))/14, rowGap=narrow?39:51, firstY=narrow?70:78;
-      const y=r=>firstY+r*rowGap, x=id=>left+(id-3+.5)*step;
-      geom={W,H,x,y,step,rowGap,left,narrow};
+      const narrow=(diagram.clientWidth || 720)<550, W=narrow?400:720, H=narrow?252:278;
+      const left=narrow?39:64, step=(W-left-(narrow?7:14))/14, rowGap=narrow?36:39, firstY=51;
+      const y=r=>firstY+r*rowGap,x=a=>left+(a-3+.5)*step, streamY=firstY+3*rowGap+58;
+      const ch=narrow?22:25, cw=step-2.3;
+      geom={x,y,step,narrow,ch,cw};
       diagram.replaceChildren();diagram.setAttribute('viewBox','0 0 '+W+' '+H);
-      const font=narrow?12:15;
-      label(diagram,left,19,'动作编号 →',{'font-size':font,fill:'#455f75','font-weight':650});
-      for (let num=3;num<=16;num++) {
-        svg('line',diagram,{x1:x(num),x2:x(num),y1:37,y2:H-7,stroke:'#dbe4ea','stroke-dasharray':'2 4'});
-        label(diagram,x(num),41,String(num),{'text-anchor':'middle','font-size':font+.3,fill:num===9?'#ae4b12':'#3e576f','font-weight':num===9?760:530});
+      const defs=trajectoryArt.palette(diagram), font=narrow?12:15;
+      label(diagram,left,14,'动作编号 →',{'font-size':font,fill:'#435d70','font-weight':640});
+      label(diagram,W-7,14,'曲线为动作分量示意',{'text-anchor':'end','font-size':font-1,fill:'#506473'});
+      for (let n=3;n<=16;n++){
+        svg('line',diagram,{x1:x(n),x2:x(n),y1:37,y2:streamY+ch/2,stroke:'#d3dce2','stroke-dasharray':'2 4'});
+        label(diagram,x(n),33,String(n),{'text-anchor':'middle','font-size':font,fill:n===9?'#893f12':'#475e71','font-weight':n===9?760:540});
       }
-      svg('rect',diagram,{x:x(9)-step*.46,y:45,width:step*.92,height:H-50,rx:5,fill:'#fff2dc'});
-      rows=[];
-      for(let r=0;r<4;r++) {
-        const g=svg('g',diagram,{}),start=3+2*r;
-        label(g,left-5,y(r)+1,'第'+(r+1)+'轮',{'text-anchor':'end','dominant-baseline':'middle','font-size':font,fill:'#233e58','font-weight':620});
-        for(let j=0;j<8;j++){
-          const num=start+j,cellWidth=step-(narrow?1.5:3), cellHeight=narrow?23:29;
-          const tracked=num===9, exec=j<2;
-          svg('rect',g,{x:x(num)-cellWidth/2,y:y(r)-cellHeight/2,width:cellWidth,height:cellHeight,rx:narrow?2:3,
-            fill:tracked?'#ffdfad':exec?'#2158a8':'#dbe8f7',stroke:tracked?'#ae5018':exec?'#174e9a':'#b6c9df','stroke-width':tracked?1.8:.7});
-          if(tracked)label(g,x(num),y(r)+.2,'9',{'dominant-baseline':'middle','text-anchor':'middle','font-size':font+2,'font-weight':750,fill:'#823707'});
-          else if(!narrow) {
-            // Fine lines distinguish the two-step executed prefix even in grayscale.
-            if(exec)svg('line',g,{x1:x(num)-step*.16,x2:x(num)+step*.16,y1:y(r),y2:y(r),stroke:'#f1f6fc','stroke-width':2.2,'stroke-linecap':'round'});
-          }
-        }
-        rows.push(g);
-      }
-      band=svg('rect',diagram,{width:step*8-(narrow?.5:1),height:narrow?33:39,rx:4,fill:'none',stroke:'#1e5fab','stroke-width':1.6});
-      line=svg('line',diagram,{x1:x(9),x2:x(9),y1:y(0),y2:y(0),stroke:'#bf5b15','stroke-width':2.5,'stroke-dasharray':'2 5','stroke-linecap':'round'});
-      locator=svg('circle',diagram,{r:narrow?3.6:4.7,fill:'#c46112',stroke:'#fff','stroke-width':1.4});
+      svg('rect',diagram,{x:x(9)-step*.48,y:38,width:step*.96,height:streamY+ch*.5-38,rx:4,fill:'#f8eaca'});
+      transfers=svg('g',diagram,{class:'om-transfer',opacity:0});
+      for(let j=0;j<6;j++)svg('path',transfers,{fill:'#c2d5eb',opacity:j%2?.59:.4});
+      rows=Array.from({length:4},(_,r)=>{
+        const g=svg('g',diagram,{}), start=3+r*2;
+        label(diagram,left-6,y(r)+1,'第'+(r+1)+'轮',{'text-anchor':'end','dominant-baseline':'middle','font-size':font-1,fill:'#29455b','font-weight':640});
+        const cells=Array.from({length:8},(_,j)=>{
+          const a=start+j;
+          const c=trajectoryArt.cell(g,x(a)-cw/2,y(r)-ch/2,cw,ch,defs);
+          const hot=a===9;
+          trajectoryArt.ink(c,hot?'#f7d89c':j<2?'#285781':'#d7e5f2',hot?'#88400f':j<2?'#fafcff':'#3a6895',hot?'#a8591f':'none');
+          trajectoryArt.wave(c,a,p=>estimate(r,p));
+          return c;
+        });
+        return {g,cells};
+      });
+      // The retained part has six positions; this brace follows only that part.
+      brace=svg('path',diagram,{fill:'none',stroke:'#34669b','stroke-width':1.2,opacity:0});
+      cursor=svg('rect',diagram,{width:step*8,height:ch+7,rx:5,fill:'none',stroke:defs.pass,'stroke-width':1.65});
+      guide=svg('path',diagram,{fill:'none',stroke:'#a05a20','stroke-width':1.8,'stroke-dasharray':'1 4','stroke-linecap':'round'});
+      locator=svg('circle',diagram,{r:narrow?3.2:4,fill:'#b06825',stroke:'#fff','stroke-width':1.3});
+      label(diagram,left-6,streamY+1,'执行',{'text-anchor':'end','dominant-baseline':'middle','font-size':font,fill:'#254969','font-weight':680});
+      execution=Array.from({length:14},(_,j)=>{
+        const a=j+3;
+        svg('rect',diagram,{x:x(a)-cw/2,y:streamY-ch*.5,width:cw,height:ch,rx:3,fill:'none',stroke:'#b7c5d0','stroke-dasharray':'3 3'});
+        if(j>=8)return null;
+        const c=trajectoryArt.cell(diagram,x(a)-cw/2,streamY-ch*.5,cw,ch,defs);
+        trajectoryArt.ink(c,'#254d73','#fff');
+        trajectoryArt.wave(c,a,q=>estimate(Math.floor(j/2),q));return c.group;
+      });
       paint(true);
     }
     function paint(force=false) {
       if(!geom)return;
-      const {x,y,step,narrow}=geom;
-      const k=clamp(value-1,0,3), round=1+Math.min(3,Math.floor(k+.0001)), s=Math.floor(k), t=smooth(k-s), interp=s+t;
+      const {x,y,step,ch,cw}=geom, k=clamp(value-1,0,3), round=1+Math.floor(k+.00001);
+      const s=Math.floor(k), t=smooth(k-s), moving=t>.001&&t<.999;
       root.dataset.motionRound=String(round);
-      for(let r=0;r<4;r++){
-        const opacity=r<round-1?.60:r===round-1?1:r===round?.18+.58*t:.18;
-        rows[r].setAttribute('opacity',opacity.toFixed(3));
-      }
-      const centerX=x(3+2*interp)-step*.49;
-      band.setAttribute('x',centerX);band.setAttribute('y',y(interp)-(narrow?16.5:19.5));
-      line.setAttribute('y2',y(interp));
-      // The dot advances in replanning time; its physical action index stays fixed.
-      locator.setAttribute('cx',x(9));locator.setAttribute('cy',y(interp)+(narrow?13:18));
+      rows.forEach(({g,cells},r)=>{
+        const incoming=r===s+1;
+        const opacity=r<s?.67:r===s?1:incoming?.16+.84*t:.16;
+        g.setAttribute('opacity',opacity.toFixed(2));
+        cells.forEach((c,j)=>{
+          const a=3+2*r+j;
+          // During handover, bring the prior estimate into the overlapping six
+          // positions. The two newly exposed positions extend from the old tail.
+          if(incoming || force || lastRound!==round){
+            trajectoryArt.wave(c,a,q=>{
+              if(!incoming) return estimate(r,q);
+              const oldEstimate=estimate(s,Math.min(q,3+2*s+7.47));
+              return oldEstimate+(estimate(r,q)-oldEstimate)*t;
+            });
+          }
+        });
+      });
+      const transferOpacity=moving?Math.sin(Math.PI*t)*.85:0;
+      transfers.setAttribute('opacity',transferOpacity.toFixed(3));
+      if(moving)Array.from(transfers.children).forEach((path,j)=>{
+        const a=5+2*s+j, xx=x(a), top=y(s)+ch/2+1, bottom=y(s+1)-ch/2-1;
+        path.setAttribute('d','M'+(xx-cw*.4)+' '+top+'h'+(cw*.8)+'L'+(xx+cw*.34)+' '+bottom+'h'+(-cw*.68)+'Z');
+      });
+      const moved=s+t, cx=x(3+2*moved)-step*.5, rowY=y(moved);
+      cursor.setAttribute('x',cx);cursor.setAttribute('y',rowY-(ch+7)/2);
+      const sourceY=y(0)+ch/2+3, cy=rowY+ch/2+3;
+      guide.setAttribute('d','M'+x(9)+' '+sourceY+'V'+cy);
+      locator.setAttribute('cx',x(9));locator.setAttribute('cy',cy);
+      const br=Math.min(3,s+1);
+      const by=y(br)+ch/2+3, bx=x(3+2*br)-cw/2, ex=x(3+2*br+5)+cw/2;
+      brace.setAttribute('d','M'+bx+' '+by+'v3H'+ex+'v-3');
+      brace.setAttribute('opacity',moving?transferOpacity:0);
+      execution.forEach((node,j)=>{
+        if(!node)return;
+        const r=Math.floor(j/2);
+        const done=r<=s?1:r===s+1?smooth((t-.67)/.33):0;
+        node.setAttribute('opacity',done.toFixed(2));
+      });
       seek.value=String(value);
       prev.disabled=value<=1.0001;next.disabled=value>=3.9999;restart.disabled=value<=1.0001;
       if(lastRound!==round||force){
@@ -238,29 +328,40 @@
       }
     }
     function syncDeck(){
-      const step=Math.min(3,Math.floor(value-1+.0001));
-      if(!slide || published===step)return;
+      const step=Math.min(3,Math.floor(value-1+.00001));
+      if(!slide||published===step)return;
       published=step;selfChange=true;
       root.dispatchEvent(new CustomEvent('stepselect',{bubbles:true,detail:{step}}));selfChange=false;
     }
-    function setValue(v,publish=true){
-      value=clamp(v,1,4);paint();if(publish)syncDeck();
+    function setValue(v,publish=true){value=clamp(v,1,4);paint();if(publish)syncDeck();}
+    function manual(v){tween=null;atEnd=0;setValue(v);player.set(false);}
+    function go(v,publish=true){
+      const target=clamp(v,1,4);
+      if(reduced.matches||Math.abs(target-value)<.005){tween=null;setValue(target,publish);player.set(false);return;}
+      tween={from:value,to:target,age:0,publish};
+      atEnd=0;player.set(true);
     }
-    function manual(v){atEnd=0;setValue(v);player.set(false);}
     player=scheduler(root,dt=>{
+      if(tween){
+        tween.age+=dt;
+        const p=clamp(tween.age/.68);
+        setValue(tween.from+(tween.to-tween.from)*p,false);
+        if(p>=1){const publish=tween.publish;tween=null;if(publish)syncDeck();return false;}
+        return true;
+      }
       if(value>=4){atEnd+=dt;return atEnd<.7;}
-      setValue(value+dt/1.75);return true;
+      setValue(value+dt/1.85);return true;
     },playing=>{
       play.textContent=playing?'暂停':value>=4?'重播':'播放';
       play.setAttribute('aria-label',playing?'暂停动作 9 推演':'播放动作 9 推演');
     });
     play.addEventListener('click',()=>{
       if(!player.playing && value>=4){atEnd=0;setValue(1);}
-      player.set(!player.playing);
+      tween=null;player.set(!player.playing);
     });
     restart.addEventListener('click',()=>manual(1));
-    prev.addEventListener('click',()=>manual(Math.ceil(value-.001)-1));
-    next.addEventListener('click',()=>manual(Math.floor(value+.001)+1));
+    prev.addEventListener('click',()=>go(Math.ceil(value-.001)-1));
+    next.addEventListener('click',()=>go(Math.floor(value+.001)+1));
     seek.addEventListener('input',()=>manual(Number(seek.value)));
     seek.addEventListener('keydown',event=>{
       if(!['ArrowLeft','ArrowDown','ArrowRight','ArrowUp','Home','End'].includes(event.key))return;
@@ -272,9 +373,12 @@
     controls.addEventListener('keydown',e=>{if(e.target.tagName==='BUTTON'&&(e.key===' '||e.key==='Enter'))e.stopPropagation();});
     if(slide)slide.addEventListener('deckstep',event=>{
       if(selfChange)return;
-      player.set(false);atEnd=0;published=Math.min(3,event.detail.step);setValue(published+1,false);
+      published=Math.min(3,event.detail.step);
+      go(published+1,false);
     });
-    new ResizeObserver(build).observe(root);build();
+    let builtWidth=0;
+    new ResizeObserver(()=>{const width=root.clientWidth;if(width>0&&width!==builtWidth){builtWidth=width;build();}}).observe(root);
+    build();
   }
   for(const root of document.querySelectorAll('[data-of-motion]')){
     if(root.dataset.ofMotion==='flow')flow(root);
