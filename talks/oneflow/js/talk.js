@@ -146,6 +146,7 @@
   }
 
   /* Fit the 1280 × 720 canvas to the stage, or reflow on narrow screens. */
+  let fitFrame = 0;
   function fit() {
     const width = stage.clientWidth;
     const height = stage.clientHeight;
@@ -154,8 +155,12 @@
     dialog.classList.toggle('is-flow', flow);
     canvas.style.setProperty('--deck-scale', flow ? '1' : String(Math.min(width / 1280, height / 720)));
   }
-  if ('ResizeObserver' in window) new ResizeObserver(fit).observe(stage);
-  window.addEventListener('resize', fit);
+  function scheduleFit() {
+    if (fitFrame) return;
+    fitFrame = requestAnimationFrame(() => { fitFrame = 0; fit(); });
+  }
+  if ('ResizeObserver' in window) new ResizeObserver(scheduleFit).observe(stage);
+  window.addEventListener('resize', scheduleFit);
 
   function tick() {
     const seconds = Math.floor((Date.now() - startedAt) / 1000);
@@ -214,6 +219,32 @@
       reading.hash = demo.dataset.readingTarget;
       applyStep();
     });
+  }
+  const latSlide = dialog.querySelector('.s-lat');
+  if (latSlide) {
+    const latTitle = latSlide.querySelector('h2');
+    const latFoot = latSlide.querySelector('.slide-foot');
+    const baseFoot = latFoot.textContent;
+    for (const button of latSlide.querySelectorAll('[data-lat-view]')) {
+      button.addEventListener('click', () => {
+        const cascade = button.dataset.latView === 'cascade';
+        for (const option of latSlide.querySelectorAll('[data-lat-view]')) {
+          const selected = option === button;
+          option.setAttribute('aria-pressed', String(selected));
+          document.getElementById(option.getAttribute('aria-controls')).hidden = !selected;
+        }
+        latTitle.textContent = cascade ? '五类策略全栈优化：端到端加速 10.3–30.3×' : latSlide.dataset.title;
+        latFoot.textContent = cascade
+          ? '论文表 4 · A100 80 GB 预热中位数，批大小 1 · 展示 OneFlow 并行与五项执行引擎优化的累计加速效果'
+          : baseFoot;
+        latSlide.dataset.readingTarget = cascade ? 'engine-cascade' : latSlide.dataset.section;
+        reading.hash = latSlide.dataset.readingTarget;
+        if (cascade) {
+          const ec = latSlide.querySelector('[data-engine-cascade]');
+          if (ec) ec.dispatchEvent(new CustomEvent('ec-play'));
+        }
+      });
+    }
   }
   previous.addEventListener('click', back);
   next.addEventListener('click', forward);

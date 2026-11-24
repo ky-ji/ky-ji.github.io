@@ -5,39 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="预训练流策略能否在一次前向传播的等待时间里，保留多步去噪的动作质量？这场 30 分钟的 OneFlow 报告通过交互图解、对照实验与真实机械臂记录回答这个问题。">
   <title>OneFlow · 多步去噪，单次前向 | Kangye Ji</title>
-  <link rel="icon" href="oneflow/oneflow-mark.svg">
-  <link rel="stylesheet" href="oneflow/talk.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/pipeline.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/results.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/field.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/deck.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/frame.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/motion-lab.css?v=20261124.4">
-  <link rel="stylesheet" href="oneflow/call-studio.css?v=20261124.4">
-  <link rel="stylesheet" href="oneflow/evidence-view.css?v=20261124.3">
-  <link rel="stylesheet" href="oneflow/robot-observatory.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/mechanism-motion.css?v=20261124.4">
-  <link rel="stylesheet" href="oneflow/serial-motion.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/continuation-view.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/routes-figure.css?v=20261124.2">
-  <link rel="stylesheet" href="oneflow/publication.css?v=20261124.5">
-  <link rel="stylesheet" href="oneflow/projector-fit.css?v=20261124.4">
-  <link rel="stylesheet" href="oneflow/stream-figure.css?v=20261124.4">
-  <link rel="stylesheet" href="oneflow/dependency-motion.css?v=20261124.4">
-  <script defer src="oneflow/talk.js?v=20261124.4"></script>
-  <script defer src="oneflow/pipeline.js?v=20261124.2"></script>
-  <script defer src="oneflow/field.js?v=20261124.2"></script>
-  <script defer src="oneflow/frame.js?v=20261124.2"></script>
-  <script defer src="oneflow/motion-lab.js?v=20261124.5"></script>
-  <script defer src="oneflow/call-studio.js?v=20261124.4"></script>
-  <script defer src="oneflow/evidence-view.js?v=20261124.2"></script>
-  <script defer src="oneflow/robot-observatory.js?v=20261124.2"></script>
-  <script defer src="oneflow/mechanism-motion.js?v=20261124.4"></script>
-  <script defer src="oneflow/serial-motion.js?v=20261124.2"></script>
-  <script defer src="oneflow/continuation-view.js?v=20261124.2"></script>
-  <script defer src="oneflow/project-motion-core.js?v=20261124.4"></script>
-  <script defer src="oneflow/dependency-motion.js?v=20261124.4"></script>
-  <script defer src="oneflow/stream-figure.js?v=20261124.4"></script>
+  <link rel="icon" href="oneflow/assets/figures/oneflow-mark.svg" type="image/svg+xml">
+  <link rel="preload" as="font" type="font/woff2" href="oneflow/assets/fonts/manrope-latin-wght.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="oneflow/assets/fonts/inter-latin.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="oneflow/assets/fonts/stix-two-text-latin-500-italic.woff2" crossorigin>
+  <link rel="stylesheet" href="oneflow/css/talk.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/pipeline.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/results.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/field.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/deck.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/frame.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/motion-lab.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/call-studio.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/evidence-view.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/robot-observatory.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/mechanism-motion.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/serial-motion.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/continuation-view.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/routes-figure.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/publication.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/projector-fit.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/stream-figure.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/dependency-motion.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/engine-cascade.css?v=20261124.6">
+  <link rel="stylesheet" href="oneflow/css/aesthetic-v4.css?v=20261124.6">
+  <script defer src="oneflow/js/talk.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/pipeline.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/field.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/frame.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/motion-lab.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/call-studio.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/evidence-view.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/robot-observatory.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/mechanism-motion.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/serial-motion.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/continuation-view.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/project-motion-core.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/dependency-motion.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/stream-figure.js?v=20261124.6"></script>
+  <script defer src="oneflow/js/engine-cascade.js?v=20261124.6"></script>
 </head>
 <body>
 
@@ -63,7 +69,7 @@
       <nav class="v3-crumbs" aria-label="站点">
         <a href="../">Kangye Ji</a>
         <a href="./index.html">讲座</a>
-        <a class="v3-crumbs-mark" href="#top" lang="en"><img src="oneflow/oneflow-mark.svg" width="22" height="22" alt="">One<i>Flow</i></a>
+        <a class="v3-crumbs-mark" href="#top" lang="en"><img src="oneflow/assets/figures/oneflow-mark.svg" width="22" height="22" alt="">One<i>Flow</i></a>
       </nav>
       <nav class="v3-nav" aria-label="章节" data-v3-nav>
         <a href="#problem">问题</a>
@@ -83,13 +89,19 @@
     <section id="top" class="v3-cover" aria-labelledby="v3-title">
     <div class="v3-cover-text">
       <p class="v3-cover-kicker">
-        <span><img src="oneflow/oneflow-mark.svg" width="28" height="28" alt="">机器人学习学术报告</span>
+        <span><img src="oneflow/assets/figures/oneflow-mark.svg" width="28" height="28" alt="">机器人学习学术报告</span>
         <time datetime="2026-11-25">2026.11.25</time>
       </p>
       <div class="v3-cover-head">
         <h1 class="v3-title" id="v3-title" lang="en">One<i>Flow</i></h1>
         <p class="v3-cover-thesis">能否在接近一次前向的时间里，<br><span class="term">保留</span>多步去噪的动作质量？</p>
         <p class="v3-cover-paper" lang="en">Parallelizing Flows for One-Pass Action Generation</p>
+        <div class="of-kpi-strip" aria-label="论文核心结果一览">
+          <div class="of-kpi"><strong>1 次前向</strong><span>稳态并行更新全部阶段</span></div>
+          <div class="of-kpi"><strong>5 类策略</strong><span>冻结权重 · 零重训练</span></div>
+          <div class="of-kpi"><strong>10–30×</strong><span>OneFlow+ 端到端加速</span></div>
+          <div class="of-kpi"><strong>66% 回击</strong><span>Franka 真机动态冰球</span></div>
+        </div>
       </div>
       <div class="v3-cover-actions">
         <button class="v3-btn v3-btn-primary" id="start-talk" type="button" data-start-talk hidden>
@@ -102,7 +114,7 @@
     <figure class="v3-plate" aria-label="主视觉：从噪声到动作的流线">
       <div id="hero-art"><div data-of-motion="flow"><div class="om-still om-cover-still">
           <div class="om-field-head" aria-hidden="true"><span>源噪声</span><span>动作估计</span></div>
-          <img src="oneflow/hero-particles.webp" width="1280" height="585" alt="分散的源噪声粒子从左向右逐渐收束为七组平滑的动作轨迹。">
+          <img src="oneflow/assets/figures/hero-particles.webp" width="1280" height="585" alt="分散的源噪声粒子从左向右逐渐收束为七组平滑的动作轨迹。">
           <div class="om-field-foot" aria-hidden="true">去噪过程示意 →</div>
         </div></div></div>
     </figure>
@@ -206,6 +218,10 @@
           <figcaption><strong id="sched-title">去噪的顺序依赖放在哪里？</strong>依据论文图 1 重绘。每列是一轮重规划，颜色由灰到深蓝表示去噪推进。<i aria-hidden="true"></i>左图的橙框标出一次规划内的串行更新。右图的橙框沿对角线标出各阶段估计如何跨轮接续，动作窗口也随执行向前移动。</figcaption>
         </figure>
 </details>
+
+          <details class="research-detail"><summary>查看论文图 1 原图：真机冰球回击、跨轮调度与五类策略时延对比</summary>
+            <figure class="paper-fig"><a href="oneflow/assets/figures/teaser.webp" aria-label="查看论文图 1 原尺寸图"><img src="oneflow/assets/figures/teaser.webp" width="1800" height="712" loading="lazy" alt="论文图 1。上方为 333 毫秒内 Franka 机械臂在桌上冰球任务中完成回击的六帧画面；左下对比原生串行与 OneFlow 对角跨轮去噪调度；右下对比五类策略在 A100 上的动作生成时延与 10.3 到 30.3 倍加速。"></a><figcaption><strong>论文图 1 总览。</strong>将迭代去噪分摊到连续重规划之间，并配合执行引擎优化，OneFlow+ 在五类流策略上实现 10.3–30.3× 加速，支持 60 Hz 级动态操作。点击可查看大图。</figcaption></figure>
+          </details>
 
           <h3 id="question">已有的加速路线，各付出了什么代价</h3>
           <div class="prose">
@@ -403,8 +419,8 @@
             </figcaption>
             <div class="sf-stage">
               <picture class="sf-still">
-                <source media="(max-width: 720px)" srcset="oneflow/stream/still-narrow.webp">
-                <img src="oneflow/stream/still.webp" width="1120" height="468" loading="lazy" alt="在一个重规划窗口中，新观测引导四个噪声阶段。每条曲线随对齐而向前移动，完成去噪的前两格进入下方执行流。">
+                <source media="(max-width: 720px)" srcset="oneflow/assets/stream/still-narrow.webp">
+                <img src="oneflow/assets/stream/still.webp" width="1120" height="468" loading="lazy" alt="在一个重规划窗口中，新观测引导四个噪声阶段。每条曲线随对齐而向前移动，完成去噪的前两格进入下方执行流。">
               </picture>
             </div>
             <div class="sf-controls" hidden>
@@ -475,27 +491,33 @@
             <p>一个自然的简化是让新观测只更新最终动作，其余阶段沿用旧估计。可是中间状态正是下一轮的起点。它们不更新，后面几轮就一直在旧观测留下的估计上继续去噪。论文在 Xiaomi Robotics 0 上做了这个消融，两种配置每轮都只调用一次网络。</p>
           </div>
           <figure class="fig proof" id="ablation-fig" aria-labelledby="proof-title">
-            <figcaption class="fig-head"><strong id="proof-title">新观测只更新最终动作时的任务成功率</strong><span>Xiaomi Robotics 0 · Google Robot · 论文表 6</span></figcaption>
+            <figcaption class="fig-head"><strong id="proof-title">组件消融：每一环在单次前向中起什么作用？</strong><span>Xiaomi Robotics 0 · Google Robot · 论文表 6（全部为 NFE = 1）</span></figcaption>
             <div class="proof-grid">
-              <p class="proof-lead deck-only">若新观测只更新最终动作，中间状态沿用旧估计</p>
+              <p class="proof-lead deck-only">固定每轮 1 次前向：逐一移除 OneFlow 的核心组件</p>
               <div class="proof-group">
                 <p>视觉匹配（VM）</p>
                 <div class="bars">
-                  <div class="bar is-flow"><span class="bar-name">完整 OneFlow</span><span class="bar-track"><i style="--v:89.2"></i></span><b>89.2%</b></div>
-                  <div class="bar"><span class="bar-name">只更新最终动作</span><span class="bar-track"><i style="--v:6.7"></i></span><b>6.7%</b></div>
+                  <div class="bar is-flow"><span class="bar-name">完整 OneFlow</span><span class="bar-track"><i style="--v:89.2"></i></span><b>89.2%<span class="bar-delta">基准</span></b></div>
+                  <div class="bar"><span class="bar-name">无并行去噪 (N=1)</span><span class="bar-track"><i style="--v:84.5"></i></span><b>84.5%<span class="bar-delta">−4.7</span></b></div>
+                  <div class="bar"><span class="bar-name">无流式对齐</span><span class="bar-track"><i style="--v:84.1"></i></span><b>84.1%<span class="bar-delta">−5.1</span></b></div>
+                  <div class="bar"><span class="bar-name">无滚动流水线</span><span class="bar-track"><i style="--v:42.2"></i></span><b>42.2%<span class="bar-delta">−47.0</span></b></div>
+                  <div class="bar is-severe"><span class="bar-name">无并行重建</span><span class="bar-track"><i style="--v:6.7"></i></span><b>6.7%<span class="bar-delta">−82.6</span></b></div>
                 </div>
               </div>
               <div class="proof-group">
                 <p>变体聚合（VA）</p>
                 <div class="bars">
-                  <div class="bar is-flow"><span class="bar-name">完整 OneFlow</span><span class="bar-track"><i style="--v:75.9"></i></span><b>75.9%</b></div>
-                  <div class="bar"><span class="bar-name">只更新最终动作</span><span class="bar-track"><i style="--v:8.7"></i></span><b>8.7%</b></div>
+                  <div class="bar is-flow"><span class="bar-name">完整 OneFlow</span><span class="bar-track"><i style="--v:75.9"></i></span><b>75.9%<span class="bar-delta">基准</span></b></div>
+                  <div class="bar"><span class="bar-name">无并行去噪 (N=1)</span><span class="bar-track"><i style="--v:70.7"></i></span><b>70.7%<span class="bar-delta">−5.1</span></b></div>
+                  <div class="bar"><span class="bar-name">无流式对齐</span><span class="bar-track"><i style="--v:62.2"></i></span><b>62.2%<span class="bar-delta">−13.6</span></b></div>
+                  <div class="bar"><span class="bar-name">无滚动流水线</span><span class="bar-track"><i style="--v:29.0"></i></span><b>29.0%<span class="bar-delta">−46.9</span></b></div>
+                  <div class="bar is-severe"><span class="bar-name">无并行重建</span><span class="bar-track"><i style="--v:8.7"></i></span><b>8.7%<span class="bar-delta">−67.2</span></b></div>
                 </div>
               </div>
             </div>
           </figure>
           <div class="prose">
-            <p>视觉匹配设置下，成功率从 89.2% 降到 6.7%。变体聚合设置下，从 75.9% 降到 8.7%。在这两个设置下，让新观测同时修正中间状态，才能把修正后的估计留给后续重规划。</p>
+            <p>逐项消融呈现了清晰的层级：仅保留源与终点（无滚动流水线）时，VA 成功率从 75.9% 掉到 29.0%；若关闭流式对齐或降为 N = 1，VA 分别降至 62.2% 与 70.7%。而若关闭并行重建、只用新观测更新最终输出，VM 从 89.2% 骤降至 6.7%，VA 从 75.9% 骤降至 8.7%。必须让新观测同时修正全部中间状态，后续重规划才能在正确的估计上接续。</p>
           </div>
 
           <details class="derivation"><summary>展开推导：一次网络调用怎样重建所有中间状态</summary><div>
@@ -507,7 +529,7 @@
           </div></details>
 
           <details class="research-detail "><summary>查看论文图 2 中的滚动去噪、流式对齐和并行重建</summary>
-<figure class="paper-fig"><a href="oneflow/method.webp" aria-label="查看原尺寸的论文方法图"><img src="oneflow/method.webp" width="1608" height="874" loading="lazy" alt="论文图 2。左边是连续三轮的滚动流水线，右上是流式对齐时窗口前移并补齐末尾，右下是由终点估计并行重建各阶段状态。"></a><figcaption><strong>论文图 2 原图。</strong>左侧每个灰底方框是一轮重规划，对应上面的三件事。右上是流式对齐，右下是并行重建。点击可放大。</figcaption></figure>
+<figure class="paper-fig"><a href="oneflow/assets/figures/method.webp" aria-label="查看原尺寸的论文方法图"><img src="oneflow/assets/figures/method.webp" width="1608" height="874" loading="lazy" alt="论文图 2。左边是连续三轮的滚动流水线，右上是流式对齐时窗口前移并补齐末尾，右下是由终点估计并行重建各阶段状态。"></a><figcaption><strong>论文图 2 原图。</strong>左侧每个灰底方框是一轮重规划，对应上面的三件事。右上是流式对齐，右下是并行重建。点击可放大。</figcaption></figure>
 </details>
         </div>
       </div>
@@ -522,10 +544,10 @@
 
           <h3 id="simulation"><span id="simulation-heading">同一个预训练策略换用四种采样配置，成功率如何变化？</span></h3>
           <div class="prose">
-            <p>这里从三个仿真平台中选取四个策略，每个策略的各组对照都沿用相同的预训练权重。每个策略比较四种配置：原生一步、原生多步、OneFlow，以及再加上执行引擎的 OneFlow+。</p>
+            <p>这里覆盖论文全部三个仿真平台的五类策略（两个世界动作模型、两个 VLA、一类专用流匹配策略），每个策略的各组对照都严格沿用相同的预训练权重。对比原生一步、原生多步、OneFlow，以及启用执行引擎的 OneFlow+。</p>
           </div>
           <figure class="ev-figure ev-success" id="success-fig" data-evidence="success" aria-label="各策略的成功率与调用预算">
-  <div class="ev-toolbar ev-js" role="group" aria-label="选择策略" hidden><button type="button" data-policy-choice="fast" aria-pressed="true">Fast-WAM</button><button type="button" data-policy-choice="xiaomi" aria-pressed="false">Xiaomi Robotics 0</button><button type="button" data-policy-choice="n17" aria-pressed="false">GR00T N1.7</button><button type="button" data-policy-choice="fm" aria-pressed="false">流匹配策略（RGB）</button></div>
+  <div class="ev-toolbar ev-js" role="group" aria-label="选择策略" hidden><button type="button" data-policy-choice="fast" aria-pressed="true">Fast-WAM</button><button type="button" data-policy-choice="openwam" aria-pressed="false">OpenWAM</button><button type="button" data-policy-choice="xiaomi" aria-pressed="false">Xiaomi Robotics 0</button><button type="button" data-policy-choice="n17" aria-pressed="false">GR00T N1.7</button><button type="button" data-policy-choice="fm" aria-pressed="false">流匹配策略（RGB）</button></div>
   <figcaption class="ev-heading"><div><small data-platform-label>RoboTwin 2.0 · H = 32 · E = 8</small><strong data-policy-label>Fast-WAM</strong></div><label class="ev-metric-select ev-js" hidden>比较范围 <select aria-label="比较范围"><option>全部场景</option></select></label></figcaption>
   <div class="ev-map-label"><b data-measure-label>回合成功率（%）</b><span><i></i> 原生多步水平</span></div>
   <div class="ev-success-chart" role="img" aria-label="Fast-WAM 原生一步 40.8%，原生十步 89.4%，OneFlow 91.0%，OneFlow+ 91.1%。">
@@ -533,8 +555,9 @@
   </div>
   <div class="ev-budgets"><div class="ev-budget ev-c0"><strong>原生一步</strong><span><b>1</b> 个阶段</span><span>每轮 <b>1</b> 次调用</span></div><div class="ev-budget ev-c1"><strong>原生多步</strong><span><b>10</b> 个阶段</span><span>每轮 <b>10</b> 次调用</span></div><div class="ev-budget ev-c2"><strong>OneFlow</strong><span><b>10</b> 个阶段</span><span>稳态每轮 <b>1</b> 次调用</span></div><div class="ev-budget ev-c3"><strong>OneFlow+</strong><span><b>10</b> 个阶段</span><span>稳态每轮 <b>1</b> 次调用</span></div></div>
   <p class="ev-takeaway" aria-live="polite">Fast-WAM 在全部场景中的回合成功率为 91.0%（OneFlow）和 89.4%（原生十步）。两者稳态每轮分别调用 1 次和 10 次。</p>
+  <p class="of-baseline-callout"><strong>同预算并行采样基线对照（论文表 2 · NFE = 1）：</strong><span>GR00T N1.7 在 Google Robot VA 上，不跨轮复用状态的 ParaSolver 与 ParaDiGMS 仅 <b>23.2%</b>，RTI-DP 仅 <b>22.0%</b>，而 OneFlow 达到 <b class="of-pill-flow">67.3%</b>。</span></p>
   <p class="ev-note ev-reading" data-protocol>论文表 3 覆盖 50 项任务，每项各有 100 个标准场景和 100 个随机化场景。每种配置共 10,000 个回合。</p>
-  <details class="ev-data ev-reading"><summary>查看四个策略的数值与评测口径</summary><div id="res-fastwam" class="ev-table-wrap" data-policy="fast" data-policy-name="Fast-WAM" data-platform="RoboTwin 2.0" data-measure="回合成功率" data-setting="H = 32 · E = 8"><table><caption id="res-fastwam-title">Fast-WAM · RoboTwin 2.0 · H = 32 · E = 8。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">全部场景</th><th scope="col">标准场景</th><th scope="col">随机化场景</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>40.8</td><td>41.2</td><td>40.4</td></tr><tr><th scope="row">原生多步</th><td>10</td><td>10</td><td>89.4</td><td>89.7</td><td>89.1</td></tr><tr><th scope="row">OneFlow</th><td>10</td><td>1</td><td>91.0</td><td>91.1</td><td>90.8</td></tr><tr><th scope="row">OneFlow+</th><td>10</td><td>1</td><td>91.1</td><td>91.3</td><td>90.9</td></tr></tbody></table><p>论文表 3 覆盖 50 项任务，每项各有 100 个标准场景和 100 个随机化场景。每种配置共 10,000 个回合。</p><p class="res-insight">把十步求解直接缩成一步，回合成功率降到 40.8%。把十个阶段摊到连续几轮重规划之后，OneFlow 稳态每轮只做一次批量调用，回合成功率为 91.0%，原生十步为 89.4%。例如，OneFlow 成功完成了 10,000 个测试回合中的 9,098 个。</p></div><div id="res-xiaomi" class="ev-table-wrap" data-policy="xiaomi" data-policy-name="Xiaomi Robotics 0" data-platform="SimplerEnv" data-measure="平均成功率" data-setting="H = 8 · E = 1"><table><caption id="res-xiaomi-title">Xiaomi Robotics 0 · SimplerEnv · H = 8 · E = 1。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">三组设置平均</th><th scope="col">Google Robot · VM</th><th scope="col">Google Robot · VA</th><th scope="col">WidowX</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>72.0</td><td>84.2</td><td>69.9</td><td>62.0</td></tr><tr><th scope="row">原生多步</th><td>5</td><td>5</td><td>74.0</td><td>88.7</td><td>72.6</td><td>60.8</td></tr><tr><th scope="row">OneFlow</th><td>5</td><td>1</td><td>81.3</td><td>89.2</td><td>75.9</td><td>78.6</td></tr><tr><th scope="row">OneFlow+</th><td>5</td><td>1</td><td>79.2</td><td>88.6</td><td>75.5</td><td>73.4</td></tr></tbody></table><p>论文表 2 的总平均对三组成功率等权。VM 为 Google Robot 视觉匹配，VA 为变体聚合。WidowX 统计四项任务的完成率。</p><p class="res-insight">提升在不同机器人上并不均匀。以 WidowX 的胡萝卜摆盘任务为例，原生五步的成功率为 20.8%，OneFlow 为 63.9%，开启引擎后为 54.9%。</p></div><div id="res-groot" class="ev-table-wrap" data-policy="n17" data-policy-name="GR00T N1.7" data-platform="SimplerEnv" data-measure="平均成功率" data-setting="H = 8 · E = 1"><table><caption id="res-groot-title">GR00T N1.7 · SimplerEnv · H = 8 · E = 1。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">三组设置平均</th><th scope="col">Google Robot · VM</th><th scope="col">Google Robot · VA</th><th scope="col">WidowX</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>54.8</td><td>73.0</td><td>56.8</td><td>34.5</td></tr><tr><th scope="row">原生多步</th><td>4</td><td>4</td><td>59.9</td><td>77.3</td><td>63.0</td><td>39.2</td></tr><tr><th scope="row">OneFlow</th><td>4</td><td>1</td><td>62.5</td><td>77.2</td><td>67.3</td><td>42.9</td></tr><tr><th scope="row">OneFlow+</th><td>4</td><td>1</td><td>62.1</td><td>78.2</td><td>65.5</td><td>42.7</td></tr></tbody></table><p>论文表 2 的总平均对三组成功率等权。VM 为 Google Robot 视觉匹配，VA 为变体聚合。WidowX 统计四项任务的完成率。</p><p class="res-insight">平均值掩盖了很接近的对照。在 Google Robot 的视觉匹配设置中，原生四步为 77.3%，OneFlow 为 77.2%，两者成功概率之差的配对 95% 置信区间包含零。</p></div><div id="res-fm" class="ev-table-wrap" data-policy="fm" data-policy-name="流匹配策略（RGB）" data-platform="RoboMimic" data-measure="成功率" data-setting="H = 16 · E = 4"><table><caption id="res-fm-title">流匹配策略（RGB） · RoboMimic · H = 16 · E = 4。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">五项任务平均</th><th scope="col">Lift</th><th scope="col">Can</th><th scope="col">Square</th><th scope="col">Hang</th><th scope="col">Transport</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>43.6</td><td>4.0</td><td>100.0</td><td>86.0</td><td>18.0</td><td>10.0</td></tr><tr><th scope="row">原生多步</th><td>10</td><td>10</td><td>61.2</td><td>100.0</td><td>100.0</td><td>86.0</td><td>14.0</td><td>6.0</td></tr><tr><th scope="row">OneFlow</th><td>8</td><td>1</td><td>64.7</td><td>100.0</td><td>100.0</td><td>89.3</td><td>20.0</td><td>14.0</td></tr><tr><th scope="row">OneFlow+</th><td>8</td><td>1</td><td>65.1</td><td>100.0</td><td>100.0</td><td>88.0</td><td>18.0</td><td>19.3</td></tr></tbody></table><p>论文表 1 对五项任务等权。每项有 50 个固定初始场景，原生采样每个场景运行一次，两种 OneFlow 配置每个场景使用三组配对噪声。</p><p class="res-insight">五项任务并非同样困难。OneFlow 在 Lift 和 Can 上都达到 100%，在 Transport 上只有 14%。平均成功率上升，与个别任务仍然困难，可以同时成立。</p></div><p>H 为每轮预测动作数，E 为每轮执行动作数。调用统计初始化后每轮去噪网络的前向次数。OneFlow+ 同时启用 OneFlow 与执行引擎。</p></details>
+  <details class="ev-data ev-reading"><summary>查看五个策略的数值与评测口径</summary><div id="res-fastwam" class="ev-table-wrap" data-policy="fast" data-policy-name="Fast-WAM" data-platform="RoboTwin 2.0" data-measure="回合成功率" data-setting="H = 32 · E = 8"><table><caption id="res-fastwam-title">Fast-WAM · RoboTwin 2.0 · H = 32 · E = 8。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">全部场景</th><th scope="col">标准场景</th><th scope="col">随机化场景</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>40.8</td><td>41.2</td><td>40.4</td></tr><tr><th scope="row">原生多步</th><td>10</td><td>10</td><td>89.4</td><td>89.7</td><td>89.1</td></tr><tr><th scope="row">OneFlow</th><td>10</td><td>1</td><td>91.0</td><td>91.1</td><td>90.8</td></tr><tr><th scope="row">OneFlow+</th><td>10</td><td>1</td><td>91.1</td><td>91.3</td><td>90.9</td></tr></tbody></table><p>论文表 3 覆盖 50 项任务，每项各有 100 个标准场景和 100 个随机化场景。每种配置共 10,000 个回合。</p><p class="res-insight">把十步求解直接缩成一步，回合成功率降到 40.8%。把十个阶段摊到连续几轮重规划之后，OneFlow 稳态每轮只做一次批量调用，回合成功率为 91.0%，原生十步为 89.4%。例如，OneFlow 成功完成了 10,000 个测试回合中的 9,098 个。</p></div><div id="res-openwam" class="ev-table-wrap" data-policy="openwam" data-policy-name="OpenWAM" data-platform="RoboTwin 2.0" data-measure="回合成功率" data-setting="H = 32 · E = 8"><table><caption id="res-openwam-title">OpenWAM · RoboTwin 2.0 · H = 32 · E = 8。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">全部场景</th><th scope="col">标准场景</th><th scope="col">随机化场景</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>48.4</td><td>49.5</td><td>47.3</td></tr><tr><th scope="row">原生多步</th><td>10</td><td>10</td><td>82.1</td><td>83.3</td><td>81.0</td></tr><tr><th scope="row">OneFlow</th><td>10</td><td>1</td><td>88.3</td><td>88.8</td><td>87.8</td></tr><tr><th scope="row">OneFlow+</th><td>10</td><td>1</td><td>87.5</td><td>87.7</td><td>87.2</td></tr></tbody></table><p>论文表 3 覆盖 50 项任务，每项各有 100 个标准场景和 100 个随机化场景（共 10,000 个回合）。OpenWAM 使用首帧视频条件输入。</p><p class="res-insight">在 OpenWAM 上，OneFlow 以单次批量前向达到 88.3% 平均成功率，比十步原生采样（82.1%）高出 6.2 个百分点，同时将单次动作生成时延从 447.08 ms 降至 19.40 ms（OneFlow+，23.0×）。</p></div><div id="res-xiaomi" class="ev-table-wrap" data-policy="xiaomi" data-policy-name="Xiaomi Robotics 0" data-platform="SimplerEnv" data-measure="平均成功率" data-setting="H = 8 · E = 1"><table><caption id="res-xiaomi-title">Xiaomi Robotics 0 · SimplerEnv · H = 8 · E = 1。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">三组设置平均</th><th scope="col">Google Robot · VM</th><th scope="col">Google Robot · VA</th><th scope="col">WidowX</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>72.0</td><td>84.2</td><td>69.9</td><td>62.0</td></tr><tr><th scope="row">原生多步</th><td>5</td><td>5</td><td>74.0</td><td>88.7</td><td>72.6</td><td>60.8</td></tr><tr><th scope="row">OneFlow</th><td>5</td><td>1</td><td>81.3</td><td>89.2</td><td>75.9</td><td>78.6</td></tr><tr><th scope="row">OneFlow+</th><td>5</td><td>1</td><td>79.2</td><td>88.6</td><td>75.5</td><td>73.4</td></tr></tbody></table><p>论文表 2 的总平均对三组成功率等权。VM 为 Google Robot 视觉匹配，VA 为变体聚合。WidowX 统计四项任务的完成率。</p><p class="res-insight">提升在不同机器人上并不均匀。以 WidowX 的胡萝卜摆盘任务为例，原生五步的成功率为 20.8%，OneFlow 为 63.9%，开启引擎后为 54.9%。</p></div><div id="res-groot" class="ev-table-wrap" data-policy="n17" data-policy-name="GR00T N1.7" data-platform="SimplerEnv" data-measure="平均成功率" data-setting="H = 8 · E = 1"><table><caption id="res-groot-title">GR00T N1.7 · SimplerEnv · H = 8 · E = 1。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">三组设置平均</th><th scope="col">Google Robot · VM</th><th scope="col">Google Robot · VA</th><th scope="col">WidowX</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>54.8</td><td>73.0</td><td>56.8</td><td>34.5</td></tr><tr><th scope="row">原生多步</th><td>4</td><td>4</td><td>59.9</td><td>77.3</td><td>63.0</td><td>39.2</td></tr><tr><th scope="row">OneFlow</th><td>4</td><td>1</td><td>62.5</td><td>77.2</td><td>67.3</td><td>42.9</td></tr><tr><th scope="row">OneFlow+</th><td>4</td><td>1</td><td>62.1</td><td>78.2</td><td>65.5</td><td>42.7</td></tr></tbody></table><p>论文表 2 的总平均对三组成功率等权。VM 为 Google Robot 视觉匹配，VA 为变体聚合。WidowX 统计四项任务的完成率。</p><p class="res-insight">平均值掩盖了很接近的对照。在 Google Robot 的视觉匹配设置中，原生四步为 77.3%，OneFlow 为 77.2%，两者成功概率之差的配对 95% 置信区间包含零。</p></div><div id="res-fm" class="ev-table-wrap" data-policy="fm" data-policy-name="流匹配策略（RGB）" data-platform="RoboMimic" data-measure="成功率" data-setting="H = 16 · E = 4"><table><caption id="res-fm-title">流匹配策略（RGB） · RoboMimic · H = 16 · E = 4。成功率（%）</caption><thead><tr><th scope="col">配置</th><th scope="col">阶段</th><th scope="col">调用</th><th scope="col">五项任务平均</th><th scope="col">Lift</th><th scope="col">Can</th><th scope="col">Square</th><th scope="col">Hang</th><th scope="col">Transport</th></tr></thead><tbody><tr><th scope="row">原生一步</th><td>1</td><td>1</td><td>43.6</td><td>4.0</td><td>100.0</td><td>86.0</td><td>18.0</td><td>10.0</td></tr><tr><th scope="row">原生多步</th><td>10</td><td>10</td><td>61.2</td><td>100.0</td><td>100.0</td><td>86.0</td><td>14.0</td><td>6.0</td></tr><tr><th scope="row">OneFlow</th><td>8</td><td>1</td><td>64.7</td><td>100.0</td><td>100.0</td><td>89.3</td><td>20.0</td><td>14.0</td></tr><tr><th scope="row">OneFlow+</th><td>8</td><td>1</td><td>65.1</td><td>100.0</td><td>100.0</td><td>88.0</td><td>18.0</td><td>19.3</td></tr></tbody></table><p>论文表 1 对五项任务等权。每项有 50 个固定初始场景，原生采样每个场景运行一次，两种 OneFlow 配置每个场景使用三组配对噪声。</p><p class="res-insight">五项任务并非同样困难。OneFlow 在 Lift 和 Can 上都达到 100%，在 Transport 上只有 14%。平均成功率上升，与个别任务仍然困难，可以同时成立。</p></div><p>H 为每轮预测动作数，E 为每轮执行动作数。调用统计初始化后每轮去噪网络的前向次数。OneFlow+ 同时启用 OneFlow 与执行引擎。</p></details>
 </figure>
 
           <h3 id="continuation"><span id="continuation-heading">固定观测和计算预算，跨轮修正同一段动作有何收益？</span></h3>
@@ -571,7 +594,7 @@
   <summary>重规划交接时，动作有多连贯？</summary>
   <div><p>论文图 4 把相邻的平移指令分成两类。左图比较同一段里前后两步的变化，右图比较上一段的末步与下一段的首步。五项任务上，两类变化都减小了，交接处的相对降幅更大。</p>
   <figure>
-    <a href="oneflow/command-continuity.webp" aria-label="查看论文图 4 原尺寸图"><img src="oneflow/command-continuity.webp" width="1200" height="678" loading="lazy" alt="五项任务按 Lift、Can、Square、Transport、Tool Hang 排列。相对原生八步采样，OneFlow 的段内指令变化和跨段跳变均更低。"></a>
+    <a href="oneflow/assets/figures/command-continuity.webp" aria-label="查看论文图 4 原尺寸图"><img src="oneflow/assets/figures/command-continuity.webp" width="1200" height="678" loading="lazy" alt="五项任务按 Lift、Can、Square、Transport、Tool Hang 排列。相对原生八步采样，OneFlow 的段内指令变化和跨段跳变均更低。"></a>
     <figcaption>相对原生八步采样，OneFlow 的段内平移指令变化平均降低 15.3%，跨段跳变平均降低 32.3%。RoboMimic 状态输入策略，H = 16，E = 4，N = 8。两种方法使用配对的源噪声，每项任务测试 50 个场景、3 条噪声序列，均未启用引擎。</figcaption>
   </figure></div>
 </details>
@@ -589,7 +612,7 @@
   <details class="ev-data ev-reading"><summary>查看十个阶段数的原始读数</summary><div class="ev-table-wrap"><table><caption>论文图 3 的 Handover Block 数据</caption><thead><tr><th scope="col">N</th><th scope="col">原生（%）</th><th scope="col">OneFlow（%）</th><th scope="col">原生（ms）</th><th scope="col">OneFlow（ms）</th></tr></thead><tbody><tr><th scope="row">1</th><td>30</td><td>18</td><td>122.2</td><td>126.2</td></tr><tr><th scope="row">2</th><td>72</td><td>52</td><td>162.5</td><td>119.3</td></tr><tr><th scope="row">3</th><td>70</td><td>76</td><td>197.3</td><td>122.0</td></tr><tr><th scope="row">4</th><td>76</td><td>74</td><td>233.3</td><td>121.1</td></tr><tr><th scope="row">5</th><td>74</td><td>84</td><td>277.9</td><td>122.9</td></tr><tr><th scope="row">6</th><td>78</td><td>84</td><td>315.7</td><td>123.5</td></tr><tr><th scope="row">7</th><td>80</td><td>84</td><td>345.6</td><td>121.9</td></tr><tr><th scope="row">8</th><td>80</td><td>84</td><td>383.1</td><td>123.6</td></tr><tr><th scope="row">9</th><td>76</td><td>86</td><td>431.8</td><td>122.5</td></tr><tr><th scope="row">10</th><td>72</td><td>88</td><td>469.2</td><td>123.1</td></tr></tbody></table></div></details>
 </figure>
           <details class="research-detail "><summary>展开论文图 3 的全部四项任务</summary>
-<figure class="paper-fig"><a href="oneflow/scaling.webp" aria-label="查看原尺寸的阶段数、成功率和时延曲线"><img src="oneflow/scaling.webp" width="1978" height="540" loading="lazy" alt="论文图 3。四个任务上，去噪阶段数从 1 增到 10 时的成功率折线和时延柱。原生采样的时延柱随阶段数明显升高，OneFlow 的时延柱高度变化很小。"></a><figcaption><strong>论文图 3 原图。</strong>四个任务依次是 Handover Block、Stamp Seal、Open Microwave 和 Stack Bowls Three。折线是成功率，柱形是预热后的动作生成时延，深蓝为 OneFlow，灰色为原生采样。两种方法都未启用执行引擎。</figcaption></figure>
+<figure class="paper-fig"><a href="oneflow/assets/figures/scaling.webp" aria-label="查看原尺寸的阶段数、成功率和时延曲线"><img src="oneflow/assets/figures/scaling.webp" width="1978" height="540" loading="lazy" alt="论文图 3。四个任务上，去噪阶段数从 1 增到 10 时的成功率折线和时延柱。原生采样的时延柱随阶段数明显升高，OneFlow 的时延柱高度变化很小。"></a><figcaption><strong>论文图 3 原图。</strong>四个任务依次是 Handover Block、Stamp Seal、Open Microwave 和 Stack Bowls Three。折线是成功率，柱形是预热后的动作生成时延，深蓝为 OneFlow，灰色为原生采样。两种方法都未启用执行引擎。</figcaption></figure>
 </details>
 
           <h3 id="latency"><span id="latency-heading">在同一个执行引擎上能快多少？</span></h3>
@@ -606,6 +629,28 @@
   <p class="ev-note ev-reading">使用 Lift Pot 任务的输入，批大小为 1，从 CPU 上的观测计至解码后的动作返回 CPU，取预热后中位数。闭环成功率单独评测。</p>
   <details class="ev-data ev-reading"><summary>查看各基线的时延与比值</summary><div class="ev-table-wrap"><table><caption>OneFlow+ 固定为十个并行阶段、16.62 ms</caption><thead><tr><th scope="col">原生基线</th><th scope="col">中位数</th><th scope="col">与 OneFlow+ 的比较</th></tr></thead><tbody><tr><th scope="row">十步，无引擎</th><td>503.53 ms</td><td>原生时延为 30.3 倍</td></tr><tr><th scope="row">十步，同引擎</th><td>51.83 ms</td><td>原生时延为 3.1 倍</td></tr><tr><th scope="row">一步，同引擎</th><td>14.80 ms</td><td>OneFlow+ 时延高 12.3%</td></tr></tbody></table></div></details>
 </figure>
+          <figure class="ec-figure" id="engine-cascade" data-engine-cascade aria-label="五类策略的执行引擎累计优化时延对比">
+            <figcaption class="ec-head">
+              <div>
+                <small>A100 80 GB · 批大小 1 · 论文表 4（五类策略累计优化）</small>
+                <strong>从 OneFlow 到 OneFlow+：五类策略全栈加速 10.3–30.3×</strong>
+              </div>
+              <button class="ec-replay" type="button" aria-label="重播五类策略的累计优化动画">
+                <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 6a3.8 3.8 0 1 0 1.1-2.7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M2.6 1.4v2.4h2.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>重播优化过程</span>
+              </button>
+            </figcaption>
+            <ol class="ec-stages" aria-label="累计执行的系统优化阶段"></ol>
+            <div class="ec-legend">
+              <div class="ec-legend-keys">
+                <span><i class="ec-key-native"></i>原生多步（各自归一化满宽）</span>
+                <span><i class="ec-key-flow"></i>当前累计配置</span>
+              </div>
+              <span class="ec-current-stage">+ 内核自动调优（OneFlow+）</span>
+            </div>
+            <div class="ec-rows"></div>
+            <p class="ec-caption">点击上方任意优化阶段可逐步拆解收益：CUDA 图消除内核发射开销，不变量预计算、I/O 持久化与算子融合压缩数据搬运，最终在 FM 策略（0.99 ms）、GR00T N1.7（9.77 ms）与 Fast-WAM（16.62 ms）上达到 10.3–30.3× 端到端加速。</p>
+          </figure>
           <details class="research-detail "><summary>查看同一策略启用引擎前后的完整计时</summary>
 <table class="plain-table">
             <caption>Fast-WAM 动作生成时延中位数（ms）</caption>
@@ -675,25 +720,25 @@
             <article class="field-case" id="field-hockey" aria-labelledby="field-hockey-title">
               <h3 id="field-hockey-title">回击冰球：每次来球单独计分</h3>
               <div class="field-photos">
-                <figure><img src="oneflow/field-hockey-01.webp" width="560" height="420" loading="lazy" alt="冰球桌旁，机器人向从对侧滑来的球移动球拍。"><figcaption>人类搭档向机器人发球</figcaption></figure>
-                <figure><img src="oneflow/field-hockey-04.webp" width="560" height="420" loading="lazy" alt="机器人的红色球拍移到球桌中线，冰球已经滑向另一侧。"><figcaption>球拍移动到中线附近</figcaption></figure>
-                <figure><img src="oneflow/field-hockey-07.webp" width="560" height="420" loading="lazy" alt="冰球向人类搭档所在的一侧滑去。"><figcaption>球返回发球一侧</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-hockey-01.webp" width="560" height="420" loading="lazy" alt="冰球桌旁，机器人向从对侧滑来的球移动球拍。"><figcaption>人类搭档向机器人发球</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-hockey-04.webp" width="560" height="420" loading="lazy" alt="机器人的红色球拍移到球桌中线，冰球已经滑向另一侧。"><figcaption>球拍移动到中线附近</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-hockey-07.webp" width="560" height="420" loading="lazy" alt="冰球向人类搭档所在的一侧滑去。"><figcaption>球返回发球一侧</figcaption></figure>
               </div>
               <p>每轮发 10 个球，机器人把球击回发球一侧才计入回击。每种方法共接 500 个来球，原生采样、OneFlow 和 OneFlow+ 的回击率分别为 6%、34% 和 66%。</p>
               <figure class="replay" aria-labelledby="replay-title">
                 <div class="photo">
-                  <img id="hockey-frame" src="oneflow/hockey-03.webp" width="1080" height="864" loading="lazy" alt="机械臂的球拍在中线附近接触来球。">
+                  <img id="hockey-frame" src="oneflow/assets/field/hockey-03.webp" width="1080" height="864" loading="lazy" alt="机械臂的球拍在中线附近接触来球。">
                   <span class="timecode" aria-hidden="true">+<span id="timecode">133</span> ms</span>
                 </div>
                 <div>
                   <div class="replay-head"><figcaption id="replay-title">OneFlow+ 的一次实机回击<span>论文图 1 · 逐帧查看</span></figcaption><button id="play-frames" type="button" hidden>¼ 速回放</button></div>
                   <div class="frames" aria-label="选择录像帧">
-                    <a href="oneflow/hockey-01.webp" aria-label="查看 0 毫秒的画面" data-time="0" data-alt="来球滑向中线，机械臂准备迎球。"><img src="oneflow/hockey-01.webp" width="1080" height="864" loading="lazy" alt=""><span>0</span></a>
-                    <a href="oneflow/hockey-02.webp" aria-label="查看 67 毫秒的画面" data-time="67" data-alt="机械臂移动球拍，迎向来球。"><img src="oneflow/hockey-02.webp" width="1080" height="864" loading="lazy" alt=""><span>67</span></a>
-                    <a href="oneflow/hockey-03.webp" aria-label="查看 133 毫秒的画面" aria-current="true" data-time="133" data-alt="机械臂的球拍在中线附近接触来球。"><img src="oneflow/hockey-03.webp" width="1080" height="864" loading="lazy" alt=""><span>133</span></a>
-                    <a href="oneflow/hockey-04.webp" aria-label="查看 200 毫秒的画面" data-time="200" data-alt="触球后，机械臂的球拍继续向前移动。"><img src="oneflow/hockey-04.webp" width="1080" height="864" loading="lazy" alt=""><span>200</span></a>
-                    <a href="oneflow/hockey-05.webp" aria-label="查看 267 毫秒的画面" data-time="267" data-alt="冰球离开球拍，向对侧滑动。"><img src="oneflow/hockey-05.webp" width="1080" height="864" loading="lazy" alt=""><span>267</span></a>
-                    <a href="oneflow/hockey-06.webp" aria-label="查看 333 毫秒的画面" data-time="333" data-alt="回击后的冰球继续远离机械臂。"><img src="oneflow/hockey-06.webp" width="1080" height="864" loading="lazy" alt=""><span>333 ms</span></a>
+                    <a href="oneflow/assets/field/hockey-01.webp" aria-label="查看 0 毫秒的画面" data-time="0" data-alt="来球滑向中线，机械臂准备迎球。"><img src="oneflow/assets/field/hockey-01.webp" width="1080" height="864" loading="lazy" alt=""><span>0</span></a>
+                    <a href="oneflow/assets/field/hockey-02.webp" aria-label="查看 67 毫秒的画面" data-time="67" data-alt="机械臂移动球拍，迎向来球。"><img src="oneflow/assets/field/hockey-02.webp" width="1080" height="864" loading="lazy" alt=""><span>67</span></a>
+                    <a href="oneflow/assets/field/hockey-03.webp" aria-label="查看 133 毫秒的画面" aria-current="true" data-time="133" data-alt="机械臂的球拍在中线附近接触来球。"><img src="oneflow/assets/field/hockey-03.webp" width="1080" height="864" loading="lazy" alt=""><span>133</span></a>
+                    <a href="oneflow/assets/field/hockey-04.webp" aria-label="查看 200 毫秒的画面" data-time="200" data-alt="触球后，机械臂的球拍继续向前移动。"><img src="oneflow/assets/field/hockey-04.webp" width="1080" height="864" loading="lazy" alt=""><span>200</span></a>
+                    <a href="oneflow/assets/field/hockey-05.webp" aria-label="查看 267 毫秒的画面" data-time="267" data-alt="冰球离开球拍，向对侧滑动。"><img src="oneflow/assets/field/hockey-05.webp" width="1080" height="864" loading="lazy" alt=""><span>267</span></a>
+                    <a href="oneflow/assets/field/hockey-06.webp" aria-label="查看 333 毫秒的画面" data-time="333" data-alt="回击后的冰球继续远离机械臂。"><img src="oneflow/assets/field/hockey-06.webp" width="1080" height="864" loading="lazy" alt=""><span>333 ms</span></a>
                   </div>
                   <p class="replay-note">六帧覆盖约三分之一秒。球拍在第三帧前后触球，随后冰球滑向对侧。</p>
                 </div>
@@ -702,27 +747,39 @@
             <article class="field-case" id="field-bottle" aria-labelledby="field-bottle-title">
               <h3 id="field-bottle-title">抓滚动瓶子：在瓶子滚过之前闭合夹爪</h3>
               <div class="field-photos">
-                <figure><img src="oneflow/field-rolling-01.webp" width="560" height="420" loading="lazy" alt="瓶子从画面左侧沿桌面滚向张开的夹爪。"><figcaption>瓶子沿桌面滚来</figcaption></figure>
-                <figure><img src="oneflow/field-rolling-04.webp" width="560" height="420" loading="lazy" alt="机械臂把夹爪降到滚动瓶子的两侧。"><figcaption>夹爪对准移动中的瓶身</figcaption></figure>
-                <figure><img src="oneflow/field-rolling-07.webp" width="560" height="420" loading="lazy" alt="瓶子出现在桌面右侧的白色容器里。"><figcaption>本次演示把瓶子放进容器</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-rolling-01.webp" width="560" height="420" loading="lazy" alt="瓶子从画面左侧沿桌面滚向张开的夹爪。"><figcaption>瓶子沿桌面滚入视野</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-rolling-02.webp" width="560" height="420" loading="lazy" alt="机械臂预判滚动轨迹并迅速向瓶子靠拢。"><figcaption>夹爪随滚动速度提前迎向</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-rolling-03.webp" width="560" height="420" loading="lazy" alt="夹爪下降至瓶身两侧准备拦截。"><figcaption>下降至滚动瓶身两侧</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-rolling-04.webp" width="560" height="420" loading="lazy" alt="夹爪在瓶子滚过瞬间准确闭合抓住瓶身。"><figcaption>瞬间闭合夹爪拦截成功</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-rolling-05.webp" width="560" height="420" loading="lazy" alt="机械臂平稳抬起抓到的瓶子。"><figcaption>平稳抬起瓶子离开桌面</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-rolling-06.webp" width="560" height="420" loading="lazy" alt="机械臂将瓶子移至桌面右侧白色容器上方。"><figcaption>移至白色容器上方准备放置</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-rolling-07.webp" width="560" height="420" loading="lazy" alt="瓶子稳妥放入桌面右侧的白色容器里。"><figcaption>松开夹爪完成放置</figcaption></figure>
               </div>
               <p>这个任务按轮计分，抓到滚动的瓶子即为成功。使用原生采样时，机械臂在 18% 的回合里抓到瓶子，使用 OneFlow 和 OneFlow+ 时分别为 44% 和 72%。</p>
             </article>
             <article class="field-case" id="field-car" aria-labelledby="field-car-title">
               <h3 id="field-car-title">跟随小车：转向之后，腕部相机还看得见它吗</h3>
               <div class="field-photos">
-                <figure><img src="oneflow/field-car-01.webp" width="560" height="420" loading="lazy" alt="外部相机画面中，小车在夹爪下方偏右。"><figcaption>小车经过夹爪下方</figcaption></figure>
-                <figure><img src="oneflow/field-car-04.webp" width="560" height="420" loading="lazy" alt="小车移到画面左侧，机械臂随之移向左侧。"><figcaption>机械臂随目标向左移动</figcaption></figure>
-                <figure><img src="oneflow/field-car-07.webp" width="560" height="420" loading="lazy" alt="小车转到桌面右侧，机械臂改变位置跟随。"><figcaption>目标转向后继续跟随</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-car-01.webp" width="560" height="420" loading="lazy" alt="外部相机画面中，小车在夹爪下方偏右。"><figcaption>小车驶过夹爪下方</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-car-02.webp" width="560" height="420" loading="lazy" alt="小车向左加速移动，机械臂紧随其后。"><figcaption>小车向左行驶，机械臂开始跟随</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-car-03.webp" width="560" height="420" loading="lazy" alt="机械臂继续平移保持小车处于腕部视野内。"><figcaption>持续追踪向左移动的目标</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-car-04.webp" width="560" height="420" loading="lazy" alt="小车移到画面左侧拐点，机械臂随之移向左侧。"><figcaption>抵达左侧拐点准备转向</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-car-05.webp" width="560" height="420" loading="lazy" alt="小车突然变向向右，机械臂即时修正轨迹。"><figcaption>小车反向折返，实时修正轨迹</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-car-06.webp" width="560" height="420" loading="lazy" alt="机械臂稳步横移回桌面中央偏右区域。"><figcaption>随小车横移保持视野锁定</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-car-07.webp" width="560" height="420" loading="lazy" alt="小车转到桌面右侧，机械臂改变位置持续跟随。"><figcaption>第二次转向后继续稳定跟随</figcaption></figure>
               </div>
               <p>照片是外部视角，计分用的是腕部相机。每轮持续 20 秒，统计小车至少部分可见的时间占比，再对 50 轮取平均。OneFlow+ 的 54% 相当于平均每轮约有 10.8 秒能看见小车，原生采样约为 2.4 秒。</p>
             </article>
             <article class="field-case" id="field-conveyor" aria-labelledby="field-conveyor-title">
               <h3 id="field-conveyor-title">传送带叠碗：六只碗全部叠好才算完成一轮</h3>
               <div class="field-photos">
-                <figure><img src="oneflow/field-conveyor-01.webp" width="560" height="420" loading="lazy" alt="机械臂的夹爪从绿色传送带上抓起灰碗。"><figcaption>从传送带抓起第一只碗</figcaption></figure>
-                <figure><img src="oneflow/field-conveyor-04.webp" width="560" height="420" loading="lazy" alt="夹爪把蓝碗移到已有的碗叠上方，传送带上还有下一只碗。"><figcaption>把蓝碗叠到已有的碗上</figcaption></figure>
-                <figure><img src="oneflow/field-conveyor-07.webp" width="560" height="420" loading="lazy" alt="夹爪张开，六只碗在传送带旁叠成一摞。"><figcaption>第六只碗就位后松爪</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-conveyor-01.webp" width="560" height="420" loading="lazy" alt="机械臂的夹爪从绿色传送带上抓起第一只灰碗。"><figcaption>从移动传送带抓起第 1 只灰碗</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-conveyor-02.webp" width="560" height="420" loading="lazy" alt="夹爪把粉色碗稳稳叠到灰碗之上。"><figcaption>将第 2 只粉碗叠入碗摞</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-conveyor-03.webp" width="560" height="420" loading="lazy" alt="已有两只碗叠好，夹爪回身从传送带抓取黄色碗。"><figcaption>返回传送带抓取第 3 只黄碗</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-conveyor-04.webp" width="560" height="420" loading="lazy" alt="夹爪把蓝碗移到已有的三只碗叠上方。"><figcaption>将第 4 只蓝碗叠上碗摞</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-conveyor-05.webp" width="560" height="420" loading="lazy" alt="四只碗已叠妥，夹爪从传送带抓取米色碗。"><figcaption>拦截传送带上的第 5 只米色碗</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-conveyor-06.webp" width="560" height="420" loading="lazy" alt="五只碗已就位，夹爪提起最后一只绿色碗。"><figcaption>抓起最后一只绿碗移向碗摞</figcaption></figure>
+                <figure><img src="oneflow/assets/field/field-conveyor-07.webp" width="560" height="420" loading="lazy" alt="夹爪张开，六只碗在传送带旁叠成整齐一摞。"><figcaption>第 6 只碗就位后松爪完成</figcaption></figure>
               </div>
               <p>机器人要在碗随传送带移走之前抓住它，再转向堆叠位置。原生采样在 50 轮里没有完成过整套动作，OneFlow+ 的整轮成功率为 30%。推理更快之后，完整堆叠依然困难。</p>
             </article>
@@ -804,6 +861,10 @@
             <li><strong>世界动作模型只验证了动作去噪</strong>实验中并行处理的是由当前画面特征引导的动作去噪。联合滚动预测未来视频和动作，是论文留下的后续问题。</li>
           </ul>
 
+          <details class="research-detail"><summary>查看补充材料图 6：五类策略在 A100 与 RTX 4090 上的峰值显存曲线</summary>
+            <figure class="paper-fig"><a href="oneflow/assets/figures/peak-memory.webp" aria-label="查看补充材料图 6 原尺寸显存曲线"><img src="oneflow/assets/figures/peak-memory.webp" width="1600" height="802" loading="lazy" alt="五类策略在 A100 80 GB 与 RTX 4090 48 GB 上随去噪阶段数 N 从 1 增至 16 的峰值已分配显存曲线。OneFlow 几乎与原生一致，OneFlow+ 因执行引擎缓存与预留工作区而增加显存占用。"></a><figcaption><strong>补充材料图 6 原图。</strong>纯算法层面的 OneFlow 几乎不增加额外显存（例如 GR00T N1.7 在 N = 16 下为 6.08 GiB 对原生 5.95 GiB）；OneFlow+ 通过执行引擎工作区和 CUDA 图预留缓冲区换取极限低时延。点击可放大。</figcaption></figure>
+          </details>
+
           <h3>留给现场的问题</h3>
           <ol class="prompts">
             <li>如果每轮把预测的 16 步全部执行完，流水线里还剩多少可以接续的估计？</li>
@@ -823,7 +884,7 @@
             <h3 lang="en">Parallelizing Flows for One-Pass Action Generation</h3>
             <p>方法推导见论文第 3 节与补充材料算法 1。图 1 并列展示去噪调度与冰球回击。图 2 解释方法，图 3 检验计算预算，图 4 分析动作连续性，图 5 展示四项实机任务。主实验见表 1–6。补充材料的图 6 与图 8 分析显存和跨轮复用，表 8、10、11、14 分别给出置信区间、同引擎延迟、目标扰动及实机对照。</p>
             <p>本页的调度示意、动作窗口、流式对齐与并行重建图解依据论文图 1 和图 2 重绘。实验数据取自论文相应图表。论文图 2、图 3 和图 4 的原图附在对应小节。</p>
-            <p class="res-note">调用时序演示沿用项目站的机械臂关节轨迹与取放场景，可切换全景和夹爪特写。Franka Panda 外观来自 <a href="https://github.com/google-deepmind/mujoco_menagerie/tree/main/franka_emika_panda">MuJoCo Menagerie</a>，支持实时三维渲染，设备也可使用预渲染画面。<a href="oneflow/robot-mesh-license.txt">模型许可</a></p>
+            <p class="res-note">调用时序演示沿用项目站的机械臂关节轨迹与取放场景，可切换全景和夹爪特写。Franka Panda 外观来自 <a href="https://github.com/google-deepmind/mujoco_menagerie/tree/main/franka_emika_panda">MuJoCo Menagerie</a>，支持实时三维渲染，设备也可使用预渲染画面。<a href="oneflow/assets/arm-model/robot-mesh-license.txt">模型许可</a></p>
             <h3>OneFlow 项目网站</h3>
             <p>交互示例沿用项目站每轮预测 8 步、执行 2 步的设置。讲稿的依赖路径、观测时间轴和动作曲线改编自项目站的 Key insight 与 Method 动画。上方观测来自机械臂示范，曲线、阶段时长和播放速度用于说明计算过程。<a href="https://github.com/ky-ji/paraflow/tree/project-page">项目站源码（需仓库权限）</a></p>
           </div>
@@ -842,11 +903,16 @@
         <section class="slide is-dark slide-cover" data-section="main" data-theme="cover" data-title="OneFlow · 多步去噪，单次前向">
           <div class="slide-body">
             <div>
-              <p class="slide-label">2026.11.25 · 机器人学习</p>
+              <p class="slide-label"><img class="of-slide-mark" src="oneflow/assets/figures/oneflow-mark.svg" width="24" height="24" alt="">2026.11.25 · 机器人学习</p>
               <h2 class="slide-word" lang="en" tabindex="-1">One<i>Flow</i></h2>
               <p class="cover-sub">多步去噪，单次前向</p>
               <p class="cover-paper" lang="en">Parallelizing Flows for One-Pass Action Generation</p>
               <p class="cover-q">已有的预训练流策略，能否在一次前向传播的时延量级上，保留多步采样的动作质量？</p>
+              <div class="of-slide-kpis" aria-label="核心结果">
+                <span><b>1 次前向</b> 稳态去噪</span>
+                <span><b>5 类策略</b> 零重训练</span>
+                <span><b>10–30×</b> 实测加速</span>
+              </div>
             </div>
             <div class="slot cover-art-slot" data-clone="hero-art"></div>
           </div>
@@ -927,20 +993,26 @@
         </section>
 
         <section class="slide s-lat" data-section="latency" data-theme="results" data-title="30.3 倍加速，用的是哪个基线？" data-steps="2" hidden>
-          <header class="slide-head"><p class="slide-label">实验 · 实测耗时</p><h2 tabindex="-1">30.3 倍加速，用的是哪个基线？</h2></header>
+          <header class="slide-head"><p class="slide-label">实验 · 实测耗时</p><h2 tabindex="-1">30.3 倍加速，用的是哪个基线？</h2>
+            <div class="lat-views" role="group" aria-label="选择时延视图">
+              <button type="button" data-lat-view="baseline" aria-pressed="true" aria-controls="deck-latency-slot">基线拆解</button>
+              <button type="button" data-lat-view="cascade" aria-pressed="false" aria-controls="deck-cascade-slot">五类策略 10–30×</button>
+            </div>
+          </header>
           <div class="slide-body">
-            <div class="slot" data-clone="latency-fig" style="--fs:1.15"></div>
+            <div class="slot" id="deck-latency-slot" data-clone="latency-fig" style="--fs:1.15"></div>
+            <div class="slot" id="deck-cascade-slot" data-clone="engine-cascade" hidden></div>
           </div>
           <footer class="slide-foot">论文表 4、补充材料表 10 · Fast-WAM，A100，预热后的中位数（ms）· 计时从 CPU 观测到解码后的 CPU 动作</footer>
         </section>
 
-        <section class="slide s-field" data-section="field" data-theme="field" data-title="两种策略的推理耗时接近，回击率会怎样？" hidden>
-          <header class="slide-head"><p class="slide-label">实机 · Franka × GR00T N1.7</p><h2 tabindex="-1">两种策略的推理耗时接近，回击率会怎样？</h2></header>
+        <section class="slide s-field" data-section="field" data-theme="field" data-title="四项动态操作，在真机上怎样计分？" data-comparison-title="两种策略的推理耗时接近，回击率会怎样？" hidden>
+          <header class="slide-head"><p class="slide-label">实机 · Franka × GR00T N1.7</p><h2 tabindex="-1">四项动态操作，在真机上怎样计分？</h2></header>
           <div class="slide-body">
             <div class="s-frames">
-              <figure><img src="oneflow/hockey-03.webp" width="1080" height="864" alt="机械臂的球拍在中线附近接触来球。"><figcaption>+133 ms 触球</figcaption></figure>
-              <figure><img src="oneflow/hockey-01.webp" width="1080" height="864" alt="来球滑向中线，机械臂准备迎球。"><figcaption>0 ms</figcaption></figure>
-              <figure><img src="oneflow/hockey-05.webp" width="1080" height="864" alt="冰球离开球拍，向对侧滑动。"><figcaption>+267 ms</figcaption></figure>
+              <figure><img src="oneflow/assets/field/hockey-03.webp" width="1080" height="864" alt="机械臂的球拍在中线附近接触来球。"><figcaption>+133 ms 触球</figcaption></figure>
+              <figure><img src="oneflow/assets/field/hockey-01.webp" width="1080" height="864" alt="来球滑向中线，机械臂准备迎球。"><figcaption>0 ms</figcaption></figure>
+              <figure><img src="oneflow/assets/field/hockey-05.webp" width="1080" height="864" alt="冰球离开球拍，向对侧滑动。"><figcaption>+267 ms</figcaption></figure>
             </div>
             <div class="s-side">
               <div class="slot" data-clone="field-control-fig" style="--fs:1.05"></div>

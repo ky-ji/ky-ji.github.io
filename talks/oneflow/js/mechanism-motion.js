@@ -5,7 +5,7 @@
   const art=window.OneFlowTrajectoryArt;
   if(!art) return;
   const NS='http://www.w3.org/2000/svg';
-  const observation=new URL('stream/obs-03.webp',document.currentScript.src).href;
+  const observation=new URL('../assets/stream/obs-03.webp',document.currentScript.src).href;
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const clamp=v=>Math.max(0,Math.min(1,v));
   const ease=v=>{const t=clamp(v);return t*t*(3-2*t);};

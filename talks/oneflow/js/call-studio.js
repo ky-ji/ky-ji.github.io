@@ -21,7 +21,7 @@
   function loadRenderer() {
     if (!renderer) renderer = (async () => {
       if (location.protocol === 'file:' || !window.WebGLRenderingContext || !window.DecompressionStream) return null;
-      if (!window.THREE) await loadScript('arm-model/three.min.js');
+      if (!window.THREE) await loadScript('../assets/arm-model/three.min.js');
       await loadScript('call-studio-scene.js');
       return window.OneFlowCallScene.load();
     })().catch(() => null);

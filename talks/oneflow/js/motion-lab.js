@@ -76,11 +76,10 @@
     footer.append(html('span','','去噪过程示意 →'),toggle);
     root.append(canvas,header,footer);
 
-    // Schematic only; it carries no measured data. A night plate sits between the two label bands,
-    // which stay paper-coloured so the ink labels need no override. Silver noise and ice-blue action estimates
-    // preserve the contrast of the original project animation on a projector.
-    const PAPER='#faf9f3', NIGHT='#0a0f15';
-    const GRAIN=[191,194,198], ACTION=[216,235,255], WAKE=[137,183,244];
+    // Schematic only; it carries no measured data. A deep obsidian-indigo plate sits between the two label bands,
+    // transitioning from silver source noise to luminous OneFlow blue-teal action trajectories.
+    const PAPER='#faf9f5', NIGHT='#091322';
+    const GRAIN=[186,196,210], ACTION=[224,244,255], WAKE=[86,184,192];
     const STRANDS=7;              // one trajectory per action dimension
     const SPAN=1.1;               // flow time loops over -0.04 to 1.06, so entry and exit stay off the plate
     const FADE=[.94,.64,.36,.17];    // opacity of the four trail segments, newest first
@@ -102,7 +101,7 @@
 
     // time opens on a balanced phase, which is also the reduced-motion still.
     let time=5.7, layout='', width=0, height=0, y0=0, y1=0, cy=0, band=0, unit=1, count=0;
-    let headInk, tailInk, guideInk, px=0, py=0;
+    let headInk, tailInk, guideInk, plateBg, px=0, py=0;
 
     // Share of the action at flow time u: noise until 4%, clean from 84%.
     const share=u=>smooth((u-.04)/.8);
@@ -131,8 +130,18 @@
     function draw() {
       if (!width) return;
       ctx.globalAlpha=1;
-      ctx.fillStyle=NIGHT;
+      ctx.fillStyle=plateBg || NIGHT;
       ctx.fillRect(0,y0,width,y1-y0);
+      // Subtle denoising-time vertical grid ticks
+      ctx.strokeStyle='rgba(140,183,244,0.075)';
+      ctx.lineWidth=1;
+      ctx.beginPath();
+      for (let g=1; g<4; g++) {
+        const gx = Math.round(width * g / 4) + 0.5;
+        ctx.moveTo(gx, y0);
+        ctx.lineTo(gx, y1);
+      }
+      ctx.stroke();
       ctx.globalCompositeOperation='lighter';
       // The seven clean trajectories, fading in only where the particles have nearly settled on them.
       ctx.beginPath();
@@ -182,14 +191,20 @@
       cy=(y0+y1)/2; band=(y1-y0)/2;
       unit=clamp(w/720,.95,1.45);
       count=Math.round(clamp(w*(y1-y0)/415,300,parts.length));
-      headInk=ramp(ACTION,.9,1); tailInk=ramp(WAKE,.64,.98);
+      headInk=ramp(ACTION,.9,1); tailInk=ramp(WAKE,.66,.98);
+      plateBg=ctx.createLinearGradient(0,y0,width,y1);
+      plateBg.addColorStop(0,'#091322');
+      plateBg.addColorStop(.55,'#0d1e36');
+      plateBg.addColorStop(1,'#0c2732');
       guideInk=ctx.createLinearGradient(.56*w,0,w,0);
-      [[0,0],[.64,.35],[1,.50]].forEach(([at,alpha])=>guideInk.addColorStop(at,`rgba(${WAKE},${alpha})`));
+      [[0,0],[.64,.36],[1,.54]].forEach(([at,alpha])=>guideInk.addColorStop(at,`rgba(${WAKE},${alpha})`));
       draw();                       // redraws the same phase: time and the particle pool are untouched
     }
-    const sizes=new ResizeObserver(resize);
+    let resizeRaf=0;
+    const scheduleResize=()=>{ if (resizeRaf) return; resizeRaf=requestAnimationFrame(()=>{ resizeRaf=0; resize(); }); };
+    const sizes=new ResizeObserver(scheduleResize);
     [canvas,header,footer].forEach(el=>sizes.observe(el));
-    addEventListener('resize',resize);   // browser zoom or another screen changes the device pixel ratio
+    addEventListener('resize',scheduleResize);   // browser zoom or another screen changes the device pixel ratio
     resize();
 
     const player=scheduler(root,dt=>{time+=dt;draw();},playing=>{

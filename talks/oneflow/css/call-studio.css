@@ -17,7 +17,7 @@
 .cs-name h4 { color: var(--cs-ink); font: 670 clamp(1.1rem, 2.3vw, 1.65rem)/1.18 var(--sans, sans-serif); letter-spacing: -.035em; margin: 0; }
 .cs-name span, .cs-receipt > span { font-size: .8rem; color: #42566b; }
 .cs-robot {
-  background-image: url(arm-sequence.webp?v=20261124.4);
+  background-image: url(../assets/arm-model/arm-sequence.webp?v=20261124.5);
   background-repeat: no-repeat;
 }
 .cs-receipt { display:flex; align-items:baseline; justify-content:space-between; border-top:1px solid #b5c4d1; padding-top:.4rem; }
@@ -80,7 +80,7 @@
 .cs-trace svg { position:absolute; display:block; inset:0; width:100%; height:100%; fill:none; stroke:#5f7183; stroke-width:1.1px; }
 .cs-strip.is-active .cs-trace svg { stroke:#1a3652; }
 .cs-robot { position:relative; width:100%; aspect-ratio:368/248; margin:0; background-size:1000% 1000%; background-position:var(--sprite-x,0%) var(--sprite-y,22.222%); }
-[data-cs-view="detail"] .cs-robot { background-image:url(arm-sequence-detail.webp); }
+[data-cs-view="detail"] .cs-robot { background-image:url(../assets/arm-model/arm-sequence-detail.webp); }
 .cs-live { position:absolute; inset:0; width:100%; height:100%; display:none; }
 .cs-robot.cs-live-ready { background-image:none; }
 .cs-robot.cs-live-ready .cs-live { display:block; }
@@ -118,6 +118,6 @@
 }
 @media print {
   .cs-cameras, .cs-live { display:none !important; }
-  .cs-robot.cs-live-ready { background-image:url(arm-sequence.webp?v=20261124.4); }
-  [data-cs-view="detail"] .cs-robot.cs-live-ready { background-image:url(arm-sequence-detail.webp); }
+  .cs-robot.cs-live-ready { background-image:url(../assets/arm-model/arm-sequence.webp?v=20261124.5); }
+  [data-cs-view="detail"] .cs-robot.cs-live-ready { background-image:url(../assets/arm-model/arm-sequence-detail.webp); }
 }

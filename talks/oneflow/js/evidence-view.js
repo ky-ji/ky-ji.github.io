@@ -26,7 +26,7 @@
       rows.forEach((row, i) => {
         const point = points[i];
         point.style.setProperty("--value", values[i]);
-        point.querySelector("b").textContent = values[i] + "%";
+        point.querySelector("b").textContent = (!revealed && i >= 2) ? "待揭示" : values[i] + "%";
         const [stages, calls] = budgets[i].querySelectorAll("span b");
         stages.textContent = row.cells[1].textContent;
         calls.textContent = row.cells[2].textContent;

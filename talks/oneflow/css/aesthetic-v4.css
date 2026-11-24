@@ -1,0 +1,925 @@
+/* ==========================================================================
+   OneFlow Talk · Unified Visual Identity & Editorial Keynote System (v4)
+   Harmonizes all talk modules with the OneFlow paper & project-page palette:
+   Manrope + Inter + STIX Two Text · OneFlow Blue (#2d5da8) × Teal (#1d7a6e)
+   ========================================================================== */
+
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url(../assets/fonts/manrope-latin-wght.woff2) format("woff2");
+}
+@font-face {
+  font-family: "STIX Two Text";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url(../assets/fonts/stix-two-text-latin-500-italic.woff2) format("woff2");
+}
+
+:root,
+.oneflow-publication {
+  --of-blue: #2d5da8;
+  --of-blue-vivid: #3668be;
+  --of-blue-deep: #19355e;
+  --of-blue-tint: #edf3fc;
+  --of-teal: #1d7a6e;
+  --of-teal-soft: #59a89d;
+  --of-teal-tint: #eaf5f3;
+  --of-gold: #d48f24;
+  --of-coral: #c44536;
+  --of-ink: #0f1d2e;
+  --of-ink-2: #415267;
+  --of-muted: #647488;
+  --of-paper: #faf9f5;
+  --of-paper-cool: #f2f5fa;
+  --of-paper-data: #fdfdfb;
+  --of-paper-deep: #f0eee8;
+  --of-card: #ffffff;
+  --of-night: #0a1424;
+  --of-night-card: #112036;
+  --of-line: rgba(15, 29, 46, 0.11);
+  --of-line-strong: rgba(15, 29, 46, 0.24);
+  --of-grad: linear-gradient(105deg, #2d5da8 0%, #1d7a6e 100%);
+  --of-shadow-sm: 0 1px 2px rgba(15, 29, 46, 0.04), 0 4px 12px -4px rgba(15, 29, 46, 0.06);
+  --of-shadow: 0 1px 3px rgba(15, 29, 46, 0.04), 0 16px 40px -18px rgba(15, 29, 46, 0.14);
+  --of-radius: 14px;
+
+  /* Map legacy shell & talk tokens into the unified OneFlow system */
+  --v3-paper: var(--of-paper);
+  --v3-paper-cool: var(--of-paper-cool);
+  --v3-paper-data: var(--of-paper-data);
+  --v3-paper-deep: var(--of-paper-deep);
+  --v3-ink: var(--of-ink);
+  --v3-ink-2: var(--of-ink-2);
+  --v3-ink-3: var(--of-muted);
+  --v3-cobalt: var(--of-blue);
+  --v3-cobalt-soft: #8cb7f4;
+  --v3-night: var(--of-night);
+  --v3-line: var(--of-line);
+  --v3-line-strong: var(--of-line-strong);
+  --v3-sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  --v3-head: "Manrope", "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  --v3-serif: "STIX Two Text", Georgia, "Times New Roman", "Songti SC", "Noto Serif CJK SC", serif;
+  --sans: var(--v3-sans);
+  --ink: var(--of-ink);
+  --text: #27394d;
+  --muted: var(--of-muted);
+  --blue: var(--of-blue);
+  --accent: var(--of-gold);
+}
+
+/* ---------- Typography & Math Variables ---------- */
+h1, h2, h3, h4,
+.v3-title,
+.slide-head h2,
+.slide-word,
+.ev-heading strong,
+.ec-head strong,
+.cs-title strong,
+.cs-name h4 {
+  font-family: var(--v3-head);
+}
+
+var,
+.m,
+.equation [lang="en"],
+.slide-eq [lang="en"],
+.mech-eq {
+  font-family: var(--v3-serif);
+}
+
+var {
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* Subtle brand mark spin matching the OneFlow project website */
+@keyframes ofMarkSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.v3-crumbs-mark img,
+.v3-cover-kicker img,
+.slide-cover .of-slide-mark {
+  transform-origin: center;
+  animation: ofMarkSpin 18s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .v3-crumbs-mark img,
+  .v3-cover-kicker img,
+  .slide-cover .of-slide-mark {
+    animation: none;
+  }
+}
+
+/* ---------- Header & Progress Bar ---------- */
+.v3-header {
+  background: rgba(250, 249, 245, 0.88);
+  -webkit-backdrop-filter: saturate(160%) blur(16px);
+  backdrop-filter: saturate(160%) blur(16px);
+}
+.v3-read {
+  background: var(--of-grad);
+}
+.v3-nav-ind i {
+  background: var(--of-grad);
+}
+.v3-title i,
+.v3-crumbs-mark i,
+#deck .slide-cover .slide-word i {
+  background: var(--of-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.v3-talk {
+  border-radius: 999px;
+  border-color: rgba(15, 29, 46, 0.22);
+  padding: 0 1.05rem;
+  letter-spacing: 0.06em;
+}
+.v3-talk:hover {
+  background: var(--of-blue);
+  border-color: var(--of-blue);
+  color: #fff;
+}
+
+/* ---------- Elevated Cover & Executive Metric Strip ---------- */
+.v3-btn-primary {
+  border-radius: 999px;
+  background: var(--of-grad);
+  box-shadow: 0 6px 18px -6px rgba(45, 93, 168, 0.45);
+  transition: transform 0.18s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.v3-btn-primary:hover {
+  background: var(--of-grad);
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -8px rgba(45, 93, 168, 0.55);
+}
+
+.of-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 1.45rem 0 1.55rem;
+  padding: 0.85rem 0;
+  border-block: 1px solid var(--of-line);
+}
+.of-kpi {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.of-kpi strong {
+  font: 760 clamp(1.08rem, 1.5vw, 1.32rem)/1.15 var(--v3-head);
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  background: var(--of-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.of-kpi span {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--of-muted);
+}
+
+/* Studio-framed Hero Particle Plate */
+.v3-cover .v3-plate::after {
+  display: none;
+}
+.v3-cover .om-flow,
+#deck .slide-cover .om-flow {
+  border: 1px solid rgba(15, 29, 46, 0.12);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--of-paper);
+  box-shadow: var(--of-shadow);
+}
+.v3-plate .om-field-head,
+.v3-plate .om-field-foot,
+#deck .slide-cover .om-field-head,
+#deck .slide-cover .om-field-foot {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.v3-plate .om-field-foot button,
+#deck .slide-cover .om-field-foot button {
+  border-radius: 999px;
+  border-color: rgba(15, 29, 46, 0.18);
+  padding: 0.24rem 0.75rem;
+  background: #ffffff;
+  color: var(--of-ink);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.v3-plate .om-field-foot button:hover,
+#deck .slide-cover .om-field-foot button:hover {
+  background: var(--of-blue);
+  border-color: var(--of-blue);
+  color: #fff;
+}
+
+/* Cover Slide 1 KPI Pills */
+.of-slide-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.25rem;
+}
+.of-slide-kpis span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.36rem;
+  padding: 0.34rem 0.78rem;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid rgba(45, 93, 168, 0.18);
+  box-shadow: 0 2px 8px -4px rgba(15, 29, 46, 0.1);
+  font-size: 0.78em;
+  color: var(--of-ink-2);
+}
+.of-slide-kpis b {
+  font-family: var(--v3-head);
+  font-weight: 760;
+  font-variant-numeric: tabular-nums;
+  color: var(--of-blue);
+}
+.slide-cover .slide-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+}
+.slide-cover .of-slide-mark {
+  width: 1.45em;
+  height: 1.45em;
+  vertical-align: middle;
+}
+
+/* ---------- Reading Route Agenda ---------- */
+.v3-route {
+  border-top: 2px solid var(--of-ink);
+}
+.v3-route a {
+  transition: background-color 0.2s ease;
+}
+.v3-route a:hover {
+  background-color: rgba(45, 93, 168, 0.045);
+}
+.v3-route-name i {
+  font-family: var(--v3-serif);
+}
+
+/* ---------- Unify Evidence View (Success, Scaling, Latency) ---------- */
+.ev-figure {
+  --ev-paper: #ffffff;
+  --ev-ink: var(--of-ink);
+  --ev-muted: var(--of-muted);
+  --ev-rule: rgba(15, 29, 46, 0.11);
+  --ev-native: #6f7f91;
+  --ev-flow: var(--of-blue);
+  --ev-tint: var(--of-blue-tint);
+  border-radius: var(--of-radius);
+  border: 1px solid var(--of-line);
+  box-shadow: var(--of-shadow);
+  font-family: var(--v3-sans);
+}
+.ev-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.24em 0.72em;
+  border-radius: 999px;
+  background: var(--of-blue-tint);
+  color: var(--of-blue);
+  font-weight: 600;
+  font-size: 0.8em;
+}
+.ev-toolbar {
+  gap: 0.4em;
+}
+.ev-toolbar button,
+.ev-metric-select select {
+  border-radius: 999px;
+  border: 1px solid rgba(15, 29, 46, 0.15);
+  background: #f6f8fb;
+  color: var(--of-ink-2);
+  padding: 0.42em 0.92em;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.ev-toolbar button:hover,
+.ev-metric-select select:hover {
+  border-color: var(--of-blue);
+  color: var(--of-blue);
+  background: var(--of-blue-tint);
+}
+.ev-toolbar button[aria-pressed="true"] {
+  background: var(--of-ink);
+  border-color: var(--of-ink);
+  color: #ffffff;
+  box-shadow: 0 4px 12px -4px rgba(15, 29, 46, 0.35);
+}
+.ev-c3 .ev-position,
+.ev-budgets .ev-c3 strong {
+  color: var(--of-teal);
+}
+.ev-c3 .ev-position i {
+  outline-color: var(--of-teal);
+}
+.ev-time-distance {
+  background: var(--of-grad);
+  border-radius: 999px;
+}
+.ev-time-flow {
+  color: var(--of-teal);
+}
+.ev-time-flow::after {
+  background: var(--of-teal);
+}
+.ev-series.ev-s1 {
+  stroke: var(--of-blue);
+  fill: var(--of-blue);
+}
+.ev-pick.ev-s1 {
+  stroke: var(--of-blue);
+  fill: var(--of-blue);
+}
+.ev-slider-row input {
+  accent-color: var(--of-blue);
+}
+
+/* Fix kerning collision on monospace figures everywhere */
+.ev-position b,
+.ev-ratio strong,
+.cv-finding strong,
+.deck:not(.is-flow) .s-mech[data-at="3"] .proof .bar > b {
+  letter-spacing: -0.025em !important;
+  font-variant-numeric: tabular-nums;
+}
+.ev-ratio strong {
+  background: var(--of-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Slide 7 unrevealed placeholder polish: clearly intentional staged reveal */
+.ev-configuration.ev-unseen {
+  opacity: 0.55 !important;
+  visibility: visible !important;
+  pointer-events: none;
+}
+.ev-configuration.ev-unseen .ev-position {
+  bottom: 50% !important;
+}
+.ev-configuration.ev-unseen .ev-position b {
+  font-size: 0.72em !important;
+  letter-spacing: 0.06em !important;
+  white-space: nowrap;
+  padding: 0.22em 0.65em;
+  border-radius: 999px;
+  border: 1px dashed rgba(45, 93, 168, 0.35);
+  background: #f8fafd;
+  color: var(--of-muted) !important;
+}
+.ev-configuration.ev-unseen .ev-position i {
+  border-style: dashed !important;
+  background: transparent !important;
+  outline: none !important;
+}
+.ev-takeaway.ev-unseen {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Parallel-sampler 1-pass baseline callout inside #success-fig */
+.of-baseline-callout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.45rem 1rem;
+  margin-top: 0.85em;
+  padding: 0.65em 0.9em;
+  border-radius: 10px;
+  background: #f3f6fb;
+  border: 1px solid rgba(45, 93, 168, 0.14);
+  font-size: 0.84em;
+  line-height: 1.55;
+  color: var(--of-ink-2);
+}
+.of-baseline-callout strong {
+  color: var(--of-blue-deep);
+  font-weight: 680;
+}
+.of-baseline-callout b {
+  font-family: var(--v3-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--of-ink);
+}
+.of-baseline-callout .of-pill-flow {
+  color: var(--of-blue);
+}
+.deck .of-baseline-callout {
+  margin-top: 0.5em;
+  padding: 0.45em 0.75em;
+  font-size: 0.76em;
+}
+
+/* ---------- Unify Continuation View (Slide 8 & #continuation) ---------- */
+.fig.ctrl.cv-ready,
+.deck .fig.ctrl.cv-ready {
+  --cv-paper: #ffffff;
+  --cv-ink: var(--of-ink);
+  --cv-muted: var(--of-muted);
+  --cv-line: rgba(15, 29, 46, 0.12);
+  --cv-teal: var(--of-blue);
+  border-radius: var(--of-radius);
+  border: 1px solid var(--of-line);
+  box-shadow: var(--of-shadow);
+}
+.cv-story {
+  font-family: var(--v3-sans);
+}
+.cv-controls {
+  gap: 0.4em;
+}
+.cv-controls button {
+  border-radius: 999px;
+  border: 1px solid rgba(15, 29, 46, 0.15);
+  background: #f6f8fb;
+  color: var(--of-ink-2);
+  padding: 0.38em 0.95em;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.cv-controls button:hover {
+  border-color: var(--of-blue);
+  color: var(--of-blue);
+  background: var(--of-blue-tint);
+}
+.cv-controls button[aria-pressed="true"] {
+  background: var(--of-ink);
+  border-color: var(--of-ink);
+  color: #ffffff;
+}
+.cv-timeline {
+  border-radius: 10px;
+  border: 1px solid rgba(15, 29, 46, 0.08);
+  background: linear-gradient(90deg, #f3f6fb 0 33.333%, #f8fafd 33.333% 66.666%, #eef4fc 66.666%);
+}
+.cv-finding strong {
+  color: var(--of-blue);
+}
+
+/* ---------- Unify Elevated Cards for Method, Serial, Routes, Call Studio, Stream ---------- */
+.fig.loop,
+.fig.axes,
+.fig.mech,
+.fig.proof,
+.fig.pert,
+#field-control-fig,
+.sf-figure,
+.call-studio,
+.rf-plate {
+  background: var(--of-card);
+  border: 1px solid var(--of-line);
+  border-radius: var(--of-radius);
+  box-shadow: var(--of-shadow);
+  padding: clamp(16px, 2.8vw, 28px);
+}
+.deck .fig.loop,
+.deck .fig.axes,
+.deck .fig.mech,
+.deck .fig.proof,
+.deck .fig.pert,
+.deck .sf-figure,
+.deck .call-studio,
+.deck .rf-plate {
+  box-shadow: 0 4px 20px -12px rgba(15, 29, 46, 0.12);
+}
+.deck .call-studio {
+  padding: 12px 16px;
+}
+.cs-scenes {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 29, 46, 0.1);
+  background: #f5f7fa;
+}
+.cs-lane.is-oneflow {
+  background: #edf3fc;
+  border-left-color: rgba(45, 93, 168, 0.2);
+  --cs-ink: var(--of-blue-deep);
+}
+.cs-player button,
+.cs-cameras {
+  border-radius: 999px;
+}
+.cs-cameras button {
+  border-radius: 999px;
+}
+.cs-player [data-cs-play],
+.cs-cameras button[aria-pressed="true"] {
+  background: var(--of-ink);
+  border-color: var(--of-ink);
+}
+.sf-controls button,
+.mx-lab button,
+.sm-controls button,
+.om-overlap-ctrl button {
+  border-radius: 999px !important;
+}
+
+/* ---------- Full 5-Row Table 6 Component Ablation (#ablation-fig) ---------- */
+.proof .bar {
+  grid-template-columns: minmax(7.8rem, 9.6rem) minmax(0, 1fr) 7.2rem;
+  gap: 0.45rem 0.65rem;
+  align-items: center;
+}
+.proof .bar-track {
+  height: 0.52rem;
+  border-radius: 999px;
+  background: #e9eef4;
+  overflow: hidden;
+}
+.proof .bar-track i {
+  border-radius: 999px;
+  background: #8d9eb1;
+}
+.proof .bar.is-flow .bar-track i {
+  background: var(--of-grad);
+}
+.proof .bar.is-severe .bar-track i {
+  background: var(--of-coral);
+}
+.proof .bar > b {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.35em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.proof .bar-delta {
+  font-size: 0.72em;
+  font-weight: 620;
+  color: var(--of-muted);
+  font-family: var(--v3-mono);
+}
+.proof .bar.is-severe > b,
+.proof .bar.is-severe .bar-delta {
+  color: var(--of-coral);
+}
+.proof .bar.is-flow > b {
+  color: var(--of-blue);
+}
+.deck:not(.is-flow) .s-mech[data-at="3"] .proof .bar {
+  grid-template-columns: 8.6em minmax(0, 1fr) 6.8em;
+}
+.deck:not(.is-flow) .s-mech[data-at="3"] .proof .bar > b {
+  font-size: 1.16em !important;
+}
+
+/* ---------- Harmonize Real-World Field Theater (#field & Slide 11) ---------- */
+#field {
+  background: var(--of-paper-deep);
+}
+.ro-viewer {
+  --ro-ink: var(--of-ink);
+  --ro-muted: var(--of-muted);
+  --ro-line: rgba(15, 29, 46, 0.12);
+  --ro-night: #0c1729;
+  --ro-light: #edf3fc;
+  --ro-signal: #f0b64d;
+  --ro-paper: #ffffff;
+}
+.ro-viewer .ro-picks {
+  border-bottom-color: rgba(15, 29, 46, 0.14);
+  gap: 0 1.45rem;
+}
+.ro-viewer .ro-picks button {
+  color: var(--of-muted);
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+.ro-viewer .ro-picks button:hover {
+  color: var(--of-blue);
+}
+.ro-viewer .ro-picks button[aria-pressed="true"] {
+  border-bottom-color: var(--of-blue);
+  color: var(--of-ink);
+}
+.ro-viewer .ro-layout {
+  border-radius: var(--of-radius);
+  overflow: hidden;
+  box-shadow: var(--of-shadow);
+  border: 1px solid rgba(15, 29, 46, 0.12);
+}
+.ro-viewer .ro-player {
+  background: #0c1729;
+}
+.ro-viewer .ro-screen {
+  background: #070f1d;
+}
+.ro-viewer .ro-clock {
+  background: rgba(10, 20, 36, 0.88);
+  border-left: 3px solid var(--of-gold);
+  border-radius: 4px;
+  backdrop-filter: blur(8px);
+}
+.ro-viewer .ro-play {
+  border-radius: 999px;
+  border-color: rgba(140, 183, 244, 0.45);
+  padding: 0.25rem 0.72rem;
+}
+.ro-viewer .ro-transport button:hover:not(:disabled) {
+  background: rgba(93, 163, 245, 0.22);
+}
+.ro-viewer .ro-ticks button {
+  border-top-color: rgba(140, 183, 244, 0.25);
+}
+.ro-viewer .ro-ticks button[aria-pressed="true"] {
+  border-color: var(--of-gold);
+  color: #ffe3ae;
+  background: rgba(240, 182, 77, 0.16);
+}
+.ro-viewer .ro-protocol {
+  border: 0;
+  border-left: 1px solid var(--of-line);
+  background: #ffffff;
+}
+.ro-viewer .ro-series > div::after {
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #97a8ba 0 var(--ro-score), #e8edf3 var(--ro-score) 100%);
+}
+.ro-viewer .ro-series > div:nth-child(3)::after {
+  background: linear-gradient(to right, #4c7ec5 0 var(--ro-score), #e8edf3 var(--ro-score) 100%);
+}
+.ro-viewer .ro-series > div:last-child::after {
+  background: linear-gradient(to right, #2d5da8 0, #1d7a6e var(--ro-score), #e8edf3 var(--ro-score) 100%);
+}
+.ro-viewer .ro-series > div:last-child dd {
+  color: var(--of-blue);
+}
+
+/* Seamless Dark Obsidian Integration on Slide 11 (.s-field) */
+#deck .slide[data-theme="field"] {
+  background: radial-gradient(90% 80% at 80% 10%, rgba(45, 93, 168, 0.22), transparent 62%),
+              radial-gradient(60% 60% at 10% 90%, rgba(29, 122, 110, 0.18), transparent 60%),
+              var(--of-night);
+}
+#deck .s-field .ro-viewer .ro-picks {
+  border-bottom-color: rgba(140, 183, 244, 0.22);
+}
+#deck .s-field .ro-viewer .ro-picks button {
+  color: #9cb2cf;
+}
+#deck .s-field .ro-viewer .ro-picks button[aria-pressed="true"] {
+  color: #ffffff;
+  border-bottom-color: #6ea8fe;
+}
+#deck .s-field .ro-viewer .ro-layout {
+  border-color: rgba(140, 183, 244, 0.2);
+  box-shadow: 0 18px 46px -18px rgba(0, 0, 0, 0.65);
+}
+#deck .s-field .ro-viewer .ro-protocol {
+  background: #122138;
+  border-left-color: rgba(140, 183, 244, 0.16);
+  color: #eef4ff;
+}
+#deck .s-field .ro-viewer .ro-title,
+#deck .s-field .ro-viewer .ro-series dt,
+#deck .s-field .ro-viewer .ro-series dd {
+  color: #f3f7ff;
+}
+#deck .s-field .ro-viewer .ro-source,
+#deck .s-field .ro-viewer .ro-rule,
+#deck .s-field .ro-viewer .ro-metric {
+  color: #a9bed8;
+}
+#deck .s-field .ro-viewer .ro-scores {
+  border-top-color: rgba(140, 183, 244, 0.2);
+}
+#deck .s-field .ro-viewer .ro-series > div::after {
+  background: linear-gradient(to right, #6f86a3 0 var(--ro-score), rgba(255, 255, 255, 0.12) var(--ro-score) 100%);
+}
+#deck .s-field .ro-viewer .ro-series > div:nth-child(3)::after {
+  background: linear-gradient(to right, #6aa3f2 0 var(--ro-score), rgba(255, 255, 255, 0.12) var(--ro-score) 100%);
+}
+#deck .s-field .ro-viewer .ro-series > div:last-child::after {
+  background: linear-gradient(to right, #4f8ef7 0, #48c2b2 var(--ro-score), rgba(255, 255, 255, 0.12) var(--ro-score) 100%);
+}
+#deck .s-field .ro-viewer .ro-series > div:last-child dd {
+  color: #8cc4ff;
+}
+#deck .s-field #field-control-fig,
+#deck .s-field .s-side .fig {
+  background: rgba(18, 33, 56, 0.72);
+  border-color: rgba(140, 183, 244, 0.2);
+  box-shadow: none;
+}
+
+/* ---------- Expandable Paper Figure Details & Teaser Showcase ---------- */
+.research-detail,
+.derivation {
+  border-radius: 10px;
+}
+.research-detail summary,
+.derivation summary {
+  color: var(--of-blue-deep);
+  transition: color 0.18s ease;
+}
+.research-detail summary:hover,
+.derivation summary:hover {
+  color: var(--of-blue);
+}
+.paper-fig {
+  margin: 0.75rem 0;
+  padding: 0.9rem;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid var(--of-line);
+}
+.paper-fig img {
+  border-radius: 8px;
+}
+
+/* ---------- Slide 10 Latency View Switcher (Baseline vs 5-Policy Cascade) ---------- */
+#deck:not(.is-flow) .s-lat .slide-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 6px 20px !important;
+}
+#deck:not(.is-flow) .s-lat .slide-head .slide-label {
+  grid-column: 1;
+  grid-row: 1;
+}
+#deck:not(.is-flow) .s-lat .slide-head h2 {
+  grid-column: 1;
+  grid-row: 2;
+}
+#deck .lat-views {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid rgba(15, 29, 46, 0.18);
+  border-radius: 999px;
+  background: #f4f7fb;
+}
+#deck:not(.is-flow) .lat-views {
+  position: static;
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+#deck .lat-views button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: transparent;
+  color: var(--of-ink-2);
+  font: 600 13.5px/1.3 var(--v3-sans);
+  cursor: pointer;
+  white-space: nowrap;
+}
+#deck .lat-views button[aria-pressed="true"] {
+  background: var(--of-ink);
+  color: #ffffff;
+}
+#deck .s-lat .slot[hidden] {
+  display: none;
+}
+/* Also refine Slide 5 demo-views pill */
+#deck .demo-views {
+  border-radius: 999px;
+  border-color: rgba(15, 29, 46, 0.18);
+  background: #f4f7fb;
+}
+#deck .demo-views button {
+  border-radius: 999px;
+}
+#deck .demo-views button[aria-pressed="true"] {
+  background: var(--of-ink);
+}
+
+/* ---------- Slide Deck Chrome & Dark Mode Harmony ---------- */
+#deck .deck-top,
+#deck .deck-controls {
+  background: rgba(250, 249, 245, 0.96);
+  border-color: var(--of-line);
+}
+#deck:has(.s-field:not([hidden])) .deck-top,
+#deck:has(.s-field:not([hidden])) .deck-controls {
+  background: #0c1729;
+  border-color: rgba(140, 183, 244, 0.18);
+  color: #dce8f8;
+}
+#deck:has(.s-field:not([hidden])) .deck-id b,
+#deck:has(.s-field:not([hidden])) #deck-position {
+  color: #f3f7ff;
+}
+#deck:has(.s-field:not([hidden])) .deck-id #deck-clock,
+#deck:has(.s-field:not([hidden])) #deck-reading {
+  color: #8cc4ff;
+}
+#deck:has(.s-field:not([hidden])) .deck-top button,
+#deck:has(.s-field:not([hidden])) .deck-controls button,
+#deck:has(.s-field:not([hidden])) .deck-picker select {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(140, 183, 244, 0.28);
+  color: #eef4ff;
+}
+#deck:has(.s-field:not([hidden])) .deck-top button:hover:not(:disabled),
+#deck:has(.s-field:not([hidden])) .deck-controls button:hover:not(:disabled) {
+  background: rgba(93, 163, 245, 0.22);
+  border-color: #8cc4ff;
+  color: #ffffff;
+}
+#deck:has(.s-field:not([hidden])) .deck-controls #deck-next:not(:disabled) {
+  background: var(--of-blue-vivid);
+  border-color: var(--of-blue-vivid);
+  color: #ffffff;
+}
+#deck:has(.s-field:not([hidden])) .deck-picker select option {
+  background: #0c1729;
+  color: #eef4ff;
+}
+#deck .deck-progress i.is-done {
+  background: rgba(45, 93, 168, 0.42);
+}
+#deck .deck-progress i.is-now {
+  background: var(--of-grad);
+}
+#deck .deck-top button,
+#deck .deck-controls button {
+  border-radius: 6px;
+  border-color: rgba(15, 29, 46, 0.18);
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+#deck .deck-top button:hover:not(:disabled),
+#deck .deck-controls button:hover:not(:disabled) {
+  border-color: var(--of-blue);
+  color: var(--of-blue);
+  background: var(--of-blue-tint);
+}
+#deck .deck-controls #deck-next:not(:disabled) {
+  background: var(--of-ink);
+  border-color: var(--of-ink);
+  color: #ffffff;
+}
+#deck .deck-controls #deck-next:hover:not(:disabled) {
+  background: var(--of-blue);
+  border-color: var(--of-blue);
+  color: #ffffff;
+}
+
+/* Fix narrow-viewport (.is-flow) clipping on Slides 3, 4, 11, 12 */
+#deck.is-flow .deck-stage {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+#deck.is-flow .slide:not(.slide-cover) {
+  padding: 1.05rem 0.95rem 2.2rem !important;
+  min-height: auto;
+}
+#deck.is-flow .slide.slide-cover {
+  padding: 1.1rem 0.95rem 2rem !important;
+}
+#deck.is-flow .s-question .routes {
+  gap: 0.75rem;
+}
+#deck.is-flow .s-question .route {
+  padding: 0.7rem 0.85rem;
+}
+#deck.is-flow .s-question .rf-drawing {
+  max-height: 92px;
+}
+#deck.is-flow .s-axes .axes-body {
+  gap: 0.85rem;
+}
+#deck.is-flow .s-field .ro-viewer .ro-screen {
+  height: auto;
+  aspect-ratio: 16 / 10;
+  max-height: 280px;
+}
+#deck.is-flow .s-end .slide-body {
+  gap: 1rem;
+}
+#deck.is-flow .s-end .s-bounds li {
+  padding: 0.45rem 0;
+}
+
+@media (max-width: 720px) {
+  .of-kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+  }
+  .proof .bar {
+    grid-template-columns: minmax(6.2rem, 7.6rem) minmax(0, 1fr) 5.8rem;
+  }
+}

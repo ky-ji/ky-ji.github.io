@@ -3,7 +3,7 @@
 (() => {
   "use strict";
   const T = window.THREE;
-  const ASSETS = new URL("arm-model/", document.currentScript.src);
+  const ASSETS = new URL("../assets/arm-model/", document.currentScript.src);
   const frames = [
     [42, 32, 0],
     [48, 38, 0],

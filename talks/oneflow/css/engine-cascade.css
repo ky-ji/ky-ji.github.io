@@ -1,0 +1,230 @@
+/* Five-policy cumulative execution engine latency cascade (Paper Table 4 & Project Page). */
+.ec-figure {
+  --ec-bg: #ffffff;
+  --ec-ink: #0f1d2e;
+  --ec-ink-2: #425368;
+  --ec-muted: #647488;
+  --ec-rule: rgba(15, 29, 46, 0.11);
+  --ec-native: #b5c0cc;
+  --ec-blue: #2d5da8;
+  --ec-teal: #1d7a6e;
+  --ec-trail: rgba(45, 93, 168, 0.22);
+  --ec-grad: linear-gradient(96deg, #2d5da8 0%, #1d7a6e 100%);
+  --ec-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  box-sizing: border-box;
+  margin: 1.8rem 0;
+  padding: clamp(18px, 2.8vw, 28px);
+  border: 1px solid var(--ec-rule);
+  border-radius: 14px;
+  background: var(--ec-bg);
+  box-shadow: 0 1px 2px rgba(15, 29, 46, 0.04), 0 14px 36px -18px rgba(15, 29, 46, 0.12);
+  color: var(--ec-ink);
+  font-variant-numeric: tabular-nums;
+}
+.ec-figure *, .ec-figure *::before, .ec-figure *::after { box-sizing: border-box; }
+.ec-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1.2rem;
+  margin-bottom: 1.15rem;
+}
+.ec-head > div { display: grid; gap: 0.18rem; }
+.ec-head small {
+  color: var(--ec-muted);
+  font: 600 0.76rem/1.4 var(--ec-mono);
+  letter-spacing: 0.02em;
+}
+.ec-head strong {
+  color: var(--ec-ink);
+  font-size: clamp(1.18rem, 2.1vw, 1.48rem);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.ec-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  height: 34px;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(15, 29, 46, 0.16);
+  border-radius: 999px;
+  background: #f5f8fc;
+  color: var(--ec-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.ec-replay:hover {
+  background: var(--ec-blue);
+  border-color: var(--ec-blue);
+  color: #fff;
+}
+.ec-replay svg { width: 13px; height: 13px; }
+
+.ec-stages {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.ec-stages button {
+  width: 100%;
+  padding: 0.35rem 0 0.25rem;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: var(--ec-muted);
+  font-size: 0.76rem;
+  line-height: 1.32;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.ec-stages button:hover { color: var(--ec-ink); }
+.ec-stages button.is-done { color: var(--ec-ink-2); }
+.ec-stages button[aria-pressed="true"] { color: var(--ec-blue); font-weight: 700; }
+.ec-stage-bar {
+  display: block;
+  height: 4px;
+  margin-bottom: 7px;
+  border-radius: 999px;
+  background: #e4eaf1;
+  overflow: hidden;
+}
+.ec-stage-bar i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 999px;
+  background: var(--ec-grad);
+  transform-origin: left;
+  transform: scaleX(var(--fill, 0));
+  transition: transform 0.18s ease-out;
+}
+.ec-stage-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.ec-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.25rem;
+  margin-bottom: 0.8rem;
+  font-size: 0.8rem;
+  color: var(--ec-muted);
+}
+.ec-legend-keys { display: inline-flex; flex-wrap: wrap; gap: 0.5rem 1.15rem; }
+.ec-legend-keys span { display: inline-flex; align-items: center; gap: 0.42rem; }
+.ec-legend-keys i { display: inline-block; width: 14px; height: 7px; border-radius: 999px; }
+.ec-key-native { background: var(--ec-native); }
+.ec-key-flow { background: var(--ec-grad); }
+.ec-current-stage {
+  font-weight: 650;
+  color: var(--ec-blue);
+  background: #eef4fc;
+  padding: 0.18rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.ec-rows { display: grid; gap: 0.68rem; }
+.ec-row {
+  display: grid;
+  grid-template-columns: minmax(8.6rem, 11.2rem) minmax(0, 1fr) minmax(4.6rem, 5.4rem);
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.62rem 0.85rem;
+  border-radius: 10px;
+  background: #f8fafd;
+  border: 1px solid rgba(15, 29, 46, 0.06);
+}
+.ec-policy { display: grid; gap: 0.08rem; }
+.ec-policy strong { font-size: 0.9rem; font-weight: 680; color: var(--ec-ink); line-height: 1.25; }
+.ec-policy span { font: 500 0.73rem/1.3 var(--ec-mono); color: var(--ec-muted); }
+
+.ec-bars { display: grid; gap: 0.32rem; min-width: 0; }
+.ec-lane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.1rem;
+  align-items: center;
+  gap: 0.55rem;
+}
+.ec-track {
+  position: relative;
+  height: 9px;
+  border-radius: 999px;
+  background: #e9eef4;
+  overflow: hidden;
+}
+.ec-fill, .ec-trail {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  transform-origin: left;
+}
+.ec-fill.is-native { background: var(--ec-native); }
+.ec-trail { background: var(--ec-trail); }
+.ec-fill.is-flow { background: var(--ec-grad); min-width: 5px; }
+.ec-ms {
+  text-align: right;
+  font: 550 0.78rem/1.1 var(--ec-mono);
+  color: var(--ec-muted);
+  white-space: nowrap;
+}
+.ec-lane.is-ours .ec-ms { color: var(--ec-ink); font-weight: 700; }
+
+.ec-speedup {
+  text-align: right;
+  font: 750 clamp(1.18rem, 2.2vw, 1.55rem)/1 var(--ec-mono);
+  letter-spacing: -0.025em;
+  color: var(--ec-blue);
+  white-space: nowrap;
+}
+.ec-figure.is-final .ec-speedup {
+  background: var(--ec-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ec-speedup small { font-size: 0.68em; font-weight: 650; margin-left: 1px; }
+
+.ec-caption {
+  margin: 0.9rem 0 0;
+  color: var(--ec-muted);
+  font-size: 0.82rem;
+  line-height: 1.62;
+}
+
+/* Presentation Slide 10 compact fit */
+.deck .ec-figure {
+  margin: 0;
+  padding: 14px 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px -14px rgba(15, 29, 46, 0.14);
+}
+.deck .ec-head { margin-bottom: 0.55rem; }
+.deck .ec-head strong { font-size: 1.18em; }
+.deck .ec-stages { margin-bottom: 0.55rem; gap: 6px; }
+.deck .ec-stages button { font-size: 0.68em; padding: 0.15rem 0; }
+.deck .ec-legend { margin-bottom: 0.45rem; font-size: 0.72em; }
+.deck .ec-rows { gap: 0.4rem; }
+.deck .ec-row { padding: 0.42rem 0.7rem; gap: 0.45rem 0.8rem; }
+.deck .ec-policy strong { font-size: 0.82em; }
+.deck .ec-policy span { font-size: 0.66em; }
+.deck .ec-track { height: 7px; }
+.deck .ec-ms { font-size: 0.72em; }
+.deck .ec-speedup { font-size: 1.2em; }
+.deck .ec-caption { margin-top: 0.5rem; font-size: 0.7em; line-height: 1.45; }
+
+@media (max-width: 740px) {
+  .ec-stages { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 8px; }
+  .ec-row { grid-template-columns: minmax(0, 1fr) auto; gap: 0.35rem 0.6rem; }
+  .ec-policy { grid-column: 1; }
+  .ec-speedup { grid-column: 2; grid-row: 1; }
+  .ec-bars { grid-column: 1 / -1; }
+}

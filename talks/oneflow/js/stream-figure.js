@@ -2,7 +2,7 @@
    are adapted from the OneFlow project page (js/fig-stream.js, js/common.js). */
 (() => {
   'use strict';
-  const assetBase = new URL('stream/', document.currentScript.src);
+  const assetBase = new URL('../assets/stream/', document.currentScript.src);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const U = 10, K = 14, duration = U * K, unitMs = 350;
   const phaseStops = [.9, 2.65, 4.95, 6.88];

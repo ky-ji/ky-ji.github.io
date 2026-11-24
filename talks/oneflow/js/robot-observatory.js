@@ -7,9 +7,9 @@
   if (!template || !atlas || !table) return;
   const config = {
     hockey: {title:'球拍能赶上来球吗？', rule:'每个回合连续发 10 球，击回发球一侧即得分。50 回合共 500 球。', metric:'冰球回击率', row:0, times:[0,67,133,200,267,333], source:'图 1 · OneFlow+ 回击录像', units:'ms'},
-    bottle: {title:'夹爪何时抓住滚动的瓶子？', rule:'每种方法评估 50 回合。抓到移动中的瓶子即算成功，放进容器是这次示例的后续动作。', metric:'成功抓取的回合占比', row:1, times:[0,1.002,9.210], source:'图 5b · 滚动瓶抓取', units:'s'},
-    car: {title:'小车转向后，还在腕部相机里吗？', rule:'图中是外部视角。计分看腕部相机中小车至少部分可见的时间占比，每回合 20 秒，取 50 回合平均。', metric:'腕部相机内可见时间占比', row:2, times:[0,1.996,4.507], source:'图 5d · 跟随移动小车', units:'s'},
-    conveyor: {title:'能否连续收齐六只碗？', rule:'每种方法评估 50 回合。机器人须从移动的传送带取下全部六只碗，叠成一摞才算完成。', metric:'六只碗全部叠好的回合占比', row:3, times:[0,31.500,57.800], source:'图 5c · 传送带堆叠', units:'s'}
+    bottle: {title:'夹爪何时抓住滚动的瓶子？', rule:'每种方法评估 50 回合。抓到移动中的瓶子即算成功，放进容器是这次示例的后续动作。', metric:'成功抓取的回合占比', row:1, times:[0,0.40,0.60,1.00,4.61,5.21,9.21], source:'图 5b · 滚动瓶抓取（7 帧）', units:'s'},
+    car: {title:'小车转向后，还在腕部相机里吗？', rule:'图中是外部视角。计分看腕部相机中小车至少部分可见的时间占比，每回合 20 秒，取 50 回合平均。', metric:'腕部相机内可见时间占比', row:2, times:[0,1.00,1.50,2.00,2.99,4.01,4.51], source:'图 5d · 跟随移动小车（7 帧）', units:'s'},
+    conveyor: {title:'能否连续收齐六只碗？', rule:'每种方法评估 50 回合。机器人须从移动的传送带取下全部六只碗，叠成一摞才算完成。', metric:'六只碗全部叠好的回合占比', row:3, times:[0,16.0,20.0,31.5,35.5,53.8,57.8], source:'图 5c · 传送带堆叠（7 帧）', units:'s'}
   };
   const names = ['原生四步','原生四步＋引擎','OneFlow','OneFlow+'];
   const tasks = {};
@@ -41,7 +41,7 @@
     function timeText(index) {
       const {times,units} = tasks[key];
       if (units === 'ms') return String(times[index]);
-      return Number(times[index].toFixed(3)).toString();
+      return Number(times[index].toFixed(2)).toString();
     }
     function showFrame(index, announce) {
       frame = index;
@@ -67,7 +67,7 @@
     function advance() {
       const task = tasks[key];
       if (frame === task.pictures.length - 1) { pause(); return; }
-      const duration = key === 'hockey' ? (task.times[frame + 1] - task.times[frame]) * 4 : 1600;
+      const duration = key === 'hockey' ? (task.times[frame + 1] - task.times[frame]) * 4 : 950;
       timer = setTimeout(() => { showFrame(frame + 1, false); advance(); }, duration);
     }
     function selectTask(value, announce) {
@@ -80,7 +80,7 @@
       el('title').textContent = task.title;
       el('rule').textContent = task.rule;
       el('metric').textContent = task.metric;
-      el('timenote').textContent = key === 'hockey' ? '刻度为距首帧的毫秒数。六张实拍取自同一次回击。' : '刻度为距首帧的秒数。三张实拍按顺序等间隔展示。';
+      el('timenote').textContent = key === 'hockey' ? '刻度为距首帧的毫秒数。六张实拍取自同一次回击。' : '刻度为距首帧的秒数。七张实拍按论文图 5 时序连续展示。';
       const series = el('series');
       series.replaceChildren();
       names.forEach((name, index) => {
@@ -140,11 +140,12 @@
     if (slide) {
       slide.classList.add('ro-equipped');
       const heading = slide.querySelector('.slide-head h2');
-      const comparisonTitle = heading?.textContent;
+      const overviewTitle = heading?.textContent || '四项动态操作，在真机上怎样计分？';
+      const comparisonTitle = slide.dataset.comparisonTitle || '两种策略的推理耗时接近，回击率会怎样？';
       slide.addEventListener('deckstep', event => {
         const comparison = event.detail.step > 0;
         root.classList.toggle('ro-comparison', comparison);
-        if (heading) heading.textContent = comparison ? comparisonTitle : '四项动态操作，在真机上怎样计分？';
+        if (heading) heading.textContent = comparison ? comparisonTitle : overviewTitle;
         if (comparison && key !== 'hockey') selectTask('hockey', false);
       });
       new MutationObserver(()=>{if(slide.hidden) pause();}).observe(slide,{attributes:true,attributeFilter:['hidden']});
