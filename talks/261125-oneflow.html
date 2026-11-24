@@ -8,10 +8,10 @@
   <link rel="icon" href="oneflow/assets/figures/oneflow-mark.svg" type="image/svg+xml">
   <link rel="preload" as="font" type="font/woff2" href="oneflow/assets/fonts/manrope-latin-wght.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="oneflow/assets/fonts/inter-latin.woff2" crossorigin>
-  <link rel="stylesheet" href="oneflow/deck/deck.css?v=20261124.k2">
-  <link rel="stylesheet" href="oneflow/deck/slides.css?v=20261124.k2">
-  <script defer src="oneflow/deck/scenes.js?v=20261124.k2"></script>
-  <script defer src="oneflow/deck/deck.js?v=20261124.k2"></script>
+  <link rel="stylesheet" href="oneflow/deck/deck.css?v=20261124.k3">
+  <link rel="stylesheet" href="oneflow/deck/slides.css?v=20261124.k3">
+  <script defer src="oneflow/deck/scenes.js?v=20261124.k3"></script>
+  <script defer src="oneflow/deck/deck.js?v=20261124.k3"></script>
 </head>
 <body>
 <div class="ofd-viewport">
@@ -551,12 +551,12 @@
   <h2 class="title">原生采样 <span class="soft">vs</span> <span class="grad">OneFlow+</span></h2>
   <div class="body vs-body">
     <div class="vs-pair" data-out="1">
-      <figure><div class="vid"><video data-src="oneflow/assets/video/rolling-native.mp4" poster="oneflow/assets/video/rolling-native.webp" muted loop playsinline></video><span class="vlabel">原生 4 步 · 46.99 ms</span></div><figcaption class="nat">瓶子从夹爪前滚过</figcaption></figure>
-      <figure class="ours"><div class="vid"><video data-src="oneflow/assets/video/rolling-oneflow.mp4" poster="oneflow/assets/video/rolling-oneflow.webp" muted loop playsinline></video><span class="vlabel">OneFlow+ · 11.97 ms</span></div><figcaption>迎上滚动的瓶子，抓起并放入容器</figcaption></figure>
+      <figure><div class="vid"><video data-src="oneflow/assets/video/rolling-native.mp4?v=2" poster="oneflow/assets/video/rolling-native.webp?v=2" data-restart muted loop playsinline></video><span class="vlabel">原生 4 步 · 46.99 ms</span></div><figcaption class="nat">瓶子从夹爪前滚过</figcaption></figure>
+      <figure class="ours"><div class="vid"><video data-src="oneflow/assets/video/rolling-oneflow.mp4" poster="oneflow/assets/video/rolling-oneflow.webp" data-restart muted loop playsinline></video><span class="vlabel">OneFlow+ · 11.97 ms</span></div><figcaption>迎上滚动的瓶子，抓起并放入容器</figcaption></figure>
     </div>
     <div class="vs-pair" data-in="1">
-      <figure><div class="vid"><video data-src="oneflow/assets/video/car-native.mp4" poster="oneflow/assets/video/car-native.webp" muted loop playsinline></video><span class="vlabel">原生 4 步 · 46.99 ms</span></div><figcaption class="nat">小车转向后跟丢</figcaption></figure>
-      <figure class="ours"><div class="vid"><video data-src="oneflow/assets/video/car-oneflow.mp4" poster="oneflow/assets/video/car-oneflow.webp" muted loop playsinline></video><span class="vlabel">OneFlow+ · 11.97 ms</span></div><figcaption>转向之后继续紧跟</figcaption></figure>
+      <figure><div class="vid"><video data-src="oneflow/assets/video/car-native.mp4?v=2" poster="oneflow/assets/video/car-native.webp?v=2" data-restart muted loop playsinline></video><span class="vlabel">原生 4 步 · 46.99 ms</span></div><figcaption class="nat">小车转向后跟丢</figcaption></figure>
+      <figure class="ours"><div class="vid"><video data-src="oneflow/assets/video/car-oneflow.mp4" poster="oneflow/assets/video/car-oneflow.webp" data-restart muted loop playsinline></video><span class="vlabel">OneFlow+ · 11.97 ms</span></div><figcaption>转向之后继续紧跟</figcaption></figure>
     </div>
   </div>
   <p class="foot">RTX 4090 上的模型推理中位数 · 实拍 1× 速度</p>
@@ -636,23 +636,7 @@
   </aside>
 </section>
 
-<!-- ============================ 25 局限 ============================ -->
-<section class="slide s-limits" data-theme="light" data-chapter="总结" data-title="局限与展望" data-time="0.75">
-  <p class="kicker">边界</p>
-  <h2 class="title">局限与展望</h2>
-  <div class="body lim-grid">
-    <div class="card lim" data-in="1"><span class="li">01</span><b>需要连续重规划</b><p>依赖相邻窗口重叠与保留的中间状态，每个回合开始仍需一次原生多步初始化</p></div>
-    <div class="card lim" data-in="2"><span class="li">02</span><b>计算量没有消失</b><p>批内仍要处理多个阶段，执行引擎以显存换速度 · GR00T N1.7 在 16 个阶段下峰值显存 5.95 / 6.08 / 13.97 GiB</p></div>
-    <div class="card lim" data-in="3"><span class="li">03</span><b>世界动作模型只并行了动作去噪</b><p>视频与动作的联合滚动预测，留给后续工作</p></div>
-  </div>
-  <p class="lim-out" data-in="4">更一般的方向：<span class="grad">在单次前向内扩展测试时计算</span></p>
-  <aside class="notes">
-    <p>三点局限。第一，依赖连续重规划，回合开始仍需初始化。第二，计算量并没有消失，OneFlow+ 用显存换速度，显存从约 6 GiB 到约 14 GiB。第三，世界动作模型里我们只并行了动作去噪，视频与动作的联合滚动留待后续。</p>
-    <p>更一般的方向是在单次前向内扩展测试时计算。</p>
-  </aside>
-</section>
-
-<!-- ============================ 26 结论 ============================ -->
+<!-- ============================ 25 结论 ============================ -->
 <section class="slide s-end" data-theme="dark" data-chrome="off" data-scene="particles" data-variant="end" data-title="结论与问答" data-time="0.5">
   <canvas class="field" aria-hidden="true"></canvas>
   <div class="end-wrap">

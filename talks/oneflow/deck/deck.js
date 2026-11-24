@@ -79,11 +79,24 @@
   function playVideos(s) {
     if (MODE === 'embed' && params.has('preview')) return;
     videosOf(s).forEach(v => {
-      if (v.closest('[data-in]:not(.on)') || v.closest('.off')) { v.pause(); return; }
+      if (v.closest('[data-in]:not(.on)') || v.closest('.off')) { v.pause(); v._restart = true; return; }
+      if (!v.src && v.dataset.src) { v.src = v.dataset.src; v.preload = 'auto'; }
       if (v.dataset.rate) v.playbackRate = Number(v.dataset.rate);
-      if (v.dataset.restart !== undefined && v._restart) v.currentTime = 0;
-      const p = v.play();
-      if (p) p.catch(() => {});
+      if (v.dataset.restart !== undefined && v._restart) {
+        try { v.currentTime = 0; } catch {}
+        v._restart = false;
+      }
+      const goPlay = () => {
+        if (s.dataset.state !== 'active' || overview) return;
+        if (v.closest('[data-in]:not(.on)') || v.closest('.off')) return;
+        const p = v.play();
+        if (p) p.catch(() => {});
+      };
+      if (v.readyState >= 2) goPlay();
+      else {
+        v.addEventListener('canplay', goPlay, { once: true });
+        goPlay();
+      }
     });
   }
   function pauseVideos(s) { videosOf(s).forEach(v => { v.pause(); v._restart = true; }); }
@@ -175,7 +188,7 @@
 
   /* ---------- overview ---------- */
   function layoutOverview() {
-    const cols = 6, gap = 26, pad = 40;
+    const cols = N <= 25 ? 5 : 6, gap = 26, pad = 40;
     const cw = (W - pad * 2 - gap * (cols - 1)) / cols;
     const sc = cw / W, ch = H * sc;
     const rows = Math.ceil(N / cols);
