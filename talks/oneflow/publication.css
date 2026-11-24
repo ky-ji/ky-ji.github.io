@@ -134,3 +134,19 @@ html:has(.slide-cover:focus-within) .cover-art-slot { min-width:0; }
   .v3-header .v3-crumbs a:nth-child(2) { display: none; }
 }
 .v3-cover-thesis .term { white-space: nowrap; }
+
+/* Use the same field for a script-free visit and the printed lecture. */
+[data-of-motion="flow"]:not(.of-motion) > .om-cover-still {
+  display:grid; grid-template-rows:auto minmax(0,1fr) auto; height:100%;
+}
+.om-cover-still img { display:block; width:100%; height:100%; min-height:0; object-fit:fill; }
+.om-cover-still .om-field-head, .om-cover-still .om-field-foot {
+  position:static; padding:.7rem clamp(.55rem,2vw,1.8rem); color:#29465e;
+}
+.om-cover-still .om-field-head span:first-child::before { border-color:#29465e; }
+@media print {
+  .v3-cover .v3-plate { display:block !important; width:min(100%,132mm); height:auto; margin:0 0 5mm; }
+  .v3-plate #hero-art, .v3-plate #hero-art > [data-of-motion="flow"], .om-cover-still img { height:auto; }
+  [data-of-motion="flow"] > .om-cover-still { display:grid; grid-template-rows:auto minmax(0,1fr) auto; }
+  .of-motion .om-cover-still :is(.om-field-head,.om-field-foot) { display:flex; }
+}

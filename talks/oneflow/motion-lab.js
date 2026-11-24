@@ -67,87 +67,131 @@
     const canvas=html('canvas');
     const ctx=canvas.getContext('2d',{alpha:false});
     if (!ctx) return;
-    root.classList.add('of-motion','om-flow');
+    root.classList.add('of-motion','om-flow','om-particle-field');
     canvas.setAttribute('role','img');
-    canvas.setAttribute('aria-label','示意流场。分散的源噪声沿流时间向右收束为平滑的动作轨迹。');
+    canvas.setAttribute('aria-label','去噪过程示意。左侧高斯分布的源噪声粒子沿流时间向右，逐渐凝成七条弯曲的动作轨迹。');
     const header=html('div','om-field-head');
     header.append(html('span','','源噪声'),html('span','','动作估计'));
     const footer=html('div','om-field-foot'), toggle=button('暂停动态');
     footer.append(html('span','','去噪过程示意 →'),toggle);
     root.append(canvas,header,footer);
 
-    let seed=11723;
-    function random() { seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; }
-    const strands=Array.from({length:86},(_,i)=>{
-      const group=i%5, rank=Math.floor(i/5);
-      return {group,rank,source:random()*2-1,turn:random()*2-1,
-        phase:random()*tau,phase2:random()*tau,breadth:random()*.54+.46,
-        depth:random(),speed:.062+random()*.06,offset:random(),tint:random()};
-    });
-    let time=0, width=0, height=0;
-    function ordinate(q,u) {
-      const a=smooth((u-.035)/.81), fade=(1-a);
-      const opening=.33*q.source + .068*Math.sin(9.2*u+q.phase+.15*time)
-        + .048*Math.sin(26*u+q.phase2-.19*time) + .019*Math.sin(64*u+q.phase+.19*time);
-      const fan=(q.group-2)*.064;
-      const center=.118*Math.sin(tau*(u*1.03-.035*time)+.42)
-        + .043*Math.sin(tau*(u*2.07+.025*time)+.3*q.group);
-      const family=fan*(.64+.34*Math.sin(u*7+.22*time)) + .035*Math.sin(q.group*1.31 + u*5.1+.18*time);
-      const detail=(q.rank-8)*.0028*(.74+.48*Math.sin(6*u+q.phase*.10)) + .012*Math.sin(7*u+q.phase2*.4-.25*time);
-      const arc=.19*q.turn*Math.sin(Math.PI*u)*fade;
-      return .50+opening*fade+(center+family+detail)*a+arc;
+    // Schematic only; it carries no measured data. A night plate sits between the two label bands,
+    // which stay paper-coloured so the ink labels need no override. Silver noise and ice-blue action estimates
+    // preserve the contrast of the original project animation on a projector.
+    const PAPER='#faf9f3', NIGHT='#0a0f15';
+    const GRAIN=[191,194,198], ACTION=[216,235,255], WAKE=[137,183,244];
+    const STRANDS=7;              // one trajectory per action dimension
+    const SPAN=1.1;               // flow time loops over -0.04 to 1.06, so entry and exit stay off the plate
+    const FADE=[.94,.64,.36,.17];    // opacity of the four trail segments, newest first
+
+    // A deterministic pool, built once per mount: the cover, the clone and every resize show the same field.
+    let seed=20261111;
+    const rand=()=>{
+      seed=(seed+0x6D2B79F5)|0;
+      let x=Math.imul(seed^(seed>>>15),1|seed);
+      x=(x+Math.imul(x^(x>>>7),61|x))^x;
+      return ((x^(x>>>14))>>>0)/4294967296;
+    };
+    const gauss=()=>Math.sqrt(-2*Math.log(1-rand()))*Math.cos(tau*rand());
+    const parts=Array.from({length:860},(_,i)=>({
+      o:rand()*SPAN, v:.035+.04*rand(), k:i%STRANDS,    // phase and speed along flow time, action dimension
+      e:gauss(), jx:clamp(gauss(),-2.5,2.5),            // Gaussian source noise: height and sideways scatter
+      f:.5+rand(), p:rand()*tau, w:.9+.9*rand()         // wobble rate and phase, grain size
+    }));
+
+    // time opens on a balanced phase, which is also the reduced-motion still.
+    let time=5.7, layout='', width=0, height=0, y0=0, y1=0, cy=0, band=0, unit=1, count=0;
+    let headInk, tailInk, guideInk, px=0, py=0;
+
+    // Share of the action at flow time u: noise until 4%, clean from 84%.
+    const share=u=>smooth((u-.04)/.8);
+    // Height of action trajectory k at flow time u and clock time t: a slow travelling wave per dimension.
+    const target=(k,u,t)=>cy+(k-(STRANDS-1)/2)*band*.115
+      +band*.2*(.62*Math.sin(tau*(1.1*u+.06*k)-.42*t)+.3*Math.sin(tau*(2.3*u+.17*k)+.27*t+k));
+    // The straight path of flow matching, y = (1 - s) * noise + s * action, written to px and py. It is a pure
+    // function of (u, t): nothing accumulates on the canvas, so pause, resize and the still frame keep the phase.
+    function locate(q,u,t) {
+      const s=share(u), wob=Math.sin(t*q.f+q.p);
+      const noise=cy+q.e*band*.5*(1+.1*wob);
+      px=(u+(1-s)*(q.jx*.012+wob*.004))*width;
+      py=noise+(target(q.k,u,t)-noise)*s;
+      return s;
     }
+    // Colour and opacity depend on s(u) alone, so all particles share one horizontal gradient.
+    function ramp(clean,from,to) {
+      const ink=ctx.createLinearGradient(0,0,width,0);
+      for (let i=0;i<=10;i++) {
+        const s=smooth(i/10), rgb=GRAIN.map((c,n)=>Math.round(c+(clean[n]-c)*s));
+        ink.addColorStop(.04+.08*i,`rgba(${rgb},${(from+(to-from)*s).toFixed(3)})`);
+      }
+      return ink;
+    }
+
     function draw() {
-      if (!width || !height) return;
-      ctx.fillStyle='#faf9f3';ctx.fillRect(0,0,width,height);
-      const x=u=>width*(.018+.964*u), y=n=>height*(.135+.72*n);
-      const gridSize=width>500 ? 28 : 21;
-      ctx.fillStyle='rgba(87,113,136,.26)';
-      for(let px=gridSize/2;px<width;px+=gridSize)
-        for(let py=height*.19;py<height*.84;py+=gridSize)ctx.fillRect(px,py,.85,.85);
-      const gx=ctx.createLinearGradient(0,0,width,0);
-      gx.addColorStop(0,'rgba(51,67,84,.24)');gx.addColorStop(.34,'rgba(31,71,115,.46)');
-      gx.addColorStop(.64,'rgba(15,80,190,.72)');gx.addColorStop(1,'rgba(28,96,207,.62)');
-      ctx.lineJoin='round';ctx.lineCap='round';
-      for(const q of strands) {
-        ctx.strokeStyle=gx;
-        ctx.globalAlpha=.32+q.depth*.60;
-        ctx.lineWidth=(.45+.78*q.breadth)*clamp(width/660,.65,1.35);
-        const points=width<420 ? 46 : 72;
-        ctx.beginPath();
-        for(let k=0;k<=points;k++){
-          const u=k/points, px=x(u), py=y(ordinate(q,u));
-          if(k)ctx.lineTo(px,py);else ctx.moveTo(px,py);
+      if (!width) return;
+      ctx.globalAlpha=1;
+      ctx.fillStyle=NIGHT;
+      ctx.fillRect(0,y0,width,y1-y0);
+      ctx.globalCompositeOperation='lighter';
+      // The seven clean trajectories, fading in only where the particles have nearly settled on them.
+      ctx.beginPath();
+      for (let k=0;k<STRANDS;k++) for (let i=0;i<=22;i++) {
+        const u=.56+.02*i, y=cy+(target(k,u,time)-cy)*share(u);
+        if (i) ctx.lineTo(u*width,y); else ctx.moveTo(u*width,y);
+      }
+      ctx.strokeStyle=guideInk; ctx.lineWidth=1.1*unit; ctx.stroke();
+      // A trail joins a particle's own earlier positions and lengthens as the particle nears its action.
+      // Each age is stroked once and every frame is drawn from scratch, so nothing is left to ghost.
+      const tails=FADE.map(()=>new Path2D()), heads=new Path2D();
+      for (let i=0;i<count;i++) {
+        const q=parts[i], u=(q.o+q.v*time)%SPAN-.04;
+        const s=locate(q,u,time), r=unit*q.w*(.83+.20*s), lag=.055+.11*s;
+        heads.moveTo(px+r,py); heads.arc(px,py,r,0,tau);
+        for (let j=1;j<=FADE.length;j++) {
+          tails[j-1].moveTo(px,py);
+          locate(q,u-q.v*lag*j,time-lag*j);
+          tails[j-1].lineTo(px,py);
         }
-        ctx.stroke();
+      }
+      ctx.strokeStyle=tailInk;
+      for (let j=FADE.length-1;j>=0;j--) {
+        ctx.globalAlpha=FADE[j]; ctx.lineWidth=unit*(1.85-.30*j); ctx.stroke(tails[j]);
       }
       ctx.globalAlpha=1;
-      for(const q of strands) {
-        const u=(q.offset+q.speed*time)%1;
-        const tail=Math.max(0,u-(.015+q.depth*.024));
-        const grad=ctx.createLinearGradient(x(tail),0,x(u)+.01,0);
-        const col=u<.33?'28,58,89':q.group===1?'0,94,224':'22,75,146';
-        grad.addColorStop(0,'rgba('+col+',0)');grad.addColorStop(1,'rgba('+col+',.83)');
-        ctx.strokeStyle=grad;ctx.lineWidth=clamp(width/500,.7,1.7)*(1+q.depth*.65);
-        ctx.beginPath();ctx.moveTo(x(tail),y(ordinate(q,tail)));
-        for(let j=1;j<=5;j++){const v=tail+(u-tail)*j/5;ctx.lineTo(x(v),y(ordinate(q,v)));}
-        ctx.stroke();
-        ctx.fillStyle=u<.4?'#466481':'#1555ac';
-        ctx.beginPath();ctx.arc(x(u),y(ordinate(q,u)),clamp(width/680,.7,1.3)*(.65+q.depth*.68),0,tau);ctx.fill();
-      }
-      // The bare ticks mark flow time, an ordering rather than a measured clock.
-      ctx.strokeStyle='#9aabb9';ctx.lineWidth=1;
-      ctx.beginPath();
-      for(let i=0;i<=24;i++){const px=x(i/24);ctx.moveTo(px,height*.854);ctx.lineTo(px,height*.854+(i%6?3:6));}
-      ctx.stroke();
+      ctx.fillStyle=headInk; ctx.fill(heads);
+      ctx.globalCompositeOperation='source-over';
+      ctx.fillStyle=PAPER;
+      ctx.fillRect(0,0,width,y0); ctx.fillRect(0,y1,width,height-y1);
     }
+
     function resize() {
-      const w=canvas.clientWidth,h=canvas.clientHeight;
-      if(!w||!h)return;
-      width=w;height=h;const ratio=Math.min(devicePixelRatio||1,2);
-      canvas.width=Math.round(w*ratio);canvas.height=Math.round(h*ratio);ctx.setTransform(ratio,0,0,ratio,0,0);draw();
+      const w=canvas.clientWidth, h=canvas.clientHeight;
+      if (!w || !h) return;         // a hidden presentation clone has no size: nothing to lay out or warm up
+      const ratio=Math.min(devicePixelRatio||1,2), edge=canvas.offsetTop;
+      // The plate gives way to the measured label bands; fixed margins apply if they do not overlap the canvas.
+      const headEnd=header.offsetTop+header.offsetHeight-edge, footStart=footer.offsetTop-edge;
+      const gap=clamp(h*.013,4,9);
+      const upper=Math.round(headEnd>0 && headEnd<h ? Math.min(headEnd+gap,h*.32) : h*.135);
+      const lower=Math.round(footStart>0 && footStart<h ? Math.max(footStart-gap,h*.68) : h*.86);
+      const next=[w,h,ratio,upper,lower].join();
+      if (next===layout) return;
+      layout=next; width=w; height=h; y0=upper; y1=lower;
+      canvas.width=Math.round(w*ratio); canvas.height=Math.round(h*ratio);
+      ctx.setTransform(ratio,0,0,ratio,0,0);
+      cy=(y0+y1)/2; band=(y1-y0)/2;
+      unit=clamp(w/720,.95,1.45);
+      count=Math.round(clamp(w*(y1-y0)/415,300,parts.length));
+      headInk=ramp(ACTION,.9,1); tailInk=ramp(WAKE,.64,.98);
+      guideInk=ctx.createLinearGradient(.56*w,0,w,0);
+      [[0,0],[.64,.35],[1,.50]].forEach(([at,alpha])=>guideInk.addColorStop(at,`rgba(${WAKE},${alpha})`));
+      draw();                       // redraws the same phase: time and the particle pool are untouched
     }
-    new ResizeObserver(resize).observe(canvas);resize();
+    const sizes=new ResizeObserver(resize);
+    [canvas,header,footer].forEach(el=>sizes.observe(el));
+    addEventListener('resize',resize);   // browser zoom or another screen changes the device pixel ratio
+    resize();
+
     const player=scheduler(root,dt=>{time+=dt;draw();},playing=>{
       const text=playing?'暂停动态':'播放动态';
       toggle.textContent=text;toggle.setAttribute('aria-label',text+'流场');
