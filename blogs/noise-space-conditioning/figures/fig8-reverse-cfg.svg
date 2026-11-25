@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 280" width="740" height="280" role="img" aria-label="Zero-shot Reverse-CFG and per-scene success histogram">
+  <defs>
+    <marker id="a-ink" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#3c4043"/>
+    </marker>
+    <marker id="a-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#1a73e8"/>
+    </marker>
+    <marker id="a-orange" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#d96b27"/>
+    </marker>
+  </defs>
+  <style>
+    text { font-family: 'Hanken Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; }
+    .p-head { font-size: 13px; font-weight: 600; fill: #202124; }
+    .lbl { font-size: 11.5px; fill: #3c4043; }
+    .lbl-b { font-size: 11.5px; font-weight: 600; fill: #202124; }
+    .ax { font-size: 11px; fill: #5f6368; }
+    .sm { font-size: 10.5px; fill: #5f6368; }
+    .val { font-size: 11px; font-weight: 600; }
+    .val-w { font-size: 11px; font-weight: 600; fill: #ffffff; }
+  </style>
+  <rect width="740" height="280" fill="#ffffff"/>
+<text x="6" y="18" class="p-head">Reverse-CFG on GR00T N1.7</text>
+<line x1="44" y1="222.0" x2="300" y2="222.0" stroke="#dadce0" stroke-width="1"/>
+<text x="37" y="226.0" text-anchor="end" class="ax">0%</text>
+<line x1="44" y1="177.0" x2="300" y2="177.0" stroke="#eceff1" stroke-width="1"/>
+<text x="37" y="181.0" text-anchor="end" class="ax">25%</text>
+<line x1="44" y1="132.0" x2="300" y2="132.0" stroke="#eceff1" stroke-width="1"/>
+<text x="37" y="136.0" text-anchor="end" class="ax">50%</text>
+<line x1="44" y1="87.0" x2="300" y2="87.0" stroke="#eceff1" stroke-width="1"/>
+<text x="37" y="91.0" text-anchor="end" class="ax">75%</text>
+<line x1="44" y1="42.0" x2="300" y2="42.0" stroke="#eceff1" stroke-width="1"/>
+<text x="37" y="46.0" text-anchor="end" class="ax">100%</text>
+<text x="62.0" y="239" text-anchor="middle" class="ax">K = 1</text>
+<text x="208.7" y="239" text-anchor="middle" class="ax">K = 4</text>
+<text x="282.0" y="239" text-anchor="middle" class="ax">K = 8</text>
+<polyline points="62.0,132.0 208.7,90.2 282.0,75.8" fill="none" stroke="#1a73e8" stroke-width="2.4" stroke-linejoin="round"/>
+<circle cx="62.0" cy="132.0" r="4" fill="#1a73e8" stroke="#ffffff" stroke-width="1.4"/>
+<text x="62.0" y="122.0" text-anchor="middle" class="val" style="fill:#1a73e8;font-size:10.5px">50.0%</text>
+<circle cx="208.7" cy="90.2" r="4" fill="#1a73e8" stroke="#ffffff" stroke-width="1.4"/>
+<text x="208.7" y="80.2" text-anchor="middle" class="val" style="fill:#1a73e8;font-size:10.5px">73.2%</text>
+<circle cx="282.0" cy="75.8" r="4" fill="#1a73e8" stroke="#ffffff" stroke-width="1.4"/>
+<text x="282.0" y="65.8" text-anchor="middle" class="val" style="fill:#1a73e8;font-size:10.5px">81.2%</text>
+<text x="294.0" y="79.8" class="sm" style="fill:#1a73e8;font-weight:600">α = 1.00</text>
+<polyline points="62.0,139.0 208.7,99.9 282.0,87.0" fill="none" stroke="#d96b27" stroke-width="2.4" stroke-linejoin="round"/>
+<circle cx="62.0" cy="139.0" r="4" fill="#d96b27" stroke="#ffffff" stroke-width="1.4"/>
+<text x="62.0" y="156.0" text-anchor="middle" class="val" style="fill:#d96b27;font-size:10.5px">46.1%</text>
+<circle cx="208.7" cy="99.9" r="4" fill="#d96b27" stroke="#ffffff" stroke-width="1.4"/>
+<text x="208.7" y="116.9" text-anchor="middle" class="val" style="fill:#d96b27;font-size:10.5px">67.9%</text>
+<circle cx="282.0" cy="87.0" r="4" fill="#d96b27" stroke="#ffffff" stroke-width="1.4"/>
+<text x="282.0" y="104.0" text-anchor="middle" class="val" style="fill:#d96b27;font-size:10.5px">75.0%</text>
+<text x="294.0" y="91.0" class="sm" style="fill:#d96b27;font-weight:600">α = 0.85</text>
+<text x="44" y="270" class="sm">α = 1.00: full conditioning · α = 0.85: zero-shot blend</text>
+<text x="392" y="18" class="p-head">Scenes by number of successful seeds (of 8)</text>
+<line x1="414" y1="222.0" x2="728" y2="222.0" stroke="#dadce0" stroke-width="1"/>
+<text x="407" y="226.0" text-anchor="end" class="ax">0</text>
+<line x1="414" y1="163.9" x2="728" y2="163.9" stroke="#eceff1" stroke-width="1"/>
+<text x="407" y="167.9" text-anchor="end" class="ax">2</text>
+<line x1="414" y1="105.9" x2="728" y2="105.9" stroke="#eceff1" stroke-width="1"/>
+<text x="407" y="109.9" text-anchor="end" class="ax">4</text>
+<line x1="414" y1="47.8" x2="728" y2="47.8" stroke="#eceff1" stroke-width="1"/>
+<text x="407" y="51.8" text-anchor="end" class="ax">6</text>
+<rect x="416.0" y="42" width="30.9" height="180" rx="4" fill="#fdf0e6" fill-opacity="0.8"/>
+<text x="431.4" y="55" text-anchor="middle" class="sm" style="fill:#d96b27;font-weight:600;font-size:9.5px">trapped</text>
+<rect x="450.9" y="42" width="240.2" height="180" rx="4" fill="#e8f0fe" fill-opacity="0.42"/>
+<text x="571.0" y="55" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600">resampling helps (1–7 of 8)</text>
+<rect x="418.6" y="134.9" width="11.9" height="87.1" rx="2" fill="#1a73e8"/>
+<text x="424.5" y="130.9" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600;font-size:9.5px">3</text>
+<rect x="432.4" y="76.8" width="11.9" height="145.2" rx="2" fill="#3c4043"/>
+<text x="438.4" y="72.8" text-anchor="middle" class="sm" style="fill:#3c4043;font-weight:600;font-size:9.5px">5</text>
+<text x="431.4" y="239" text-anchor="middle" class="ax">0/8</text>
+<rect x="453.5" y="193.0" width="11.9" height="29.0" rx="2" fill="#1a73e8"/>
+<text x="459.4" y="189.0" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600;font-size:9.5px">1</text>
+<rect x="467.3" y="193.0" width="11.9" height="29.0" rx="2" fill="#3c4043"/>
+<text x="473.3" y="189.0" text-anchor="middle" class="sm" style="fill:#3c4043;font-weight:600;font-size:9.5px">1</text>
+<text x="466.3" y="239" text-anchor="middle" class="ax">1/8</text>
+<rect x="488.4" y="134.9" width="11.9" height="87.1" rx="2" fill="#1a73e8"/>
+<text x="494.3" y="130.9" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600;font-size:9.5px">3</text>
+<rect x="502.2" y="193.0" width="11.9" height="29.0" rx="2" fill="#3c4043"/>
+<text x="508.2" y="189.0" text-anchor="middle" class="sm" style="fill:#3c4043;font-weight:600;font-size:9.5px">1</text>
+<text x="501.2" y="239" text-anchor="middle" class="ax">2/8</text>
+<rect x="523.2" y="163.9" width="11.9" height="58.1" rx="2" fill="#1a73e8"/>
+<text x="529.2" y="159.9" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600;font-size:9.5px">2</text>
+<text x="536.1" y="239" text-anchor="middle" class="ax">3/8</text>
+<rect x="572.0" y="105.9" width="11.9" height="116.1" rx="2" fill="#3c4043"/>
+<text x="577.9" y="101.9" text-anchor="middle" class="sm" style="fill:#3c4043;font-weight:600;font-size:9.5px">4</text>
+<text x="571.0" y="239" text-anchor="middle" class="ax">4/8</text>
+<rect x="593.0" y="193.0" width="11.9" height="29.0" rx="2" fill="#1a73e8"/>
+<text x="599.0" y="189.0" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600;font-size:9.5px">1</text>
+<text x="605.9" y="239" text-anchor="middle" class="ax">5/8</text>
+<rect x="627.9" y="193.0" width="11.9" height="29.0" rx="2" fill="#1a73e8"/>
+<text x="633.8" y="189.0" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600;font-size:9.5px">1</text>
+<rect x="641.8" y="193.0" width="11.9" height="29.0" rx="2" fill="#3c4043"/>
+<text x="647.7" y="189.0" text-anchor="middle" class="sm" style="fill:#3c4043;font-weight:600;font-size:9.5px">1</text>
+<text x="640.8" y="239" text-anchor="middle" class="ax">6/8</text>
+<rect x="676.7" y="193.0" width="11.9" height="29.0" rx="2" fill="#3c4043"/>
+<text x="682.6" y="189.0" text-anchor="middle" class="sm" style="fill:#3c4043;font-weight:600;font-size:9.5px">1</text>
+<text x="675.7" y="239" text-anchor="middle" class="ax">7/8</text>
+<rect x="697.7" y="76.8" width="11.9" height="145.2" rx="2" fill="#1a73e8"/>
+<text x="703.6" y="72.8" text-anchor="middle" class="sm" style="fill:#1a73e8;font-weight:600;font-size:9.5px">5</text>
+<rect x="711.6" y="134.9" width="11.9" height="87.1" rx="2" fill="#3c4043"/>
+<text x="717.5" y="130.9" text-anchor="middle" class="sm" style="fill:#3c4043;font-weight:600;font-size:9.5px">3</text>
+<text x="710.6" y="239" text-anchor="middle" class="ax">8/8</text>
+<rect x="414" y="261" width="10" height="10" rx="2" fill="#1a73e8"/>
+<text x="429" y="270" class="sm">cross-attention (GR00T)</text>
+<rect x="572" y="261" width="10" height="10" rx="2" fill="#3c4043"/>
+<text x="587" y="270" class="sm">KV-cache (Xiaomi)</text>
+</svg>

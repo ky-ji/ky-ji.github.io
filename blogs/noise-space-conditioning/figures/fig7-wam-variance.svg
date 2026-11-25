@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 300" width="740" height="300" role="img" aria-label="Dual-noise variance attribution and degraded-input widening across three OpenWAM variants">
+  <defs>
+    <marker id="a-ink" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#3c4043"/>
+    </marker>
+    <marker id="a-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#1a73e8"/>
+    </marker>
+    <marker id="a-orange" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#d96b27"/>
+    </marker>
+  </defs>
+  <style>
+    text { font-family: 'Hanken Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; }
+    .p-head { font-size: 13px; font-weight: 600; fill: #202124; }
+    .lbl { font-size: 11.5px; fill: #3c4043; }
+    .lbl-b { font-size: 11.5px; font-weight: 600; fill: #202124; }
+    .ax { font-size: 11px; fill: #5f6368; }
+    .sm { font-size: 10.5px; fill: #5f6368; }
+    .val { font-size: 11px; font-weight: 600; }
+    .val-w { font-size: 11px; font-weight: 600; fill: #ffffff; }
+  </style>
+  <rect width="740" height="300" fill="#ffffff"/>
+<text x="6" y="18" class="p-head">Share of trajectory variance by noise source</text>
+<text x="6" y="59" class="lbl-b">Joint Video-Action</text>
+<text x="6" y="74" class="sm">co-denoised video &amp; action</text>
+<rect x="140.0" y="44.0" width="228.9" height="22" rx="3" fill="#d96b27"/>
+<rect x="369.9" y="44.0" width="26.1" height="22" rx="3" fill="#1a73e8"/>
+<text x="254.5" y="59.0" text-anchor="middle" class="val-w">89.4% z<tspan baseline-shift="sub" font-size="75%">v</tspan></text>
+<text x="402.0" y="59.0" class="val" style="fill:#1a73e8">10.6% z<tspan baseline-shift="sub" font-size="75%">a</tspan></text>
+<rect x="140.0" y="72.0" width="56.3" height="8" rx="2" fill="#f2a36b"/>
+<rect x="197.3" y="72.0" width="198.7" height="8" rx="2" fill="#8ab4f8"/>
+<text x="140.0" y="93.0" class="sm">first step · <tspan style="fill:#1a73e8;font-weight:600">78.0% z<tspan baseline-shift="sub" font-size="75%">a</tspan></tspan> · 22.0% z<tspan baseline-shift="sub" font-size="75%">v</tspan></text>
+<line x1="6" y1="106" x2="456" y2="106" stroke="#eceff1" stroke-width="1"/>
+<text x="6" y="133" class="lbl-b">Video-Then-Action</text>
+<text x="6" y="148" class="sm">rollout first, then IDM</text>
+<rect x="140.0" y="118.0" width="93.9" height="22" rx="3" fill="#d96b27"/>
+<rect x="234.9" y="118.0" width="161.1" height="22" rx="3" fill="#1a73e8"/>
+<text x="186.9" y="133.0" text-anchor="middle" class="val-w">36.7% z<tspan baseline-shift="sub" font-size="75%">v</tspan></text>
+<text x="314.9" y="133.0" text-anchor="middle" class="val-w">63.3% z<tspan baseline-shift="sub" font-size="75%">a</tspan></text>
+<rect x="140.0" y="146.0" width="40.4" height="8" rx="2" fill="#f2a36b"/>
+<rect x="181.4" y="146.0" width="214.6" height="8" rx="2" fill="#8ab4f8"/>
+<text x="140.0" y="167.0" class="sm">first step · <tspan style="fill:#1a73e8;font-weight:600">84.2% z<tspan baseline-shift="sub" font-size="75%">a</tspan></tspan> · 15.8% z<tspan baseline-shift="sub" font-size="75%">v</tspan></text>
+<line x1="6" y1="180" x2="456" y2="180" stroke="#eceff1" stroke-width="1"/>
+<text x="6" y="207" class="lbl-b">Direct-Action WAM</text>
+<text x="6" y="222" class="sm">frame-0 only, no rollout</text>
+<rect x="140.0" y="192.0" width="256.0" height="22" rx="3" fill="#1a73e8"/>
+<text x="268.0" y="207.0" text-anchor="middle" class="val-w">100.0% z<tspan baseline-shift="sub" font-size="75%">a</tspan></text>
+<rect x="140.0" y="220.0" width="256.0" height="8" rx="2" fill="#8ab4f8"/>
+<text x="140.0" y="241.0" class="sm">first step · <tspan style="fill:#1a73e8;font-weight:600">100.0% z<tspan baseline-shift="sub" font-size="75%">a</tspan></tspan> · 0.0% z<tspan baseline-shift="sub" font-size="75%">v</tspan></text>
+<text x="490" y="18" class="p-head">Cloud widening under degraded input</text>
+<line x1="490.0" y1="36" x2="490.0" y2="240" stroke="#dadce0" stroke-width="1"/>
+<text x="490.0" y="254" text-anchor="middle" class="ax">0×</text>
+<line x1="545.6" y1="36" x2="545.6" y2="240" stroke="#eceff1" stroke-width="1"/>
+<text x="545.6" y="254" text-anchor="middle" class="ax">5×</text>
+<line x1="601.1" y1="36" x2="601.1" y2="240" stroke="#eceff1" stroke-width="1"/>
+<text x="601.1" y="254" text-anchor="middle" class="ax">10×</text>
+<line x1="656.7" y1="36" x2="656.7" y2="240" stroke="#eceff1" stroke-width="1"/>
+<text x="656.7" y="254" text-anchor="middle" class="ax">15×</text>
+<rect x="490" y="45.0" width="77.6" height="11" rx="2.5" fill="#f2a36b"/>
+<text x="573.6" y="54.5" class="sm" style="fill:#3c4043;font-weight:600">7.0× blur</text>
+<rect x="490" y="60.0" width="179.3" height="11" rx="2.5" fill="#d96b27"/>
+<text x="675.3" y="69.5" class="val" style="fill:#d96b27;font-size:10.5px">16.1× blank</text>
+<rect x="490" y="119.0" width="98.1" height="11" rx="2.5" fill="#f2a36b"/>
+<text x="594.1" y="128.5" class="sm" style="fill:#3c4043;font-weight:600">8.8× blur</text>
+<rect x="490" y="134.0" width="124.1" height="11" rx="2.5" fill="#d96b27"/>
+<text x="620.1" y="143.5" class="val" style="fill:#d96b27;font-size:10.5px">11.2× blank</text>
+<rect x="490" y="193.0" width="23.5" height="11" rx="2.5" fill="#8ab4f8"/>
+<text x="519.5" y="202.5" class="sm" style="fill:#3c4043;font-weight:600">2.1× blur</text>
+<rect x="490" y="208.0" width="48.2" height="11" rx="2.5" fill="#1a73e8"/>
+<text x="544.2" y="217.5" class="val" style="fill:#1a73e8;font-size:10.5px">4.3× blank</text>
+<rect x="6" y="281" width="11" height="11" rx="2" fill="#d96b27"/>
+<text x="22" y="290" class="sm">video noise z<tspan baseline-shift="sub" font-size="75%">v</tspan> (world-model imagination)</text>
+<rect x="300" y="281" width="11" height="11" rx="2" fill="#1a73e8"/>
+<text x="316" y="290" class="sm">action noise z<tspan baseline-shift="sub" font-size="75%">a</tspan> (VLA-like)</text>
+<text x="490" y="290" class="sm">16×16 blur / blank first frame vs. clean</text>
+</svg>

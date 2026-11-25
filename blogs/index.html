@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Research essays and empirical notes by Kangye Ji.">
+  <title>Blog | Kangye Ji</title>
+  <link rel="icon" href="../assets/img/Tsinghua_University_Logo.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://ky-ji.github.io/blogs/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #ffffff;
+      --paper-2: #f8f9fa;
+      --ink: #202124;
+      --ink-2: #3c4043;
+      --ink-3: #5f6368;
+      --rule: #dadce0;
+      --rule-2: #e8eaed;
+      --accent: #1a73e8;
+      --accent-hover: #1967d2;
+      --font-sans: "Hanken Grotesk", "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink-2);
+      font: 16px/1.55 var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      font-optical-sizing: auto;
+    }
+    .topbar {
+      border-bottom: 1px solid var(--rule-2);
+      background: var(--paper);
+    }
+    .topbar-inner {
+      max-width: 1120px;
+      height: 70px;
+      margin: 0 auto;
+      padding: 0 clamp(20px, 4vw, 56px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 19px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .brand img { width: 22px; height: 22px; display: block; }
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+    .nav a {
+      color: var(--ink-2);
+      text-decoration: none;
+      padding: 6px 0;
+      border-bottom: 2px solid transparent;
+    }
+    .nav a:hover { color: var(--ink); }
+    .nav a[aria-current="page"] {
+      color: var(--ink);
+      border-bottom-color: var(--accent);
+    }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: clamp(44px, 7vw, 72px) clamp(20px, 4vw, 56px) 96px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(36px, 4.5vw, 46px);
+      font-weight: 600;
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+    .lead {
+      margin: 0 0 44px;
+      font-size: 17px;
+      color: var(--ink-3);
+      max-width: 600px;
+    }
+    .post-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-width: 820px;
+    }
+    .post-row {
+      padding: 26px 0;
+      border-bottom: 1px solid var(--rule-2);
+    }
+    .post-row:first-child { border-top: 1px solid var(--rule-2); }
+    .post-date {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink-3);
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 6px;
+    }
+    .post-title {
+      display: inline-block;
+      font-size: 22px;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      text-decoration: none;
+      margin: 0 0 8px;
+    }
+    .post-title:hover { color: var(--accent); }
+    .post-desc {
+      margin: 0 0 12px;
+      font-size: 16px;
+      line-height: 1.55;
+      color: var(--ink-2);
+    }
+    .post-actions {
+      display: flex;
+      gap: 18px;
+      font-size: 14.5px;
+      font-weight: 500;
+    }
+    .post-actions a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .post-actions a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../index.html">
+        <img src="../assets/img/Tsinghua_University_Logo.svg" alt="" width="22" height="22">
+        <span>Kangye Ji</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="../index.html">Home</a>
+        <a href="../talks/">Talks</a>
+        <a href="./" aria-current="page">Blog</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h1>Blog</h1>
+    <p class="lead">Empirical essays and mechanistic probes on robot policies, world models, and test-time scaling.</p>
+
+    <ul class="post-list">
+      <li class="post-row">
+        <time class="post-date" datetime="2026-11-25">Nov 25, 2026</time>
+        <a class="post-title" href="noise-space-conditioning/">A Noise-Space Perspective on Conditioning in Robot Policies</a>
+        <p class="post-desc">What do giant VLMs and world models actually do to a flow action head? Mostly, they select a behavior the action head already knows. Removing conditioning widens the prior, while wrong conditioning traps the policy off-mode.</p>
+        <div class="post-actions">
+          <a href="noise-space-conditioning/">Read</a>
+        </div>
+      </li>
+    </ul>
+  </main>
+</body>
+</html>

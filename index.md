@@ -22,6 +22,10 @@ From Sep. 2025, Ph.D. in Computer Science and Technology, Tsinghua University
 
 {% include_relative _includes/projects.md %}
 
+## [Blogs](./blogs/)
+
+- Nov. 25, 2026 · [A Noise-Space Perspective on Conditioning in Robot Policies](./blogs/noise-space-conditioning/)
+
 ## Selected Awards
 - Oct. 2026 **National Scholarship**, Tsinghua University (Top 1%)
 - Jun. 2025 **Outstanding Graduate**, Xidian University

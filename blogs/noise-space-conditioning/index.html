@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="What do giant VLMs and world models actually do to a flow action head? A noise-space study across five VLA and WAM architectures.">
+  <title>A Noise-Space Perspective on Conditioning in Robot Policies | Kangye Ji</title>
+  <link rel="icon" href="../../assets/img/Tsinghua_University_Logo.svg" type="image/svg+xml">
+  <link rel="canonical" href="https://ky-ji.github.io/blogs/noise-space-conditioning/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    (function () {
+      var m = /[?&]lang=(en|zh)/.exec(location.search);
+      if (m) {
+        document.documentElement.setAttribute("data-lang", m[1]);
+        document.documentElement.setAttribute("lang", m[1] === "zh" ? "zh-Hans" : "en");
+      }
+    })();
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+    onload="renderMathInElement(document.body, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false}
+      ],
+      throwOnError: false
+    });"></script>
+</head>
+<body>
+  <div class="progress" aria-hidden="true"><span id="progress-bar"></span></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="../../index.html">
+        <img src="../../assets/img/Tsinghua_University_Logo.svg" alt="" width="22" height="22">
+        <span lang="en">Kangye Ji</span>
+        <span lang="zh">季康业 · Kangye Ji</span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a href="../../index.html"><span lang="en">Home</span><span lang="zh">首页</span></a>
+        <a href="../../talks/"><span lang="en">Talks</span><span lang="zh">报告</span></a>
+        <a href="../" class="active"><span lang="en">Blog</span><span lang="zh">博客</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <header class="ar-head">
+    <div class="ar-eyebrow">
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="../"><span lang="en">Blog</span><span lang="zh">博客</span></a>
+        <span aria-hidden="true">›</span>
+        <span lang="en">Research note</span>
+        <span lang="zh">研究笔记</span>
+      </nav>
+      <div class="ar-lang" role="group" aria-label="Language">
+        <button type="button" data-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+    <h1>
+      <span lang="en">A Noise-Space Perspective on Conditioning in Robot Policies</span>
+      <span lang="zh">从噪声空间看机器人策略中的条件控制</span>
+    </h1>
+    <p class="ar-standfirst" lang="en">What do giant VLMs and world models actually do to a flow action head?</p>
+    <p class="ar-standfirst" lang="zh">数十亿参数的 VLM 和视频世界模型，究竟对流匹配动作头做了什么？</p>
+    <div class="ar-byline">
+      <span class="avatar-badge" aria-hidden="true">KJ</span>
+      <div class="byline-text">
+        <span lang="en"><a href="../../index.html">Kangye Ji</a> · Tsinghua University</span>
+        <span lang="zh"><a href="../../index.html">季康业</a> · 清华大学</span>
+        <span class="byline-meta" lang="en">Nov 25, 2026 · 14 min read · GR00T N1.7, Xiaomi Robotics-0, OpenWAM 5B</span>
+        <span class="byline-meta" lang="zh">2026 年 11 月 25 日 · 阅读约 14 分钟 · GR00T N1.7、Xiaomi Robotics-0、OpenWAM 5B</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="ar-shell">
+    <nav class="ar-toc" aria-label="Contents">
+      <p class="toc-title"><span lang="en">Contents</span><span lang="zh">目录</span></p>
+      <ol id="toc-list">
+        <li><a href="#tldr"><span lang="en">TL;DR</span><span lang="zh">核心摘要</span></a></li>
+        <li><a href="#puzzle"><span lang="en">The puzzle</span><span lang="zh">反直觉起点</span></a></li>
+        <li><a href="#hypotheses"><span lang="en">Two hypotheses</span><span lang="zh">两种假说</span></a></li>
+        <li><a href="#setup"><span lang="en">Setup and metrics</span><span lang="zh">实验与指标</span></a></li>
+        <li><a href="#finding-1"><span lang="en">Finding 1 · Widen vs. trap</span><span lang="zh">发现一 · 变宽与陷阱</span></a></li>
+        <li><a href="#finding-2"><span lang="en">Finding 2 · Closed loop</span><span lang="zh">发现二 · 闭环验证</span></a></li>
+        <li><a href="#finding-3"><span lang="en">Finding 3 · World models</span><span lang="zh">发现三 · 世界模型</span></a></li>
+        <li><a href="#tts"><span lang="en">Test-time scaling</span><span lang="zh">测试时扩展</span></a></li>
+        <li><a href="#closing"><span lang="en">Closing</span><span lang="zh">结语</span></a></li>
+      </ol>
+    </nav>
+
+    <main class="ar-main">
+
+      <!-- ================================================================= -->
+      <section id="tldr" class="tldr">
+        <p class="tldr-label"><span lang="en">TL;DR</span><span lang="zh">核心摘要</span></p>
+        <p class="tldr-answer" lang="en">Mostly, they <strong>select</strong> a behavior the action head already knows. They rarely <strong>create</strong> it.</p>
+        <p class="tldr-answer" lang="zh">大多数时候，它们是在动作头已有的技能库里做<strong>选择</strong>，而不是凭空<strong>创造</strong>动作。</p>
+        <ul lang="en">
+          <li><strong>Skill lives in the head.</strong> Resampling noise lifts Pass@1 to Pass@8 by 25–31 points across two VLAs.</li>
+          <li><strong>Conditioning contracts rather than builds.</strong> Removing it widens clouds 1.8–16.1×, while wrong conditioning traps the policy off-mode.</li>
+          <li><strong>VLM-free heads match full VLAs.</strong> With oracle on-shell noise, both reach 50.0% success (full VLAs hit 43.8% and 31.2%).</li>
+          <li><strong>Coupling sets world-model variance.</strong> Joint Video-Action puts 89.4% of variance in video noise, while Direct-Action WAM puts 100% in action noise.</li>
+        </ul>
+        <ul lang="zh">
+          <li><strong>运动技能本来就在动作头里。</strong>仅重采样初始噪声，就能把两类 VLA 的 Pass@1 到 Pass@8 拉升 25 到 31 个百分点。</li>
+          <li><strong>条件的作用是收缩而非构造。</strong>去掉条件会让动作云拓宽 1.8 到 16.1 倍，而错误条件会把策略锁死在错误模态上。</li>
+          <li><strong>无 VLM 也能追平完整策略。</strong>只要给定壳层上的最优噪声，去掉 VLM 的动作头在两类 VLA 上都能达到 50.0% 成功率（完整基线为 43.8% 和 31.2%）。</li>
+          <li><strong>耦合程度决定世界模型的方差归属。</strong>Joint Video-Action 把 89.4% 的轨迹方差留在视频噪声里，而 Direct-Action WAM 把 100% 留在动作噪声里。</li>
+        </ul>
+      </section>
+
+      <!-- Hero: live flow-matching ODE (schematic) -->
+      <figure class="widget hero" id="hero-widget" aria-labelledby="hero-title">
+        <div class="w-head">
+          <div>
+            <p class="w-kicker">
+              <span lang="en">Schematic · flow matching from noise (t = 1) to action (t = 0)</span>
+              <span lang="zh">示意图 · 流匹配从噪声 (t = 1) 演化到动作 (t = 0)</span>
+            </p>
+            <p class="w-title" id="hero-title">
+              <span lang="en">Three ways conditioning shapes a flow action head</span>
+              <span lang="zh">条件信号塑造流匹配动作头的三种方式</span>
+            </p>
+          </div>
+          <div class="pills" role="group" aria-label="VLA paradigm">
+            <button type="button" class="pill is-on" data-model="gr00t" aria-pressed="true"><span lang="en">Cross-Attn VLA (GR00T)</span><span lang="zh">交叉注意力 VLA (GR00T)</span></button>
+            <button type="button" class="pill" data-model="xiaomi" aria-pressed="false"><span lang="en">KV-Cache VLA (Xiaomi)</span><span lang="zh">逐层 KV 缓存 VLA (Xiaomi)</span></button>
+          </div>
+        </div>
+        <div class="hero-panels">
+          <div class="hero-panel" data-kind="full">
+            <p class="hp-name"><span lang="en">Full VLM</span><span lang="zh">完整 VLM</span></p>
+            <canvas role="img" aria-label="Noise particles flow into a tight cloud centred on the target action a-star."></canvas>
+            <div class="hp-text">
+              <p class="hp-desc"><span lang="en">Tight cloud on the target</span><span lang="zh">紧致聚焦在目标动作上</span></p>
+              <p class="hp-big">43.8% success</p>
+              <p class="hp-meta">width 1.03 · D<sub>M</sub> 7.3</p>
+            </div>
+          </div>
+          <div class="hero-panel" data-kind="bad">
+            <p class="hp-name"><span lang="en">Wrong / averaged VLM</span><span lang="zh">错误或均值 VLM</span></p>
+            <canvas role="img" aria-label="Noise particles flow into an equally tight cloud far from the target, which is left outside the support."></canvas>
+            <div class="hp-text">
+              <p class="hp-desc"><span lang="en">Equally tight in the wrong place</span><span lang="zh">同样紧致却锁死在错误位置</span></p>
+              <p class="hp-big">6.2% success</p>
+              <p class="hp-meta">wrong scene · width 0.92 · D<sub>M</sub> 102.4</p>
+            </div>
+          </div>
+          <div class="hero-panel" data-kind="zero">
+            <p class="hp-name"><span lang="en">No VLM (c = 0)</span><span lang="zh">去掉 VLM (c = 0)</span></p>
+            <canvas role="img" aria-label="Noise particles flow into a wide cloud that still contains the target; one highlighted oracle noise flows exactly onto it."></canvas>
+            <div class="hp-text">
+              <p class="hp-desc"><span lang="en">Wide prior still covers the target</span><span lang="zh">变宽的先验依然覆盖目标动作</span></p>
+              <p class="hp-big">50.0% success with z*</p>
+              <p class="hp-meta">width 2.66 (2.6×) · D<sub>M</sub> 20.5</p>
+            </div>
+          </div>
+        </div>
+        <div class="hero-controls">
+          <button type="button" class="ctl" data-act="play" aria-pressed="false">Pause</button>
+          <button type="button" class="ctl ghost" data-act="replay">Replay</button>
+          <label class="scrub">
+            <span class="scrub-end">t = 1</span>
+            <input type="range" min="0" max="1000" value="0" aria-label="Flow time, from t = 1 (noise) to t = 0 (action)">
+            <span class="scrub-end">t = 0</span>
+          </label>
+          <output class="scrub-out" aria-live="off">t = 1.00</output>
+        </div>
+        <p class="w-foot">
+          <span class="hero-model-note">Cross-attention VLA (GR00T N1.7). The wrong panel uses VLM tokens from a different scene.</span>
+          <span lang="en"> Cloud widths follow the measured width ratios, the wrong cloud's offset grows with $\log D_M$, and $a^\star$ sits at the same spot in every panel. Success is measured on SimplerEnv WidowX over 16 episodes per condition (8 for KV-cache oracle runs).</span>
+          <span lang="zh"> 动作云宽度按实测比例缩放，错误云团的偏移量随 $\log D_M$ 增大，且三幅图中的目标动作 $a^\star$ 位于同一位置。成功率测自 SimplerEnv WidowX 每组 16 条轨迹（KV 缓存预言机实验为 8 条）。</span>
+        </p>
+        <noscript><p class="w-foot">This figure animates with JavaScript. Its numbers also appear in Table 1 and Figure 5.</p></noscript>
+      </figure>
+
+      <!-- ================================================================= -->
+      <section id="puzzle">
+        <p class="sec-eyebrow"><span lang="en">1 · The puzzle</span><span lang="zh">1 · 反直觉起点</span></p>
+        <h2>
+          <span lang="en">Noise alone buys 25–31 points of success</span>
+          <span lang="zh">只换随机噪声，就能白赚 25 到 31 个百分点的成功率</span>
+        </h2>
+        <p lang="en">
+          Take a generalist robot policy and freeze the weights, the camera image, and the language instruction. Change only the Gaussian noise $z \sim \mathcal{N}(0, I)$ that the flow action head starts from. Roll out $K = 8$ seeds in closed loop on 16 SimplerEnv WidowX scenes, and count a scene as solved if <em>any</em> seed succeeds (Pass@K).
+        </p>
+        <p lang="zh">
+          拿一个通用的机器人策略，把模型权重、相机图像和语言指令全部冻住，只改动流匹配动作头起点的那一份高斯噪声 $z \sim \mathcal{N}(0, I)$。在 SimplerEnv WidowX 的 16 个场景里，每个场景闭环跑 $K = 8$ 个随机种子，只要有<em>任意</em>一个种子完成任务，就记作该场景通过（Pass@K）。
+        </p>
+        <p lang="en">
+          A <strong>cross-attention VLA</strong> (GR00T N1.7) goes from 50.0% at Pass@1 to 81.2% at Pass@8. A <strong>layer-wise KV-cache VLA</strong> (Xiaomi Robotics-0, $\pi_0$-style) goes from 43.8% to 68.8%. With the model, scene, and instruction held fixed, a random seed decides whether the robot succeeds or fails.
+        </p>
+        <p lang="zh">
+          <strong>交叉注意力 VLA</strong>（GR00T N1.7）的成功率从 Pass@1 的 50.0% 跃升到 Pass@8 的 81.2%。<strong>逐层 KV 缓存 VLA</strong>（Xiaomi Robotics-0，$\pi_0$ 风格）也从 43.8% 涨到 68.8%。同一个模型、同一张画面、同一句指令，决定成败的竟然是一颗随机种子。
+        </p>
+
+        <figure class="fig" data-swap>
+          <div class="fig-head">
+            <div class="fig-head-row">
+              <h4>
+                <span lang="en">Figure 1 · Pass@K on SimplerEnv WidowX</span>
+                <span lang="zh">图 1 · SimplerEnv WidowX 上的 Pass@K 曲线</span>
+              </h4>
+              <div class="pills small" role="group" aria-label="Figure 1 view">
+                <button type="button" class="pill is-on" data-show="all" aria-pressed="true"><span lang="en">All scenes</span><span lang="zh">全部场景</span></button>
+                <button type="button" class="pill" data-show="task" aria-pressed="false"><span lang="en">Per task</span><span lang="zh">分任务</span></button>
+              </div>
+            </div>
+            <p class="fig-takeaway" lang="en">More noise seeds solve more scenes, while removing the task instruction drops success to zero.</p>
+            <p class="fig-takeaway" lang="zh">噪声种子越多，解出的场景越多，而去掉具体任务指令后成功率直接归零。</p>
+          </div>
+          <div data-view="all"><div class="fig-scroll"><img src="figures/fig1-passk.svg" alt="Closed-loop Pass@K curves on GR00T N1.7 and Xiaomi Robotics-0" width="740" height="290"></div></div>
+          <div data-view="task" hidden><div class="fig-scroll"><img src="figures/fig1-passk-tasks.svg" alt="Per-task Pass@1 and Pass@8 for both VLAs" width="740" height="300" loading="lazy"></div></div>
+          <figcaption lang="en">
+            Unbiased Pass@K across 16 paired scenes with $K = 8$ (128 rollouts per condition). Per task (4 scenes each), Pass@8 moves in steps of 25 points, and seven of eight model-task pairs gain from resampling. Under a generic prompt ("do the task"), GR00T still grasps an object in 62.5% of scenes at $K = 8$, while Xiaomi grasps nothing.
+          </figcaption>
+          <figcaption lang="zh">
+            16 个配对场景上 $K = 8$ 的无偏 Pass@K（每组 128 次闭环测试）。按 4 个任务拆开（每个任务 4 个场景），Pass@8 以 25 个百分点步进，8 组模型与任务组合中有 7 组因重采样受益。换用泛化提示词（"do the task"）时，GR00T 在 $K = 8$ 下仍有 62.5% 的场景能抓起物体，而 Xiaomi 一次也没抓起。
+          </figcaption>
+        </figure>
+
+        <p lang="en">
+          If the seed decides the outcome, the motor skill must already live inside the action head. That raises a direct question.
+        </p>
+        <p lang="zh">
+          如果随机种子就能决定成败，说明完成任务的运动技能早就住在动作头里面了。一个很直接的问题随之浮现。
+        </p>
+        <blockquote class="pull">
+          <span lang="en">What is the multi-billion-parameter VLM, or video world model, actually contributing?</span>
+          <span lang="zh">那么，几十亿参数的 VLM 或视频世界模型，究竟贡献了什么？</span>
+        </blockquote>
+      </section>
+
+      <!-- ================================================================= -->
+      <section id="hypotheses">
+        <p class="sec-eyebrow"><span lang="en">2 · Framing</span><span lang="zh">2 · 问题框架</span></p>
+        <h2>
+          <span lang="en">Mode selection and vector-field synthesis make opposite predictions</span>
+          <span lang="zh">“模态选择”与“向量场构造”给出了截然相反的预测</span>
+        </h2>
+        <p lang="en">Write the action head as $a = f_\theta(z;\, c)$, where $z$ is noise and $c$ is the conditioning from the VLM or world model. Two clean hypotheses explain what $c$ might do.</p>
+        <p lang="zh">把动作头写成 $a = f_\theta(z;\, c)$，其中 $z$ 是初始噪声，$c$ 是来自 VLM 或世界模型的条件信号。关于 $c$ 的作用，存在两种清晰对立的假说。</p>
+
+        <div class="hyp-grid">
+          <div class="hyp hyp-a">
+            <p class="hyp-tag"><span lang="en">Hypothesis A</span><span lang="zh">假说 A</span></p>
+            <p class="hyp-name"><span lang="en">Mode selection</span><span lang="zh">模态选择</span></p>
+            <p lang="en">The head already stores a wide, multi-task motor prior, and $c$ narrows it onto the right region.</p>
+            <p lang="zh">动作头内部已经存好了宽广的多任务运动先验，而条件 $c$ 只是把它收窄到正确区域。</p>
+            <p class="hyp-pred" lang="en"><span class="pred-label">If we remove $c$</span> the action cloud widens, and the target stays reachable by <em>some</em> noise.</p>
+            <p class="hyp-pred" lang="zh"><span class="pred-label">如果去掉 $c$</span> 动作云会变宽，目标动作依然能被<em>某个</em>噪声命中。</p>
+          </div>
+          <div class="hyp hyp-b">
+            <p class="hyp-tag"><span lang="en">Hypothesis B</span><span lang="zh">假说 B</span></p>
+            <p class="hyp-name"><span lang="en">Vector-field synthesis</span><span lang="zh">向量场构造</span></p>
+            <p lang="en">Conditioning $c$ builds the action, so without it the head has no notion of the target behavior.</p>
+            <p lang="zh">条件 $c$ 负责动态拼出动作向量场，没了它，动作头根本不知道目标行为是什么。</p>
+            <p class="hyp-pred" lang="en"><span class="pred-label">If we remove $c$</span> no noise can reproduce the target action.</p>
+            <p class="hyp-pred" lang="zh"><span class="pred-label">如果去掉 $c$</span> 无论怎么选噪声，都复现不出目标动作。</p>
+          </div>
+        </div>
+
+        <p lang="en">
+          The test follows directly. Let $a^\star = f_\theta(z_{\text{ref}};\, c_{\text{true}})$ be what the full policy does. Remove or corrupt $c$, then ask whether <strong>there is still a noise $z$ that produces $a^\star$</strong>.
+        </p>
+        <p lang="zh">
+          检验方法顺理成章。记 $a^\star = f_\theta(z_{\text{ref}};\, c_{\text{true}})$ 为完整策略给出的动作，然后把 $c$ 拿掉或替换成错误条件，直接追问一个问题，即<strong>是否还存在某个正常噪声 $z$ 能够生成 $a^\star$</strong>。
+        </p>
+      </section>
+
+      <!-- ================================================================= -->
+      <section id="setup">
+        <p class="sec-eyebrow"><span lang="en">3 · Setup</span><span lang="zh">3 · 实验设置</span></p>
+        <h2>
+          <span lang="en">Conditioning enters one noise channel in VLAs and two in world models</span>
+          <span lang="zh">VLA 只有一个噪声通道，而世界模型打开了第二个通道</span>
+        </h2>
+        <p lang="en">
+          One checkpoint cannot separate conditioning from architecture. We therefore probe five flow-matching paradigms arranged along one structural axis, ordered by <strong>how tightly the foundation backbone couples to the action head</strong>.
+        </p>
+        <p lang="zh">
+          单看一个权重无法把条件机制和架构特性剥离开来。因此我们沿着同一条结构轴线考察五类流匹配范式，按照<strong>大模型主干与动作头的耦合紧密程度</strong>依次排开。
+        </p>
+        <p lang="en">
+          <strong>Two canonical VLA paradigms (one noise channel $z_a$).</strong> Continuous flow VLAs split into two dominant designs. <em>Cross-Attention VLAs</em> (GR00T-family, represented by GR00T N1.7) encode image and text once into a conditioning sequence $H$, and a decoupled action DiT reads $H$ only through cross-attention. <em>Layer-wise KV-Cache VLAs</em> ($\pi_0$ and MoT-family, represented by Xiaomi Robotics-0) fuse the action expert into every transformer layer, sharing joint self-attention with all 36 layers of VLM keys and values.
+        </p>
+        <p lang="zh">
+          <strong>两类主流 VLA 范式（单一动作噪声通道 $z_a$）。</strong>连续流匹配 VLA 主要分为两种架构。<em>Cross-Attention VLA</em>（以 GR00T 系列为代表，实测 GR00T N1.7）先用 VLM 把图文编码为一层条件序列 $H$，再由独立的动作 DiT 通过交叉注意力读取 $H$。<em>Layer-wise KV-Cache VLA</em>（以 $\pi_0$ 与 MoT 系列为代表，实测 Xiaomi Robotics-0）则把动作专家嵌入每一层 Transformer，在全部 36 层中与 VLM 的键值对做联合自注意力。
+        </p>
+        <p lang="en">
+          <strong>Three canonical WAM paradigms (two noise channels $z_v, z_a$).</strong> World action models add a video noise channel $z_v$ for future frames, evaluated across three OpenWAM 5B variants on RoboTwin 2.0 along the same coupling axis. <em>Joint Video-Action WAMs</em> (UVA and Motus-style, OpenWAM mutual-joint) co-denoise future video and actions together in shared attention. <em>Video-Then-Action WAMs</em> (UniSim and DreamGen-style, OpenWAM two-stage IDM) generate a full future video rollout first and then decode actions with an inverse dynamics model. <em>Direct-Action WAMs</em> (FastWAM and VPP-style, OpenWAM isolated) keep video modeling during pretraining, yet skip future video generation at inference and read only the current frame $o_0$.
+        </p>
+        <p lang="zh">
+          <strong>三类主流 WAM 范式（视频与动作双噪声通道 $z_v, z_a$）。</strong>世界动作模型引入了预测未来画面的视频噪声 $z_v$，我们在 RoboTwin 2.0 上沿着同一条耦合轴对比 OpenWAM 5B 的三种实现。<em>Joint Video-Action WAM</em>（UVA / Motus 风格，对应 OpenWAM mutual-joint）在共享注意力中同步对未来视频和动作去噪。<em>Video-Then-Action WAM</em>（UniSim / DreamGen 风格，对应 OpenWAM two-stage IDM）先完整生成一段未来视频，再用逆动力学模型单向译出动作。<em>Direct-Action WAM</em>（FastWAM / VPP 风格，对应 OpenWAM isolated）在预训练阶段保留视频建模，但推理时跳过未来视频生成，只读当前帧 $o_0$。
+        </p>
+
+        <figure class="fig" id="arch-widget">
+          <div class="fig-head">
+            <h4>
+              <span lang="en">Figure 2 · How conditioning and noise enter each paradigm</span>
+              <span lang="zh">图 2 · 条件信号与噪声如何进入五类策略范式</span>
+            </h4>
+            <p class="fig-takeaway" lang="en">VLAs carry all variance in one action noise channel, while WAMs split trajectory variance between video and action noise according to coupling depth.</p>
+            <p class="fig-takeaway" lang="zh">VLA 将全部方差集中在单一动作噪声通道中，而 WAM 按视频与动作的耦合深度在双噪声通道之间切分轨迹方差。</p>
+          </div>
+          <div class="arch-host"><noscript><div class="fig-scroll"><img src="figures/fig2-architectures.svg" alt="Five conditioning paradigms drawn as academic architecture diagrams, with two VLA paradigms above three world action model paradigms and their measured variance splits" width="720" height="557"></div></noscript></div>
+          <p class="arch-note" aria-live="polite">Hover or click any panel to inspect its attention coupling and variance split.</p>
+          <figcaption lang="en">
+            Schematic topologies across two VLA and three WAM paradigms. Bottom bars show the measured share of 32-step trajectory variance carried by each noise source (Finding 3). VLAs are evaluated on SimplerEnv WidowX, and WAMs are evaluated on RoboTwin 2.0 (clicking an alarm clock and handing over a block).
+          </figcaption>
+          <figcaption lang="zh">
+            两类 VLA 与三类 WAM 的架构拓扑与 2×2 注意力掩码示意。底部横条为实测 32 步轨迹方差在各噪声源之间的占比（详见发现三）。VLA 在 SimplerEnv WidowX 上评测，WAM 在 RoboTwin 2.0（按闹钟与递方块）上评测。
+          </figcaption>
+        </figure>
+
+        <h3>
+          <span lang="en">Four diagnostics that separate the hypotheses</span>
+          <span lang="zh">区分两种假说的四个诊断指标</span>
+        </h3>
+        <dl class="metrics" lang="en">
+          <div><dt>Cloud width</dt><dd>Spread of actions over many noise draws (Std), relative to the full policy. Wider means more behaviors are on offer.</dd></div>
+          <div><dt>Distance $D_M$</dt><dd>Mahalanobis distance from the target $a^\star$ to the cloud, in units of the cloud's own spread. Low means the target sits inside the cloud.</dd></div>
+          <div><dt>Reach error</dt><dd>Smallest error to $a^\star$ found by optimizing the 56 active noise coordinates, over the whole action chunk (Ch) or the first step (S0).</dd></div>
+          <div><dt>Success / Grasp</dt><dd>Closed-loop task success rate (SR) and grasp rate in simulation.</dd></div>
+        </dl>
+        <dl class="metrics" lang="zh">
+          <div><dt>动作云宽度</dt><dd>多次重采样噪声得到的动作标准差（Std），相对于完整策略的倍数。越宽代表可供选择的行为越多。</dd></div>
+          <div><dt>马氏距离 $D_M$</dt><dd>目标动作 $a^\star$ 到动作云中心的马氏距离，以动作云自身展宽为单位。数值越低说明目标越靠近云团内部。</dd></div>
+          <div><dt>可达误差</dt><dd>仅优化 56 个有效噪声坐标所能逼近 $a^\star$ 的最小误差，分别衡量整段动作块（Ch）与第一步动作（S0）。</dd></div>
+          <div><dt>成功率 / 抓取率</dt><dd>仿真环境中的闭环任务成功率（SR）与物体抓取率。</dd></div>
+        </dl>
+        <p class="muted" style="margin-top:-8px;" lang="en">Across all figures, <strong style="color:var(--accent);">blue</strong> marks wide priors, reachable targets, and action noise $z_a$, while <strong style="color:var(--warm);">orange</strong> marks collapsed traps, misleading conditioning, and video noise $z_v$. Neutral <strong>grey</strong> marks full-policy baselines.</p>
+        <p class="muted" style="margin-top:-8px;" lang="zh">全文配色保持一致，<strong style="color:var(--accent);">蓝色</strong>代表变宽的先验、可达目标与动作噪声 $z_a$，<strong style="color:var(--warm);">橙色</strong>代表坍缩陷阱、误导性条件与视频噪声 $z_v$，中性<strong>灰色</strong>代表完整策略基线。</p>
+
+        <div class="tip">
+          <span class="tip-label"><span lang="en">Keeping the test honest</span><span lang="zh">守住实验的诚实边界</span></span>
+          <p lang="en">We optimize only the <strong>56 active noise coordinates</strong> (8 steps × 7 DoF), freeze every padding dimension to a fixed Gaussian draw, and keep the noise on the typical Gaussian shell ($\|z_{56}\|_2 \le 1.15\sqrt{56}$, $|z_i| \le 3$). The optimized noise therefore looks like an ordinary sample.</p>
+          <p lang="zh">我们只允许优化 <strong>56 个真实有效的噪声维度</strong>（8 步 × 7 自由度），把所有多机型填充维度锁死在固定高斯抽样上，并将优化后的噪声投影回典型高斯球壳（$\|z_{56}\|_2 \le 1.15\sqrt{56}$ 且 $|z_i| \le 3$），保证找出来的噪声看起来就是一次普通抽样。</p>
+        </div>
+
+        <details class="proto">
+          <summary><span lang="en">Why not just sample, or invert freely?</span><span lang="zh">为什么不直接随机采样，或者放开所有维度反演？</span></summary>
+          <div class="proto-body" lang="en">
+            <p><strong>Random sampling gives false negatives.</strong> In 56 dimensions, Gaussian samples concentrate on a thin shell of radius $\approx\sqrt{56}$. If removing the VLM widens the cloud 3× along 8 behavioral directions, a random draw lands within one native radius of $a^\star$ with probability $\sim 3^{-8} \approx 1.5 \times 10^{-4}$. Even 1,024 blind draws routinely miss a target that sits inside the support.</p>
+            <p><strong>Unconstrained inversion gives false positives.</strong> Generalist heads pad actions for multi-robot use. GR00T integrates $40 \times 132 = 5{,}280$ dimensions and Xiaomi integrates $8 \times 32 = 256$, of which only 56 are active. Optimizing unused dimensions or leaving the Gaussian shell can smuggle information through padding channels, so freezing 5,224 (GR00T) and 200 (Xiaomi) padding dimensions prevents that artifact.</p>
+          </div>
+          <div class="proto-body" lang="zh">
+            <p><strong>盲目随机采样会带来假阴性。</strong>在 56 维空间里，高斯样本集中在半径约 $\sqrt{56}$ 的薄壳上。只要去掉 VLM 后动作云沿着 8 个行为方向各拓宽 3 倍，单次随机抽样落进 $a^\star$ 原生半径内的概率就会降到 $3^{-8} \approx 1.5 \times 10^{-4}$。哪怕目标就在支撑集里，盲抽 1,024 次也常常擦肩而过。</p>
+            <p><strong>无约束反演则会带来假阳性。</strong>通用策略为了兼容不同构型的机械臂做了大量零填充，GR00T 积分 $40 \times 132 = 5{,}280$ 维，Xiaomi 积分 $8 \times 32 = 256$ 维，其中真正生效的只有 56 维。如果放任优化器修改多余填充维或冲出高斯球壳，信息就会经由废通道偷渡，因此锁死 GR00T 的 5,224 维和 Xiaomi 的 200 维填充通道是必要前提。</p>
+          </div>
+        </details>
+      </section>
+
+      <!-- ================================================================= -->
+      <section id="finding-1">
+        <p class="sec-eyebrow"><span lang="en">4 · Finding 1</span><span lang="zh">4 · 发现一</span></p>
+        <h2>
+          <span lang="en">Removing the VLM widens the prior while a wrong VLM traps it</span>
+          <span lang="zh">去掉 VLM 会把先验变宽，喂入错误的 VLM 反而把策略锁死</span>
+        </h2>
+        <p class="claim" lang="en">An absent VLM leaves the target reachable inside a wide cloud, while a wrong VLM squeezes it out.</p>
+        <p class="claim" lang="zh">没有 VLM 时，目标动作仍安稳地落在宽广的动作云里，而错误的 VLM 会把它硬生生挤出支撑集。</p>
+        <p lang="en">
+          Intuition says less VLM signal means worse reachability, with no VLM at the bottom. <strong>The opposite happens.</strong>
+        </p>
+        <p lang="zh">
+          直觉会告诉我们，VLM 信号越弱，动作可达性就越差，彻底去掉 VLM 应该垫底。<strong>但实验结果恰恰相反。</strong>
+        </p>
+        <p lang="en">
+          In the <strong>Cross-Attention VLA</strong> (GR00T N1.7), removing the VLM tokens widens the action cloud <strong>2.6×</strong> while keeping <strong>78.9%</strong> subspace overlap with the full policy. The target stays close ($D_M = 20.5$), and the chunk reach error remains below half the full policy's own cloud radius (Table 1).
+        </p>
+        <p lang="zh">
+          在 <strong>Cross-Attention VLA</strong>（GR00T N1.7）中，拿掉 VLM token 后，动作云拓宽了 <strong>2.6 倍</strong>，同时与完整策略保持 <strong>78.9%</strong> 的子空间重叠。目标动作依然离云团很近（$D_M = 20.5$），整段动作块的可达误差不到完整策略自身半径的一半（表 1）。
+        </p>
+        <p lang="en">
+          Now feed a confident but <em>wrong</em> scene. The cloud refuses to widen (0.9×) and instead contracts around the wrong behavior. Distance jumps five-fold to $D_M = 102.4$, and reach error more than triples. We call this the <strong>Over-Collapse Trap</strong>.
+        </p>
+        <p lang="zh">
+          现在换成一个自信却<em>错误</em>的场景条件。动作云不仅拒绝变宽（仅 0.9 倍），反而紧紧收缩到错误行为周围，马氏距离暴涨五倍到 $D_M = 102.4$，可达误差翻了三倍多。我们把这种现象称为<strong>过度坍缩陷阱（Over-Collapse Trap）</strong>。
+        </p>
+
+        <figure class="fig">
+          <div class="fig-head">
+            <h4>
+              <span lang="en">Figure 3 · Prior inflation and the Over-Collapse Trap</span>
+              <span lang="zh">图 3 · 先验膨胀与过度坍缩陷阱</span>
+            </h4>
+            <p class="fig-takeaway" lang="en">Removing conditioning widens the cloud across all five paradigms, while wrong or averaged conditioning keeps it narrow and deep KV-cache coupling amplifies the trap.</p>
+            <p class="fig-takeaway" lang="zh">去掉条件会在全部五类范式中把动作云变宽，而错误或均值条件会死死收窄云团，深层 KV 缓存耦合更会成倍放大这一陷阱。</p>
+          </div>
+          <div class="fig-scroll"><img src="figures/fig3-prior-inflation.svg" alt="Prior inflation across five paradigms and the width versus distance trap" width="740" height="330" loading="lazy"></div>
+          <figcaption lang="en">
+            <em>Left</em> shows cloud width relative to the full policy on a log scale. <em>Right</em> plots cloud width against $D_M$ on the Cross-Attention VLA (GR00T N1.7, filled, $n = 23$) and the Layer-wise KV-Cache VLA (Xiaomi Robotics-0, open, $n = 22$).
+          </figcaption>
+          <figcaption lang="zh">
+            <em>左图</em>展示相对于完整策略的动作云宽度（对数坐标）。<em>右图</em>对比 Cross-Attention VLA（GR00T N1.7，实心点，$n = 23$）与 Layer-wise KV-Cache VLA（Xiaomi Robotics-0，空心点，$n = 22$）的云团宽度与 $D_M$。
+          </figcaption>
+        </figure>
+
+        <p lang="en">
+          The trap also explains the generic-prompt divergence in Figure 1. Under "do the task", the decoupled cross-attention head keeps a broad approach cloud, so eight seeds still grasp an object in 62.5% of scenes. Deep layer-wise KV coupling collapses its approach cloud to a quarter of normal width ($D_M = 257.6$) and grasps nothing in 128 rollouts.
+        </p>
+        <p lang="zh">
+          这个陷阱也解释了图 1 里泛化提示词为何出现分化。面对 "do the task" 这类空泛指令，解耦的交叉注意力动作头仍保留了较宽的接近动作云，8 个种子依然能在 62.5% 的场景里抓住物体。而深层逐层 KV 耦合把接近云团压扁到正常宽度的四分之一（$D_M = 257.6$），128 次尝试无一抓取成功。
+        </p>
+
+        <h3>
+          <span lang="en">A neutral anchor traps too, so this is not an attention shock</span>
+          <span lang="zh">中性均值锚点同样会把策略锁死，这并非注意力分布突变</span>
+        </h3>
+        <p lang="en">
+          Removing the VLM might widen the cloud only because masking 36 layers of KV cache is out of distribution. To rule that out, we build a <strong>neutral mean anchor</strong> by averaging VLM features across 16 scenes from all four tasks (output tokens in the Cross-Attention VLA, and all 36 KV layers in the KV-Cache VLA). This anchor carries no information about the current scene, yet preserves in-distribution norms, sequence lengths, positions, and softmax mass.
+        </p>
+        <p lang="zh">
+          有人可能会怀疑，去掉 VLM 让云团变宽，只是因为屏蔽 36 层 KV 缓存让网络落到了分布外。为了排除这个干扰，我们构造了一个<strong>中性均值锚点</strong>，把全部 4 个任务共 16 个场景的 VLM 特征取平均（Cross-Attention VLA 平均输出 token，KV-Cache VLA 平均全部 36 层 KV）。它不含任何当前场景信息，却完整保留了分布内的范数、长度、位置编码和 softmax 质量。
+        </p>
+        <p lang="en">
+          The anchor makes reachability <em>worse</em> rather than better (Table 1). Averaging sixteen scenes in feature space does not yield a mixture of sixteen actions, because the nonlinear DiT reads the average as one phantom scene and contracts onto it ($D_M = 73.3$ in Cross-Attention, and $203.3$ in KV-Cache). Removing conditioning beats neutral conditioning on every metric in both VLA paradigms.
+        </p>
+        <p lang="zh">
+          结果均值锚点反而把可达性变得更<em>糟</em>（表 1）。在特征空间里平均 16 个场景，并不会得到 16 种动作的混合分布，非线性 DiT 会把这份平均值当成一个“幽灵场景”死死收缩上去（Cross-Attention 的 $D_M = 73.3$，KV-Cache 高达 $203.3$）。在两类 VLA 范式的每一项指标上，彻底去掉条件都胜过喂入中性均值。
+        </p>
+        <p lang="en">
+          Sliding the features from the true scene toward the anchor shows where the two paradigms diverge (Figure 4). In the Cross-Attention VLA, a light blend ($\alpha = 0.75$) even <em>lowers</em> chunk reach error from 0.159 to 0.137. In the KV-Cache VLA, the same blend raises error from 0.252 to 0.664 because interpolating across 36 nonlinear KV layers breaks the head immediately.
+        </p>
+        <p lang="zh">
+          把特征从真实场景平滑滑向中性锚点，两类架构的分水岭一目了然（图 4）。在 Cross-Attention VLA 中，轻微混合（$\alpha = 0.75$）甚至把整段可达误差从 0.159 <em>降</em>到了 0.137。但在 KV-Cache VLA 中，同样的混合立刻让误差从 0.252 飙升到 0.664，因为直接插值 36 层非线性 KV 缓存会瞬间破坏动作头的内部几何。
+        </p>
+
+        <figure class="fig" id="alpha-widget">
+          <div class="fig-head">
+            <h4>
+              <span lang="en">Figure 4 · Relaxing conditioning toward a neutral anchor</span>
+              <span lang="zh">图 4 · 将条件从真实场景平滑松弛到中性均值锚点</span>
+            </h4>
+            <p class="fig-takeaway" lang="en">Cross-attention bends smoothly under light blending, while the 36-layer KV cache breaks immediately and climbs worse than no VLM.</p>
+            <p class="fig-takeaway" lang="zh">交叉注意力在轻度混合下平滑过渡，而 36 层 KV 缓存一碰就碎，迅速恶化到不如彻底去掉 VLM。</p>
+          </div>
+          <div class="w-controls">
+            <div class="pills" role="group" aria-label="Metric">
+              <button type="button" class="pill is-on" data-metric="ch" aria-pressed="true"><span lang="en">Reach error · chunk</span><span lang="zh">可达误差 · 整段</span></button>
+              <button type="button" class="pill" data-metric="s0" aria-pressed="false"><span lang="en">Reach error · step 0</span><span lang="zh">可达误差 · 第一步</span></button>
+              <button type="button" class="pill" data-metric="dm" aria-pressed="false"><span lang="en">Distance D<sub>M</sub></span><span lang="zh">马氏距离 D<sub>M</sub></span></button>
+            </div>
+            <button type="button" class="ctl" data-act="sweep">Sweep α</button>
+          </div>
+          <div class="alpha-panels">
+            <div class="alpha-panel" data-model="gr00t">
+              <p class="ap-title"><span lang="en">Cross-attention VLA <span>GR00T N1.7 · 23 states</span></span><span lang="zh">交叉注意力 VLA <span>GR00T N1.7 · 23 个状态</span></span></p>
+              <canvas role="img" aria-label="Reach error versus blend weight for the cross-attention VLA, with no-VLM and wrong-scene reference lines."></canvas>
+              <div class="ap-read" aria-live="polite"></div>
+            </div>
+            <div class="alpha-panel" data-model="xiaomi">
+              <p class="ap-title"><span lang="en">Layer-wise KV-cache VLA <span>Xiaomi Robotics-0 · 22 states</span></span><span lang="zh">逐层 KV 缓存 VLA <span>Xiaomi Robotics-0 · 22 个状态</span></span></p>
+              <canvas role="img" aria-label="Reach error versus blend weight for the KV-cache VLA, with no-VLM and wrong-scene reference lines."></canvas>
+              <div class="ap-read" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="alpha-slider">
+            <label for="alpha-range"><span lang="en">Blend weight</span><span lang="zh">混合权重</span></label>
+            <input id="alpha-range" type="range" min="0" max="4" step="1" value="0">
+            <output for="alpha-range">α = 1.00</output>
+          </div>
+          <figcaption lang="en">
+            Each dot marks a measured audit condition where VLM features interpolate between the true scene ($\alpha = 1$) and the 16-scene neutral mean ($\alpha = 0$) on a log scale. Reach errors are divided by each model's native cloud radius so both paradigms share one axis, while readouts display raw values. The orange band marks values worse than removing the VLM.
+          </figcaption>
+          <figcaption lang="zh">
+            每个圆点对应一次实测静态审计，将 VLM 特征在真实场景（$\alpha = 1$）与 16 场景中性均值（$\alpha = 0$）之间按对数坐标展示。可达误差已按各自原生动作云半径归一化以便共用纵轴，下方读数保留原始数值，橙色阴影区表示表现劣于去掉 VLM。
+          </figcaption>
+        </figure>
+
+        <div class="tbl-wrap">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th><span lang="en">Model · condition</span><span lang="zh">模型与条件</span></th>
+                <th class="num"><span lang="en">Width</span><span lang="zh">宽度</span></th>
+                <th class="num"><span lang="en">Reach Ch ↓</span><span lang="zh">整段误差 ↓</span></th>
+                <th class="num"><span lang="en">Reach S0 ↓</span><span lang="zh">首步误差 ↓</span></th>
+                <th class="num">R²@8</th>
+                <th class="num">$D_M$ ↓</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="grp"><td colspan="6"><span lang="en">GR00T N1.7 · cross-attention</span><span lang="zh">GR00T N1.7 · 交叉注意力 VLA</span></td></tr>
+              <tr>
+                <td><span lang="en">Full VLM <span class="muted">(native radius 1.03 / 0.25)</span></span><span lang="zh">完整 VLM <span class="muted">（原生半径 1.03 / 0.25）</span></span></td>
+                <td class="num">1.03</td><td class="num">0.159</td><td class="num">0.017</td><td class="num">0.784</td><td class="num">7.3</td>
+              </tr>
+              <tr>
+                <td><span lang="en">Blend α = 0.75</span><span lang="zh">混合 α = 0.75</span></td>
+                <td class="num">1.09</td><td class="num"><strong>0.137</strong></td><td class="num"><strong>0.016</strong></td><td class="num">0.818</td><td class="num">13.9</td>
+              </tr>
+              <tr class="hi">
+                <td><span lang="en">No VLM <code>zero_vlm</code></span><span lang="zh">去掉 VLM <code>zero_vlm</code></span></td>
+                <td class="num">2.66</td><td class="num">0.508</td><td class="num">0.095</td><td class="num">0.789</td><td class="num">20.5</td>
+              </tr>
+              <tr class="bad">
+                <td><span lang="en">Neutral mean <code>mean_vlm_embed</code></span><span lang="zh">中性均值 <code>mean_vlm_embed</code></span></td>
+                <td class="num">1.05</td><td class="num">1.247</td><td class="num">0.064</td><td class="num">0.507</td><td class="num">73.3</td>
+              </tr>
+              <tr class="bad">
+                <td><span lang="en">Wrong scene <code>other_scene_vlm</code></span><span lang="zh">错误场景 <code>other_scene_vlm</code></span></td>
+                <td class="num">0.92</td><td class="num">1.784</td><td class="num">0.292</td><td class="num">0.437</td><td class="num">102.4</td>
+              </tr>
+              <tr class="grp"><td colspan="6"><span lang="en">Xiaomi Robotics-0 · 36-layer KV cache</span><span lang="zh">Xiaomi Robotics-0 · 36 层 KV 缓存 VLA</span></td></tr>
+              <tr>
+                <td><span lang="en">Full VLM <span class="muted">(native radius 1.33 / 0.37)</span></span><span lang="zh">完整 VLM <span class="muted">（原生半径 1.33 / 0.37）</span></span></td>
+                <td class="num">1.33</td><td class="num">0.252</td><td class="num">0.028</td><td class="num">0.577</td><td class="num">11.7</td>
+              </tr>
+              <tr>
+                <td><span lang="en">Blend α = 0.75</span><span lang="zh">混合 α = 0.75</span></td>
+                <td class="num">1.30</td><td class="num">0.664</td><td class="num">0.072</td><td class="num">0.455</td><td class="num">26.4</td>
+              </tr>
+              <tr class="hi">
+                <td><span lang="en">No VLM <code>zero_vlm_mask</code></span><span lang="zh">去掉 VLM <code>zero_vlm_mask</code></span></td>
+                <td class="num">2.46</td><td class="num">2.268</td><td class="num">0.331</td><td class="num">0.171</td><td class="num">55.1</td>
+              </tr>
+              <tr class="bad">
+                <td><span lang="en">Neutral mean <code>mean_vlm_kv</code></span><span lang="zh">中性均值 <code>mean_vlm_kv</code></span></td>
+                <td class="num">1.25</td><td class="num">4.327</td><td class="num">0.888</td><td class="num">0.097</td><td class="num">203.3</td>
+              </tr>
+              <tr class="bad">
+                <td><span lang="en">Wrong scene <code>other_scene_vlm</code></span><span lang="zh">错误场景 <code>other_scene_vlm</code></span></td>
+                <td class="num">1.43</td><td class="num">5.256</td><td class="num">0.953</td><td class="num">0.106</td><td class="num">221.9</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="tbl-cap" lang="en">
+          <strong>Table 1.</strong> Static reachability audit on GR00T N1.7 ($n = 23$ states) and Xiaomi Robotics-0 ($n = 22$). Only the 56 active noise coordinates are optimized, padding stays frozen, and $\|z_{56}\|_2 \le 1.15\sqrt{56}$. Blue rows mark no conditioning, and orange rows mark misleading conditioning.
+        </p>
+        <p class="tbl-cap" lang="zh">
+          <strong>表 1.</strong> GR00T N1.7（$n = 23$ 个状态）与 Xiaomi Robotics-0（$n = 22$）上的静态可达性审计。仅优化 56 个有效噪声坐标，冻结全部填充维并约束 $\|z_{56}\|_2 \le 1.15\sqrt{56}$。蓝色行代表无条件，橙色行代表误导性条件。
+        </p>
+        <p lang="en">
+          Static reachability is necessary, not sufficient. Does this ordering hold up over 120 contact-rich steps in physics?
+        </p>
+        <p lang="zh">
+          静态单步可达只是必要条件，还远不够充分。这套排序在连续 120 步富含物理接触的闭环仿真里还能成立吗？
+        </p>
+      </section>
+
+      <!-- ================================================================= -->
+      <section id="finding-2">
+        <p class="sec-eyebrow"><span lang="en">5 · Finding 2</span><span lang="zh">5 · 发现二</span></p>
+        <h2>
+          <span lang="en">With the right noise, a VLM-free head matches the full policy</span>
+          <span lang="zh">只要选对噪声，去掉 VLM 的动作头也能追平完整策略</span>
+        </h2>
+        <p class="claim" lang="en">The ordering from the static audit survives contact-rich, closed-loop physics.</p>
+        <p class="claim" lang="zh">静态审计得到的排序，在富含接触的闭环物理仿真中完整保留了下来。</p>
+        <p lang="en">
+          Small single-step errors can compound over an episode, so we run the same protocol live in SimplerEnv WidowX. At each tick, the ablated policy gets no current VLM signal and executes an on-shell noise $z^\star_{56}$ chosen against the full policy's first action. This is an <strong>oracle existence test</strong> that measures what the head already contains rather than how to select $z^\star$ without the VLM.
+        </p>
+        <p lang="zh">
+          微小的单步误差可能在长时序里滚雪球，因此我们把同一套协议搬进 SimplerEnv WidowX 闭环实测。每个控制步中，被屏蔽条件的策略拿不到当前 VLM 信号，而是执行对照完整策略首步动作选出的球壳噪声 $z^\star_{56}$。这是一项<strong>预言机存在性检验</strong>，测量的是动作头内部究竟装了多少技能，而不是探讨如何在没有 VLM 时自动搜索 $z^\star$。
+        </p>
+        <p lang="en">
+          In the <strong>Cross-Attention VLA</strong> (GR00T N1.7, 16 paired episodes per condition), closed-loop success tracks cloud width.
+        </p>
+        <p lang="zh">
+          在 <strong>Cross-Attention VLA</strong>（GR00T N1.7，每组 16 条配对轨迹）上，闭环成功率紧紧跟随动作云宽度变化。
+        </p>
+        <ul class="result-list" lang="en">
+          <li><span class="rl-tag t-ink">Full VLM</span> 43.8% success and 56.2% grasp.</li>
+          <li><span class="rl-tag t-blue">No VLM + z*</span> <strong>50.0% success and 68.8% grasp</strong> (mean error 0.11).</li>
+          <li><span class="rl-tag t-orange">Neutral mean + z*</span> 68.8% grasp, yet only 12.5% success because it can pick up but fails to transport.</li>
+          <li><span class="rl-tag t-orange">Wrong scene + z*</span> 6.2% success and 31.2% grasp, showing that even a per-step oracle cannot escape the trap.</li>
+        </ul>
+        <ul class="result-list" lang="zh">
+          <li><span class="rl-tag t-ink">完整 VLM</span> 43.8% 成功率，56.2% 抓取率。</li>
+          <li><span class="rl-tag t-blue">去掉 VLM + z*</span> <strong>50.0% 成功率，68.8% 抓取率</strong>（平均步误差 0.11）。</li>
+          <li><span class="rl-tag t-orange">中性均值 + z*</span> 抓取率有 68.8%，成功率却跌到 12.5%，能抓起物体却无法完成搬运。</li>
+          <li><span class="rl-tag t-orange">错误场景 + z*</span> 成功率仅 6.2%，抓取率 31.2%，连逐步预言机都逃不出坍缩陷阱。</li>
+        </ul>
+
+        <figure class="fig">
+          <div class="fig-head">
+            <h4>
+              <span lang="en">Figure 5 · Closed-loop success and where failures happen</span>
+              <span lang="zh">图 5 · 闭环预言机成功率与轨迹中的失效阶段</span>
+            </h4>
+            <p class="fig-takeaway" lang="en">In both VLA paradigms, no VLM plus oracle noise reaches 50.0% success (matching the full baselines), while misleading conditioning fails after approach during grasp and transport.</p>
+            <p class="fig-takeaway" lang="zh">两类 VLA 在去掉 VLM 配上预言机噪声后均达到 50.0% 成功率（追平完整基线），而误导性条件会在接近物体后的抓取与搬运阶段崩盘。</p>
+          </div>
+          <div class="fig-scroll"><img src="figures/fig5-closed-loop.svg" alt="Closed-loop success with oracle noise and Mahalanobis distance along each episode" width="740" height="336" loading="lazy"></div>
+          <figcaption lang="en">
+            <em>Left</em> shows SimplerEnv WidowX rollouts with on-shell, active-56D oracle noise (Cross-Attention GR00T uses $N = 16$ per bar, while KV-Cache Xiaomi uses $N = 16$ for baselines and $N = 8$ for oracle runs). <em>Right</em> traces $D_M$ along the episode on a log scale at control steps 4, 20, 40, and 65. Thin lines show individual episodes, bold lines show medians, and the grey band shows the full policy's range. Wrong conditioning spikes once the gripper reaches the object, whereas no conditioning stays flat.
+          </figcaption>
+          <figcaption lang="zh">
+            <em>左图</em>为 SimplerEnv WidowX 上受球壳约束的 56 维有效预言机闭环表现（Cross-Attention GR00T 每组 $N = 16$，KV-Cache Xiaomi 基线 $N = 16$，预言机 $N = 8$）。<em>右图</em>按对数坐标追踪第 4、20、40、65 控制步上的 $D_M$，细线为单条轨迹，粗线为中位数，灰带为完整策略区间。夹爪接近目标后，错误条件的 $D_M$ 急剧飙升，而无条件始终平缓。
+          </figcaption>
+        </figure>
+
+        <p lang="en">
+          The <strong>Layer-wise KV-Cache VLA</strong> (Xiaomi Robotics-0) repeats the same first-order law.
+        </p>
+        <p lang="zh">
+          <strong>Layer-wise KV-Cache VLA</strong>（Xiaomi Robotics-0）复现了完全相同的一阶规律。
+        </p>
+        <ul class="result-list" lang="en">
+          <li><span class="rl-tag t-ink">Full VLM</span> 31.2% success and 62.5% grasp.</li>
+          <li><span class="rl-tag t-blue">No VLM + z*</span> <strong>50.0% success and 75.0% grasp</strong> (mean error 0.64).</li>
+          <li><span class="rl-tag t-orange">Neutral mean + z*</span> 0.0% success and 25.0% grasp.</li>
+        </ul>
+        <ul class="result-list" lang="zh">
+          <li><span class="rl-tag t-ink">完整 VLM</span> 31.2% 成功率，62.5% 抓取率。</li>
+          <li><span class="rl-tag t-blue">去掉 VLM + z*</span> <strong>50.0% 成功率，75.0% 抓取率</strong>（平均步误差 0.64）。</li>
+          <li><span class="rl-tag t-orange">中性均值 + z*</span> 0.0% 成功率，25.0% 抓取率。</li>
+        </ul>
+
+        <h3>
+          <span lang="en">Cross-Attention versus Layer-wise KV-Cache VLAs</span>
+          <span lang="zh">Cross-Attention VLA 与 Layer-wise KV-Cache VLA 的深层对照</span>
+        </h3>
+        <p lang="en">
+          Comparing the two VLA paradigms side by side separates universal flow-policy behavior from architectural effects of coupling depth. Both paradigms obey the same first-order law, because removing VLM conditioning widens the prior and leaves step-0 motor commands reachable in closed loop (50.0% success in both). Yet deep per-layer KV fusion changes <em>how much</em> trajectory structure migrates into the VLM and how harshly the head punishes misleading conditioning (Table 2).
+        </p>
+        <p lang="zh">
+          把两类 VLA 范式并排对照，就能分清哪些是流匹配策略的普适规律，哪些源自耦合深度的架构效应。二者遵循同一条一阶规律，去掉 VLM 后先验都会变宽，且闭环第一步动作均保持噪声可达（成功率均为 50.0%）。但逐层 KV 深度融合改变了多步轨迹结构向 VLM 迁移的程度，也放大了误导条件带来的惩罚（表 2）。
+        </p>
+        <div class="tbl-wrap">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th><span lang="en">Architectural property</span><span lang="zh">架构性质</span></th>
+                <th><span lang="en">Cross-Attention VLA <span class="muted">(GR00T-style)</span></span><span lang="zh">Cross-Attention VLA <span class="muted">（GR00T 风格）</span></span></th>
+                <th><span lang="en">Layer-wise KV-Cache VLA <span class="muted">($\pi_0$-style)</span></span><span lang="zh">Layer-wise KV-Cache VLA <span class="muted">（$\pi_0$ 风格）</span></span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong lang="en">Where multi-step trajectory lives</strong><strong lang="zh">多步轨迹结构存放在哪</strong></td>
+                <td><span lang="en">Mostly in the action head (unconditional chunk error 0.5× native, 78.9% subspace overlap)</span><span lang="zh">主要留在动作头中（无条件整段误差 0.5× 原生半径，78.9% 子空间重叠）</span></td>
+                <td><span lang="en">Shared deeply with the VLM (unconditional chunk error 1.7× native, 17.1% overlap), while step-0 stays inside native radius</span><span lang="zh">与 VLM 深度共担（无条件整段误差 1.7× 原生半径，重叠率 17.1%），但首步动作仍在原生半径内</span></td>
+              </tr>
+              <tr>
+                <td><strong lang="en">Trap severity under wrong or neutral VLM</strong><strong lang="zh">错误或均值 VLM 下的陷阱烈度</strong></td>
+                <td><span lang="en">Moderate ($D_M = 73.3$–$102.4$), where the neutral anchor still grasps (68.8%) and a generic prompt hits 62.5% Grasp@8</span><span lang="zh">中等（$D_M = 73.3$–$102.4$），中性锚点仍能抓取（68.8%），泛化提示词 Grasp@8 达 62.5%</span></td>
+                <td><span lang="en">Severe ($D_M = 203.3$–$221.9$), where the neutral anchor stalls at 0.0% SR and a generic prompt collapses to 0.0% Grasp@8</span><span lang="zh">剧烈（$D_M = 203.3$–$221.9$），中性锚点成功率归零（0.0%），泛化提示词 Grasp@8 直接坍缩到 0.0%</span></td>
+              </tr>
+              <tr>
+                <td><strong lang="en">Soft conditioning relaxation ($\alpha = 0.75$)</strong><strong lang="zh">条件软松弛（$\alpha = 0.75$）</strong></td>
+                <td><span lang="en">Smooth, as blending lowers static chunk error below the full policy (0.159 to 0.137)</span><span lang="zh">平滑稳定，轻度混合反而让静态整段误差低于完整策略（0.159 降至 0.137）</span></td>
+                <td><span lang="en">Brittle, as interpolating 36 nonlinear KV layers immediately raises error (0.252 to 0.664)</span><span lang="zh">高度脆弱，插值 36 层非线性 KV 立即导致误差飙升（0.252 升至 0.664）</span></td>
+              </tr>
+              <tr class="hi">
+                <td><strong lang="en">Closed-loop MPC recovery</strong><strong lang="zh">闭环 MPC 恢复能力</strong> <span class="muted" style="white-space:nowrap;">(<span lang="en">no VLM</span><span lang="zh">无 VLM</span> + $z^\star$)</span></td>
+                <td><span lang="en"><strong>50.0% SR</strong> (vs. 43.8% full)</span><span lang="zh"><strong>50.0% 成功率</strong>（对比完整策略 43.8%）</span></td>
+                <td><span lang="en"><strong>50.0% SR</strong> (vs. 31.2% full), because step-by-step replanning bypasses the chunk residual</span><span lang="zh"><strong>50.0% 成功率</strong>（对比完整策略 31.2%），逐步重规划绕开了整段误差残差</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="tbl-cap" lang="en">
+          <strong>Table 2.</strong> High-level comparison of the two canonical continuous VLA conditioning paradigms. Tighter layer-wise coupling pulls multi-step structure out of the head and sharpens the Over-Collapse Trap, while keeping immediate motor primitives noise-reachable.
+        </p>
+        <p class="tbl-cap" lang="zh">
+          <strong>表 2.</strong> 两类主流连续流 VLA 条件范式的架构级对照。更紧的逐层耦合会把多步轨迹结构抽离出动作头并加剧过度坍缩陷阱，但瞬时运动原语依然保持噪声可达。
+        </p>
+        <p lang="en">
+          In VLAs, tighter coupling pulls multi-step trajectory structure out of the action head and into the VLM. Does tighter coupling in a video world model pull trajectory variance out of action noise and into video noise in the same way?
+        </p>
+        <p lang="zh">
+          在 VLA 里，耦合越紧，多步轨迹结构就越往 VLM 迁移。那么在视频世界动作模型里，更紧的耦合是否同样会把轨迹方差从动作噪声抽离到视频噪声里呢？
+        </p>
+      </section>
+
+      <!-- ================================================================= -->
+      <section id="finding-3">
+        <p class="sec-eyebrow"><span lang="en">6 · Finding 3</span><span lang="zh">6 · 发现三</span></p>
+        <h2>
+          <span lang="en">In world action models, coupling decides which noise holds the plan</span>
+          <span lang="zh">在世界动作模型中，耦合方式决定哪份噪声握着轨迹规划</span>
+        </h2>
+        <p class="claim" lang="en">The tighter video and actions are coupled, the more the plan lives in video noise.</p>
+        <p class="claim" lang="zh">视频与动作耦合得越紧，轨迹规划的决定权就越向视频噪声倾斜。</p>
+        <p lang="en">
+          WAMs add a second noise channel, video noise $z_v$, for generating future frames. Fixing one channel while sweeping the other measures how much trajectory variance each channel carries across 16 live RoboTwin 2.0 observations. Figure 6 replays that experiment as a picture.
+        </p>
+        <p lang="zh">
+          WAM 多出了用于生成未来画面的第二条噪声通道 $z_v$。在 RoboTwin 2.0 的 16 个真实观测上，固定其中一条通道并扫动另一条，就可以精确量出每条噪声通道各承载了多少轨迹方差。图 6 直观复现了这一实验。
+        </p>
+
+        <figure class="fig" id="wam-widget">
+          <div class="fig-head">
+            <h4>
+              <span lang="en">Figure 6 · Sweep one noise channel at a time</span>
+              <span lang="zh">图 6 · 每次只扫动一条噪声通道</span>
+            </h4>
+            <p class="fig-takeaway" lang="en">In Joint Video-Action WAMs, video noise fans out the plan while action noise barely moves it, until the first step where the roles flip.</p>
+            <p class="fig-takeaway" lang="zh">在 Joint Video-Action WAM 中，视频噪声大幅撑开整段规划而动作噪声几乎不动，但放大到第一步动作时，二者角色彻底反转。</p>
+          </div>
+          <div class="w-controls">
+            <div class="pills" role="group" aria-label="Noise channel to sweep">
+              <button type="button" class="pill is-on" data-mode="zv" aria-pressed="true"><span lang="en">Sweep video noise z<sub>v</sub></span><span lang="zh">扫动视频噪声 z<sub>v</sub></span></button>
+              <button type="button" class="pill" data-mode="za" aria-pressed="false"><span lang="en">Sweep action noise z<sub>a</sub></span><span lang="zh">扫动动作噪声 z<sub>a</sub></span></button>
+              <button type="button" class="pill" data-mode="joint" aria-pressed="false"><span lang="en">Joint (both)</span><span lang="zh">同时扫动</span></button>
+            </div>
+            <div class="ctl-row">
+              <button type="button" class="ctl ghost" data-act="resample">Resample</button>
+              <button type="button" class="ctl toggle is-on" data-act="auto" aria-pressed="true">Auto</button>
+            </div>
+          </div>
+          <div class="wam-panels">
+            <div class="wam-panel" data-v="mutual">
+              <p class="wp-title">Joint Video-Action <span lang="en">co-denoising</span><span lang="zh">联合去噪</span></p>
+              <canvas role="img" aria-label="Joint Video-Action WAM: twelve end-effector paths and a zoomed first step."></canvas>
+              <div class="wp-read"></div>
+            </div>
+            <div class="wam-panel" data-v="idm">
+              <p class="wp-title">Video-Then-Action <span lang="en">rollout + IDM</span><span lang="zh">先视频后 IDM</span></p>
+              <canvas role="img" aria-label="Video-Then-Action WAM: twelve end-effector paths and a zoomed first step."></canvas>
+              <div class="wp-read"></div>
+            </div>
+            <div class="wam-panel" data-v="isolated">
+              <p class="wp-title">Direct-Action WAM <span lang="en">frame 0 only</span><span lang="zh">仅读当前帧</span></p>
+              <canvas role="img" aria-label="Direct-Action WAM: twelve end-effector paths and a zoomed first step."></canvas>
+              <div class="wp-read"></div>
+            </div>
+          </div>
+          <figcaption lang="en">
+            <em>Schematic.</em> Twelve 32-step end-effector paths per panel, drawn with the selected channel resampled and the other held fixed. Path spread scales with the measured Std of that sweep, and the loupe zooms into the first step scaled by first-step Std (dashed rings mark one Std of each channel). Path shapes are illustrative, while bottom bars report measured variance shares (OpenWAM 5B, 16 observations, $N = 12$ draws).
+          </figcaption>
+          <figcaption lang="zh">
+            <em>示意图。</em>每幅画布展示重采样所选通道、固定另一通道得到的 12 条 32 步末端轨迹，轨迹散度按该扫动下的实测标准差缩放，放大镜按第一步标准差展示首步抖动（虚线圈为各自 1 倍标准差）。曲线形状为示意，底部横条为 OpenWAM 5B 在 16 个观测、$N = 12$ 次抽样上的实测方差占比。
+          </figcaption>
+        </figure>
+        <p lang="en">
+          <strong>Joint Video-Action (OpenWAM mutual-joint).</strong> Video noise $z_v$ explains <strong>89.4%</strong> of 32-step trajectory variance and matches the full joint draw on chunk coverage (Table 3). Action noise $z_a$ explains only 10.6% of the full chunk, yet flips to <strong>78.0%</strong> of first-step variation. Video noise selects the coarse plan, while action noise adds fine execution jitter.
+        </p>
+        <p lang="zh">
+          <strong>Joint Video-Action（OpenWAM mutual-joint）。</strong>视频噪声 $z_v$ 贡献了 32 步轨迹方差的 <strong>89.4%</strong>，仅扫动它就能在覆盖度上追平双通道联合抽样（表 3）。动作噪声 $z_a$ 在整段轨迹里只占 10.6%，但在第一步动作上瞬间反转为 <strong>78.0%</strong>。视频噪声定下宏观规划，动作噪声负责微调瞬时执行。
+        </p>
+        <p lang="en">
+          <strong>Video-Then-Action (OpenWAM two-stage IDM).</strong> We expected video noise to dominate even more when the action head reads a finished video, yet <strong>it dominates less</strong>. Action spread with a fixed video grows nearly four-fold, splitting chunk variance into <strong>36.7% video and 63.3% action</strong>. Joint denoising locks the small action stream to the 5B video field at every step, whereas a finished low-resolution video leaves many joint postures visually compatible.
+        </p>
+        <p lang="zh">
+          <strong>Video-Then-Action（OpenWAM two-stage IDM）。</strong>按理说动作头直接读取成品视频，视频噪声应该更加一家独大，结果却<strong>恰恰相反</strong>。固定视频后，动作自身的展宽膨胀了近四倍，整段方差被拆成 <strong>36.7% 视频与 63.3% 动作</strong>。联合去噪会在每一步把小动作流死锁在 5B 视频场里，而一段先算完的低分辨率成品视频在视觉上容得下多种兼容的关节姿态。
+        </p>
+        <p lang="en">
+          <strong>Direct-Action WAM (OpenWAM isolated).</strong> With future video generation bypassed at inference, 100% of trajectory variance returns to $z_a$, just as in a VLA.
+        </p>
+        <p lang="zh">
+          <strong>Direct-Action WAM（OpenWAM isolated）。</strong>推理时跳过未来视频生成后，100% 的轨迹方差全部回归到 $z_a$，行为模式重新与 VLA 一致。
+        </p>
+
+        <figure class="fig">
+          <div class="fig-head">
+            <h4>
+              <span lang="en">Figure 7 · Where trajectory variance lives, and how degraded input inflates it</span>
+              <span lang="zh">图 7 · 轨迹方差的归属与退化输入下的先验膨胀</span>
+            </h4>
+            <p class="fig-takeaway" lang="en">Joint Video-Action puts 89.4% of variance in video noise, Video-Then-Action splits it 36.7% to 63.3%, and Direct-Action WAM puts 100% in action noise.</p>
+            <p class="fig-takeaway" lang="zh">Joint Video-Action 将 89.4% 方差压在视频噪声中，Video-Then-Action 拆成 36.7% 对 63.3%，Direct-Action WAM 则 100% 回到动作噪声。</p>
+          </div>
+          <div class="fig-scroll"><img src="figures/fig7-wam-variance.svg" alt="Dual-noise variance attribution and degraded-input widening across Joint Video-Action, Video-Then-Action, and Direct-Action WAM paradigms" width="740" height="300" loading="lazy"></div>
+          <figcaption lang="en">
+            <em>Left</em> plots the variance share $\sigma^2(z_v) / [\sigma^2(z_v) + \sigma^2(z_a)]$ over 32-step chunks (thick bars) and the first step (thin bars). <em>Right</em> shows cloud width under a 16×16 blur or a blank first frame, relative to clean input.
+          </figcaption>
+          <figcaption lang="zh">
+            <em>左图</em>展示 32 步轨迹（粗条）与第一步动作（细条）上的方差占比 $\sigma^2(z_v) / [\sigma^2(z_v) + \sigma^2(z_a)]$。<em>右图</em>展示在 16×16 模糊或全黑首帧下，动作云相对干净输入的展宽倍数。
+          </figcaption>
+        </figure>
+
+        <p lang="en">
+          The right panel reveals a second effect where <strong>world-model hallucination amplifies prior inflation</strong>. In the Direct-Action WAM, blurring or blanking the frame widens the cloud 2.1× and 4.3×, matching a VLA. In Joint Video-Action and Video-Then-Action WAMs, the same degradation widens it 7.0–8.8× under blur and 11.2–16.1× under a blank frame, because an ambiguous first frame lets the video model imagine diverging futures that the action head tracks.
+        </p>
+        <p lang="zh">
+          右图还揭示了第二个效应，即<strong>世界模型的幻觉会大幅放大先验膨胀</strong>。在 Direct-Action WAM 里，把首帧打模糊或抹黑会让动作云变宽 2.1 倍和 4.3 倍，与 VLA 相当。但在 Joint Video-Action 和 Video-Then-Action 中，同样的退化会让动作云在模糊下拓宽 7.0 到 8.8 倍、在黑帧下拓宽 11.2 到 16.1 倍，因为模糊的起点让视频模型脑补出截然不同的未来，动作头只能一路跟随。
+        </p>
+
+        <div class="tbl-wrap">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th><span lang="en">WAM paradigm <span class="muted">(OpenWAM 5B)</span></span><span lang="zh">WAM 范式 <span class="muted">（OpenWAM 5B）</span></span></th>
+                <th class="num"><span lang="en">Width</span><span lang="zh">宽度</span></th>
+                <th class="num"><span lang="en">$z_v$ share</span><span lang="zh">$z_v$ 占比</span></th>
+                <th class="num"><span lang="en">$z_a$ share</span><span lang="zh">$z_a$ 占比</span></th>
+                <th class="num"><span lang="en">$z_a$ step-0</span><span lang="zh">首步 $z_a$</span></th>
+                <th class="num">$d_N$ ($z_v$ / $z_a$)</th>
+                <th class="num"><span lang="en">Blur / blank</span><span lang="zh">模糊 / 黑帧</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Joint Video-Action</strong> <span class="muted">(mutual-joint)</span></td>
+                <td class="num">0.184</td><td class="num"><strong>89.4%</strong></td><td class="num">10.6%</td><td class="num">78.0%</td><td class="num">0.072 / 0.214</td><td class="num">7.0× / 16.1×</td>
+              </tr>
+              <tr>
+                <td><strong>Video-Then-Action</strong> <span class="muted">(two-stage IDM)</span></td>
+                <td class="num">0.252</td><td class="num">36.7%</td><td class="num"><strong>63.3%</strong></td><td class="num">84.2%</td><td class="num">0.202 / 0.182</td><td class="num">8.8× / 11.2×</td>
+              </tr>
+              <tr>
+                <td><strong>Direct-Action WAM</strong> <span class="muted">(isolated)</span></td>
+                <td class="num">0.189</td><td class="num">0.0%</td><td class="num"><strong>100.0%</strong></td><td class="num">100.0%</td><td class="num">n/a / 0.085</td><td class="num">2.1× / 4.3×</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="tbl-cap" lang="en">
+          <strong>Table 3.</strong> Three WAM paradigms evaluated on OpenWAM 5B over 16 live RoboTwin 2.0 observations ($N = 12$ paired draws per condition). Here $d_N$ is the best-of-$N$ distance to the target chunk when sweeping only that noise channel.
+        </p>
+        <p class="tbl-cap" lang="zh">
+          <strong>表 3.</strong> OpenWAM 5B 三类 WAM 范式在 16 个 RoboTwin 2.0 观测上的定量拆解（每组 $N = 12$ 次配对抽样）。其中 $d_N$ 表示仅扫动对应噪声通道时与目标轨迹块的 best-of-$N$ 距离。
+        </p>
+        <p lang="en">
+          If conditioning traps VLAs and coupling moves variance in world models, what breaks when we scale test-time sampling?
+        </p>
+        <p lang="zh">
+          既然错误条件会锁死 VLA，而耦合深度会挪动世界模型的方差归属，那么当我们做测试时采样扩展时，真正的瓶颈会出在哪里？
+        </p>
+      </section>
+
+      <!-- ================================================================= -->
+      <section id="tts">
+        <p class="sec-eyebrow"><span lang="en">7 · Implications</span><span lang="zh">7 · 实践启示</span></p>
+        <h2>
+          <span lang="en">Resampling stalls on trapped scenes and in the wrong noise channel</span>
+          <span lang="zh">在陷入坍缩的场景和选错的噪声通道里，重采样会直接撞墙</span>
+        </h2>
+        <p lang="en">
+          Return to Figure 1. On both VLAs, half of the 16 scenes sit in the active scaling band where some seeds succeed and others fail, so resampling helps. Yet 3 scenes on GR00T and 5 on Xiaomi score <strong>0/8</strong> (Figure 8, right).
+        </p>
+        <p lang="zh">
+          回到图 1。在两类 VLA 上，16 个场景中有一半落在有效扩展区，部分种子成、部分种子败，因此重采样能立竿见影。但 GR00T 有 3 个场景、Xiaomi 有 5 个场景拿到了 <strong>0/8</strong>（图 8 右）。
+        </p>
+        <p lang="en">
+          The Over-Collapse Trap explains why. When the VLM misreads a scene, the head contracts around the wrong behavior, and neither more seeds nor hotter noise ($\sigma = 2.0$ still scores 0.0% on a wrong scene) escapes a tight off-mode basin. Similarly, in a Joint Video-Action WAM, sampling $z_a$ alone spends all compute on just 10.6% of trajectory variance.
+        </p>
+        <p lang="zh">
+          过度坍缩陷阱道破了原因。一旦 VLM 看错场景，动作头就会死死收紧在错误行为上，无论堆多少随机种子还是调大噪声温度（在错误场景上把 $\sigma$ 拉到 2.0 成功率依然是 0.0%），都逃不出窄小的错误势阱。同理，在 Joint Video-Action WAM 里只采样 $z_a$，等于把全部算力砸在了区区 10.6% 的轨迹方差上。
+        </p>
+        <p lang="en">
+          Can we loosen an over-confident VLM at test time? We tested a zero-shot <strong>Reverse-CFG</strong> that blends conditional and unconditional velocities.
+        </p>
+        <p lang="zh">
+          能不能在测试时把过于自信的 VLM 稍微“松一松绑”？我们在 GR00T 上测试了零样本的 <strong>Reverse-CFG</strong>，将有条件与无条件速度场线性混合。
+        </p>
+        <p class="eq">$$v_\alpha(x, t \mid c) = \alpha\, v_\theta(x, t \mid c) + (1 - \alpha)\, v_\theta(x, t \mid 0)$$</p>
+        <p lang="en">
+          At $\alpha = 0.85$ on GR00T, single-shot grasping edges up from 56.2% to 57.8%. Yet Pass@8 drops from 81.2% to 75.0% because GR00T was never trained with conditioning dropout, so zero-shot velocity mixing adds drift during placement.
+        </p>
+        <p lang="zh">
+          在 $\alpha = 0.85$ 时，GR00T 的单次抓取率从 56.2% 微升至 57.8%，但 Pass@8 却从 81.2% 滑落到 75.0%。因为 GR00T 训练时从未做过条件丢弃，零样本混合两个速度场会在放置阶段引入漂移。
+        </p>
+
+        <figure class="fig">
+          <div class="fig-head">
+            <h4>
+              <span lang="en">Figure 8 · Zero-shot Reverse-CFG and per-scene outcomes</span>
+              <span lang="zh">图 8 · 零样本 Reverse-CFG 与单场景成败分布</span>
+            </h4>
+            <p class="fig-takeaway" lang="en">Zero-shot relaxation helps grasping slightly yet hurts transport, and per-scene outcomes split bimodally between scalable scenes and scenes trapped at 0/8.</p>
+            <p class="fig-takeaway" lang="zh">零样本松弛略微帮助抓取却伤及搬运，而各场景结果呈双峰分化，一半吃满采样红利，另一小撮死锁在 0/8。</p>
+          </div>
+          <div class="fig-scroll"><img src="figures/fig8-reverse-cfg.svg" alt="GR00T Reverse-CFG at alpha 0.85 and per-scene success histogram" width="740" height="280" loading="lazy"></div>
+          <figcaption lang="en">
+            <em>Left</em> compares GR00T N1.7 Pass@K at $\alpha = 1.00$ versus $\alpha = 0.85$ (128 rollouts each). <em>Right</em> counts how many WidowX scenes succeed in $m$ of 8 seeds under full conditioning.
+          </figcaption>
+          <figcaption lang="zh">
+            <em>左图</em>对比 GR00T N1.7 在 $\alpha = 1.00$ 与 $\alpha = 0.85$ 下的 Pass@K（各 128 次测试）。<em>右图</em>统计完整条件下 8 颗种子中恰好成功 $m$ 次的场景数量。
+          </figcaption>
+        </figure>
+
+        <p lang="en">Three practical lessons follow.</p>
+        <p lang="zh">由此引出三条直接落地的工程启示。</p>
+        <div class="lessons">
+          <div class="lesson">
+            <span class="lesson-num">01</span>
+            <p class="lesson-title"><span lang="en">Train with conditioning dropout</span><span lang="zh">训练时引入条件丢弃</span></p>
+            <p lang="en">Both VLAs keep a usable unconditional prior only by accident. Dropping vision, language, or VLM tokens during training aligns $v_\theta(\cdot \mid 0)$ with $v_\theta(\cdot \mid c)$, turning $\alpha$ into a clean knob for widening proposals on stuck scenes.</p>
+            <p lang="zh">现有 VLA 保留了可用的无条件先验纯属无心插柳。训练时显式丢弃视觉、语言或 VLM token，可以对齐 $v_\theta(\cdot \mid 0)$ 与 $v_\theta(\cdot \mid c)$，让 $\alpha$ 真正成为卡死场景上的安全松绑旋钮。</p>
+          </div>
+          <div class="lesson">
+            <span class="lesson-num">02</span>
+            <p class="lesson-title"><span lang="en">Search the right noise</span><span lang="zh">在对的噪声通道上搜索</span></p>
+            <p lang="en">Search $z_v$ (scoring imagined rollouts) in Joint Video-Action WAMs, search $(z_v, z_a)$ hierarchically in Video-Then-Action WAMs, and search relaxed $z_a$ in VLAs and Direct-Action WAMs.</p>
+            <p lang="zh">在 Joint Video-Action WAM 中应当搜索 $z_v$（并对脑补视频打分），在 Video-Then-Action WAM 中分层搜索 $(z_v, z_a)$，在 VLA 与 Direct-Action WAM 中则搜索经过松弛的 $z_a$。</p>
+          </div>
+          <div class="lesson">
+            <span class="lesson-num">03</span>
+            <p class="lesson-title"><span lang="en">Verify transport, not just contact</span><span lang="zh">验证搬运过程，而非只看接触</span></p>
+            <p lang="en">Conditioning errors bite after the grasp, as shown in Figure 5 (68.8% grasp versus 12.5% success). Verifiers must score post-grasp progress to collect the full Pass@K headroom.</p>
+            <p lang="zh">条件出错往往在抓起物体之后才致命（图 5 中抓取率高达 68.8%，成功率却仅 12.5%）。测试时验证器必须评估抓取之后的搬运与放置进展，才能真正兑现 Pass@K 的全部潜力。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <section id="closing">
+        <p class="sec-eyebrow"><span lang="en">8 · Closing</span><span lang="zh">8 · 结语</span></p>
+        <h2>
+          <span lang="en">Backbones select behaviors more than they invent them</span>
+          <span lang="zh">大模型主干更像行为选择器，而非动作发明家</span>
+        </h2>
+        <p lang="en">
+          Across five flow-matching architectures in simulation, giant VLMs and world models act less like motor programmers and more like <strong>selectors</strong> that narrow a wide prior the action head already holds. One structural rule governs both families. Tighter coupling (from Cross-Attention to Layer-wise KV-Cache in VLAs, or from Direct-Action to Joint Video-Action in WAMs) pulls multi-step trajectory structure out of the action head and sharpens the Over-Collapse Trap when the selector errs. Better robot policies may therefore need less a stronger conditioner than a head trained to keep its prior wide, paired with test-time search in the right noise channel.
+        </p>
+        <p lang="zh">
+          纵观仿真中测试的五类流匹配架构，庞大的 VLM 与世界模型与其说在逐帧编写运动程序，不如说扮演了<strong>选择器</strong>的角色，负责把动作头原本宽广的先营收窄到当前任务上。同一条结构法则贯穿了 VLA 与 WAM 两个家族，从 Cross-Attention 到 Layer-wise KV-Cache、从 Direct-Action 到 Joint Video-Action，耦合越紧，多步轨迹结构就越从动作头向外迁移，选择器出错时的过度坍缩陷阱也就越锋利。未来的通用机器人策略，或许需要的不仅是一个更强的条件编码器，更需要一个在训练时学会保持宽广先验的动作头，再配合精准落在正确噪声通道上的测试时搜索。
+        </p>
+
+        <details class="proto">
+          <summary><span lang="en">Experimental protocol and checkpoints</span><span lang="zh">实验协议与模型权重详情</span></summary>
+          <div class="proto-body" lang="en">
+            <p><strong>GR00T N1.7</strong> uses Cosmos-Reason2-2B VLM with a 1.09B flow DiT and 10 Euler steps. The action tensor spans $40 \times 132 = 5{,}280$ dimensions (56 active WidowX Bridge dimensions and 5,224 frozen) across 4 official WidowX tasks and 16 paired scenes.</p>
+            <p><strong>Xiaomi Robotics-0</strong> uses Qwen2.5-VL 4.72B with a 36-layer flow DiT and 5 flow steps. The action tensor spans $8 \times 32 = 256$ dimensions (56 active and 200 frozen). The neutral anchor <code>mean_vlm_kv</code> averages 16 cross-task scenes across all 36 KV layers ($L = 115$ tokens).</p>
+            <p><strong>OpenWAM 5B</strong> uses Wan2.2 5B TI2V with an action DiT predicting 32-step bimanual 14-DoF chunks on RoboTwin 2.0 (<code>click_alarmclock</code> and <code>handover_block</code>). We evaluate 16 live observations with $N = 12$ paired draws per condition across the <code>mutual-joint</code> (Joint Video-Action), <code>two-stage IDM</code> (Video-Then-Action), and <code>isolated</code> (Direct-Action WAM) checkpoints.</p>
+            <p><strong>Shell projection</strong> optimizes only $z_{56}$ with Adam ($\text{lr} = 0.08$, 15–30 steps), elementwise clipping to $[-3, 3]$, and radial projection onto $\|z_{56}\|_2 \le 1.15\sqrt{56}$. Achieved norms across all closed-loop runs stayed within $1.04$–$1.14\sqrt{56}$.</p>
+          </div>
+          <div class="proto-body" lang="zh">
+            <p><strong>GR00T N1.7</strong> 采用 Cosmos-Reason2-2B VLM 与 1.09B 流匹配 DiT，积分 10 步 Euler。动作张量共 $40 \times 132 = 5{,}280$ 维（含 56 维有效 WidowX Bridge 坐标与 5,224 维冻结填充），在 4 个官方 WidowX 任务共 16 个配对场景上评测。</p>
+            <p><strong>Xiaomi Robotics-0</strong> 采用 Qwen2.5-VL 4.72B 与 36 层流匹配 DiT，积分 5 步。动作张量共 $8 \times 32 = 256$ 维（56 维有效与 200 维冻结）。中性锚点 <code>mean_vlm_kv</code> 对全部 36 层 KV 缓存（$L = 115$ 个 token）跨 16 个跨任务场景取均值。</p>
+            <p><strong>OpenWAM 5B</strong> 基于 Wan2.2 5B TI2V 与动作 DiT，在 RoboTwin 2.0（<code>click_alarmclock</code> 与 <code>handover_block</code>）上预测 32 步双臂 14 自由度动作块。我们在 16 个实时观测上对 <code>mutual-joint</code>（Joint Video-Action）、<code>two-stage IDM</code>（Video-Then-Action）和 <code>isolated</code>（Direct-Action WAM）三个权重各做 $N = 12$ 次配对抽样。</p>
+            <p><strong>球壳投影</strong>仅使用 Adam（$\text{lr} = 0.08$，15–30 步）优化 $z_{56}$，逐元素截断至 $[-3, 3]$ 并径向投影到 $\|z_{56}\|_2 \le 1.15\sqrt{56}$。全部闭环实验的实测范数均落在 $1.04$–$1.14\sqrt{56}$ 区间内。</p>
+          </div>
+        </details>
+
+        <div class="cite">
+          <p class="cite-label"><span lang="en">Citation</span><span lang="zh">引用格式</span></p>
+<pre><code>@misc{ji2026noisespace,
+  author       = {Kangye Ji},
+  title        = {A Noise-Space Perspective on Conditioning in Robot Policies:
+                  What Do Giant VLMs and World Models Actually Do to a Flow Action Head?},
+  year         = {2026},
+  month        = {November},
+  howpublished = {\url{https://ky-ji.github.io/blogs/noise-space-conditioning/}}
+}</code></pre>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <span lang="en">Kangye Ji · Tsinghua University</span>
+      <span lang="zh">季康业 · 清华大学</span>
+      <span lang="en"><a href="../">← All posts</a> &nbsp;·&nbsp; <a href="../../index.html">Homepage</a></span>
+      <span lang="zh"><a href="../">← 全部文章</a> &nbsp;·&nbsp; <a href="../../index.html">个人主页</a></span>
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="widgets.js"></script>
+</body>
+</html>

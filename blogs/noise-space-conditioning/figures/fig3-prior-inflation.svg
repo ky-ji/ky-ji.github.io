@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 330" width="740" height="330" role="img" aria-label="Prior inflation across five paradigms and the width versus distance trap">
+  <defs>
+    <marker id="a-ink" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#3c4043"/>
+    </marker>
+    <marker id="a-blue" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#1a73e8"/>
+    </marker>
+    <marker id="a-orange" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 1.5 L9 5 L0 8.5 z" fill="#d96b27"/>
+    </marker>
+  </defs>
+  <style>
+    text { font-family: 'Hanken Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif; }
+    .p-head { font-size: 13px; font-weight: 600; fill: #202124; }
+    .lbl { font-size: 11.5px; fill: #3c4043; }
+    .lbl-b { font-size: 11.5px; font-weight: 600; fill: #202124; }
+    .ax { font-size: 11px; fill: #5f6368; }
+    .sm { font-size: 10.5px; fill: #5f6368; }
+    .val { font-size: 11px; font-weight: 600; }
+    .val-w { font-size: 11px; font-weight: 600; fill: #ffffff; }
+  </style>
+  <rect width="740" height="330" fill="#ffffff"/>
+<text x="6" y="18" class="p-head">Cloud width relative to the full policy</text>
+<line x1="149.2" y1="36" x2="149.2" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="149.2" y="286" text-anchor="middle" class="ax" style="font-weight:400;fill:#5f6368">½×</text>
+<line x1="185.9" y1="36" x2="185.9" y2="270" stroke="#3c4043" stroke-width="1.2" stroke-dasharray="3 3"/>
+<text x="185.9" y="286" text-anchor="middle" class="ax" style="font-weight:600;fill:#202124">1×</text>
+<line x1="222.6" y1="36" x2="222.6" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="222.6" y="286" text-anchor="middle" class="ax" style="font-weight:400;fill:#5f6368">2×</text>
+<line x1="259.3" y1="36" x2="259.3" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="259.3" y="286" text-anchor="middle" class="ax" style="font-weight:400;fill:#5f6368">4×</text>
+<line x1="296.0" y1="36" x2="296.0" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="296.0" y="286" text-anchor="middle" class="ax" style="font-weight:400;fill:#5f6368">8×</text>
+<line x1="332.7" y1="36" x2="332.7" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="332.7" y="286" text-anchor="middle" class="ax" style="font-weight:400;fill:#5f6368">16×</text>
+<text x="185.9" y="300" text-anchor="middle" class="sm">full policy</text>
+<text x="128" y="63.4" text-anchor="end" class="lbl-b" style="font-size:11px">Cross-attn VLA</text>
+<line x1="185.9" y1="53.4" x2="236.3" y2="53.4" stroke="#1a73e8" stroke-width="6" stroke-linecap="round"/>
+<text x="243.3" y="57.4" class="val" style="fill:#1a73e8;font-size:11px">2.6×</text>
+<line x1="185.9" y1="68.4" x2="180.2" y2="68.4" stroke="#d96b27" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="180.2" cy="68.4" r="3.6" fill="#d96b27"/>
+<text x="193.9" y="72.4" class="sm" style="fill:#d96b27;font-weight:600;font-size:10px">0.90× wrong scene</text>
+<line x1="6" y1="82.8" x2="366" y2="82.8" stroke="#eceff1" stroke-width="1"/>
+<text x="128" y="110.2" text-anchor="end" class="lbl-b" style="font-size:11px">KV-cache VLA</text>
+<line x1="185.9" y1="100.2" x2="218.4" y2="100.2" stroke="#1a73e8" stroke-width="6" stroke-linecap="round"/>
+<text x="225.4" y="104.2" class="val" style="fill:#1a73e8;font-size:11px">1.8×</text>
+<line x1="185.9" y1="115.2" x2="182.4" y2="115.2" stroke="#d96b27" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="182.4" cy="115.2" r="3.6" fill="#d96b27"/>
+<text x="193.9" y="119.2" class="sm" style="fill:#d96b27;font-weight:600;font-size:10px">0.94× neutral mean</text>
+<line x1="6" y1="129.6" x2="366" y2="129.6" stroke="#eceff1" stroke-width="1"/>
+<text x="128" y="157.0" text-anchor="end" class="lbl-b" style="font-size:11px">Joint Video-Action</text>
+<line x1="185.9" y1="147.0" x2="333.2" y2="147.0" stroke="#1a73e8" stroke-width="6" stroke-linecap="round"/>
+<text x="340.2" y="151.0" class="val" style="fill:#1a73e8;font-size:11px">16.1×</text>
+<line x1="185.9" y1="162.0" x2="148.6" y2="162.0" stroke="#d96b27" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="148.6" cy="162.0" r="3.6" fill="#d96b27"/>
+<text x="193.9" y="166.0" class="sm" style="fill:#d96b27;font-weight:600;font-size:10px">0.49× no future video</text>
+<line x1="6" y1="176.4" x2="366" y2="176.4" stroke="#eceff1" stroke-width="1"/>
+<text x="128" y="203.8" text-anchor="end" class="lbl-b" style="font-size:11px">Video-Then-Action</text>
+<line x1="185.9" y1="193.8" x2="313.7" y2="193.8" stroke="#1a73e8" stroke-width="6" stroke-linecap="round"/>
+<text x="320.7" y="197.8" class="val" style="fill:#1a73e8;font-size:11px">11.2×</text>
+<line x1="185.9" y1="208.8" x2="178.1" y2="208.8" stroke="#d96b27" stroke-width="2.6" stroke-linecap="round"/>
+<circle cx="178.1" cy="208.8" r="3.6" fill="#d96b27"/>
+<text x="193.9" y="212.8" class="sm" style="fill:#d96b27;font-weight:600;font-size:10px">0.86× fixed video</text>
+<line x1="6" y1="223.2" x2="366" y2="223.2" stroke="#eceff1" stroke-width="1"/>
+<text x="128" y="250.6" text-anchor="end" class="lbl-b" style="font-size:11px">Direct-Action WAM</text>
+<line x1="185.9" y1="240.6" x2="263.6" y2="240.6" stroke="#1a73e8" stroke-width="6" stroke-linecap="round"/>
+<text x="270.6" y="244.6" class="val" style="fill:#1a73e8;font-size:11px">4.3×</text>
+<text x="420" y="18" class="p-head">Distance to target D<tspan baseline-shift="sub" font-size="75%">M</tspan> vs. cloud width</text>
+<rect x="446" y="36" width="105.9" height="175.5" fill="#fdf0e6" fill-opacity="0.75" rx="4"/>
+<rect x="591.6" y="201.8" width="132.4" height="68.2" fill="#e8f0fe" fill-opacity="0.75" rx="4"/>
+<line x1="446" y1="270.0" x2="724" y2="270.0" stroke="#dadce0" stroke-width="1"/>
+<text x="438" y="274.0" text-anchor="end" class="ax">0</text>
+<line x1="446" y1="211.5" x2="724" y2="211.5" stroke="#eceff1" stroke-width="1"/>
+<text x="438" y="215.5" text-anchor="end" class="ax">60</text>
+<line x1="446" y1="153.0" x2="724" y2="153.0" stroke="#eceff1" stroke-width="1"/>
+<text x="438" y="157.0" text-anchor="end" class="ax">120</text>
+<line x1="446" y1="94.5" x2="724" y2="94.5" stroke="#eceff1" stroke-width="1"/>
+<text x="438" y="98.5" text-anchor="end" class="ax">180</text>
+<line x1="446" y1="36.0" x2="724" y2="36.0" stroke="#eceff1" stroke-width="1"/>
+<text x="438" y="40.0" text-anchor="end" class="ax">240</text>
+<line x1="479.1" y1="36" x2="479.1" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="479.1" y="286" text-anchor="middle" class="ax">1.0</text>
+<line x1="545.3" y1="36" x2="545.3" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="545.3" y="286" text-anchor="middle" class="ax">1.5</text>
+<line x1="611.5" y1="36" x2="611.5" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="611.5" y="286" text-anchor="middle" class="ax">2.0</text>
+<line x1="677.7" y1="36" x2="677.7" y2="270" stroke="#eceff1" stroke-width="1"/>
+<text x="677.7" y="286" text-anchor="middle" class="ax">2.5</text>
+<text x="585.0" y="300" text-anchor="middle" class="sm">cloud width (Std)  →  wider</text>
+<text x="454" y="123.8" class="sm" style="fill:#d96b27;font-weight:700">Over-Collapse Trap</text>
+<text x="454" y="136.8" class="sm" style="fill:#d96b27">narrow and far</text>
+<text x="718" y="186.8" text-anchor="end" class="sm" style="fill:#1a73e8;font-weight:700">Reachable</text>
+<text x="718" y="198.8" text-anchor="end" class="sm" style="fill:#1a73e8">wide and close</text>
+<circle cx="482.8" cy="262.9" r="5" fill="#202124" stroke="#ffffff" stroke-width="1.5"/>
+<text x="476.8" y="240.9" text-anchor="start" class="sm" style="fill:#202124;font-weight:600">Cross-attn full <tspan style="font-weight:400">(7.3)</tspan></text>
+<circle cx="485.4" cy="198.5" r="5" fill="#d96b27" stroke="#ffffff" stroke-width="1.5"/>
+<text x="494.4" y="202.5" text-anchor="start" class="sm" style="fill:#d96b27;font-weight:600">Cross-attn mean <tspan style="font-weight:400">(73.3)</tspan></text>
+<circle cx="468.8" cy="170.1" r="5" fill="#d96b27" stroke="#ffffff" stroke-width="1.5"/>
+<text x="477.8" y="174.1" text-anchor="start" class="sm" style="fill:#d96b27;font-weight:600">Cross-attn wrong <tspan style="font-weight:400">(102.4)</tspan></text>
+<circle cx="699.0" cy="250.0" r="5" fill="#1a73e8" stroke="#ffffff" stroke-width="1.5"/>
+<text x="690.0" y="254.0" text-anchor="end" class="sm" style="fill:#1a73e8;font-weight:600">Cross-attn no VLM <tspan style="font-weight:400">(20.5)</tspan></text>
+<circle cx="523.1" cy="258.6" r="4.6" fill="#ffffff" stroke="#202124" stroke-width="2.2"/>
+<text x="532.1" y="265.6" text-anchor="start" class="sm" style="fill:#202124;font-weight:600">KV-cache full <tspan style="font-weight:400">(11.7)</tspan></text>
+<circle cx="511.7" cy="71.7" r="4.6" fill="#ffffff" stroke="#d96b27" stroke-width="2.2"/>
+<text x="520.7" y="76.7" text-anchor="start" class="sm" style="fill:#d96b27;font-weight:600">KV-cache mean <tspan style="font-weight:400">(203.3)</tspan></text>
+<circle cx="536.4" cy="53.7" r="4.6" fill="#ffffff" stroke="#d96b27" stroke-width="2.2"/>
+<text x="545.4" y="52.7" text-anchor="start" class="sm" style="fill:#d96b27;font-weight:600">KV-cache wrong <tspan style="font-weight:400">(221.9)</tspan></text>
+<circle cx="672.7" cy="216.3" r="4.6" fill="#ffffff" stroke="#1a73e8" stroke-width="2.2"/>
+<text x="663.7" y="220.3" text-anchor="end" class="sm" style="fill:#1a73e8;font-weight:600">KV-cache no VLM <tspan style="font-weight:400">(55.1)</tspan></text>
+<line x1="6" y1="318" x2="22" y2="318" stroke="#1a73e8" stroke-width="5" stroke-linecap="round"/>
+<text x="28" y="322" class="sm">conditioning removed or blanked</text>
+<circle cx="206" cy="318" r="3.6" fill="#d96b27"/>
+<text x="215" y="322" class="sm">wrong, averaged or fixed</text>
+<circle cx="452" cy="318" r="4.4" fill="#3c4043"/>
+<text x="461" y="322" class="sm">cross-attn (GR00T)</text>
+<circle cx="578" cy="318" r="4" fill="#ffffff" stroke="#3c4043" stroke-width="2"/>
+<text x="587" y="322" class="sm">KV-cache (Xiaomi)</text>
+</svg>
