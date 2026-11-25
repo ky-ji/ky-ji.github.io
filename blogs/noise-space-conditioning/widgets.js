@@ -23,7 +23,7 @@
     document.documentElement.setAttribute("data-lang", next);
     document.documentElement.setAttribute("lang", next === "zh" ? "zh-Hans" : "en");
     document.title = next === "zh"
-      ? "从噪声空间看机器人策略中的条件控制 | 季康业"
+      ? "从噪声空间看机器人策略中的条件控制 | 季康烨"
       : "A Noise-Space Perspective on Conditioning in Robot Policies | Kangye Ji";
     $$(".ar-lang button").forEach(function (b) {
       b.setAttribute("aria-pressed", b.getAttribute("data-lang") === next ? "true" : "false");

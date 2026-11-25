@@ -1,0 +1,9 @@
+main:
+
+  - title: "A Noise-Space Perspective on Conditioning in Robot Policies"
+    description: "What do giant VLMs and world models actually do to a flow action head? Mostly, they select a behavior the action head already knows rather than creating it."
+    date: "Nov. 25, 2026"
+    tag: "Blog"
+    url: ./blogs/noise-space-conditioning/
+    url_zh: ./blogs/noise-space-conditioning/?lang=zh
+    image: ./assets/img/noise-space-conditioning-cover.svg
