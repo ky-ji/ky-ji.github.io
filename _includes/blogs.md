@@ -12,9 +12,6 @@
     <a href="{{ link.url }}">
       <img src="{{ link.image }}" class="teaser img-fluid z-depth-1" style="object-fit:contain;background:#f8fafd;" alt="{{ link.title }}">
     </a>
-    {% if link.tag %}
-    <abbr class="badge">{{ link.tag }}</abbr>
-    {% endif %}
     {% endif %}
   </div>
   <div class="col-sm-9" style="position: relative;padding-right: 15px;padding-left: 20px;">
