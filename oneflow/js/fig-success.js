@@ -9,9 +9,9 @@
 
   // One group per result table: which columns to draw and how to name them.
   const GROUPS = [
-    { title: 'World action models', sub: 'RoboTwin50', table: '#panel-wam table',
+    { title: 'World Action Models', sub: 'RoboTwin50', table: '#panel-wam table',
       cols: { 'Average ↑': 'average of clean and randomized' } },
-    { title: 'Vision–language–action models', sub: 'SimplerEnv', table: '#panel-vla table',
+    { title: 'Vision–Language–Action models', sub: 'SimplerEnv', table: '#panel-vla table',
       cols: { 'WidowX ↑': 'WidowX', 'Google VM ↑': 'Google Robot, Visual Matching', 'Google VA ↑': 'Google Robot, Variant Aggregation' } },
     { title: 'Flow-matching policies', sub: 'RoboMimic', table: '#panel-fm table', model: 'FM Policy',
       cols: { 'State avg. ↑': 'state observations, five-task average', 'RGB avg. ↑': 'RGB observations, five-task average' } },
