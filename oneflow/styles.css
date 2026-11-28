@@ -1253,20 +1253,22 @@ p.table-note { margin: 12px 4px 0; font-size: 13px; line-height: 1.5; color: var
   z-index: 2;
   display: grid;
   place-items: center;
-  width: 76px;
-  height: 76px;
-  margin: -38px 0 0 -38px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  border: 1px solid rgba(176, 210, 255, 0.44);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(14, 19, 29, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 8px 28px rgba(0, 0, 0, 0.58);
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
-  color: #fff;
+  color: #f4f8ff;
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s var(--ease);
+  transition: opacity 0.25s ease, transform 0.28s var(--ease), background-color 0.25s ease, border-color 0.25s ease, top 0s linear 0.3s;
 }
-.cinema-big svg { width: 28px; height: 28px; margin-left: 3px; }
-.cinema-frame:hover .cinema-big { transform: scale(1.06); }
+.cinema:not(.is-started) .cinema-big { top: 66%; }
+.cinema-big svg { width: 22px; height: 22px; margin-left: 3px; }
+.cinema-frame:hover .cinema-big { background: rgba(20, 30, 48, 0.9); border-color: rgba(140, 192, 255, 0.78); transform: scale(1.07); }
 .cinema[data-state="playing"] .cinema-big, .cinema.is-started[data-state="paused"] .cinema-big { opacity: 0; }
 .cinema.is-started[data-state="paused"] .cinema-frame:hover .cinema-big { opacity: 1; }
 .cinema-note { position: absolute; left: 50%; top: 50%; z-index: 3; transform: translate(-50%, -50%); margin: 0; padding: 10px 16px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 15px; white-space: nowrap; }
@@ -1278,8 +1280,8 @@ p.table-note { margin: 12px 4px 0; font-size: 13px; line-height: 1.5; color: var
 @media (max-width: 734px) {
   .cinema { margin-top: 40px; padding: 8px; }
   .cinema-frame { border-radius: 14px; }
-  .cinema-big { width: 60px; height: 60px; margin: -30px 0 0 -30px; }
-  .cinema-big svg { width: 22px; height: 22px; }
+  .cinema-big { width: 46px; height: 46px; margin: -23px 0 0 -23px; }
+  .cinema-big svg { width: 18px; height: 18px; margin-left: 2px; }
 }
 
 /* ---------- 7. Cite and footer ---------- */
