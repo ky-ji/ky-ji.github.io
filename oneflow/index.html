@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OneFlow: Parallelizing Flows for One-Pass Action Generation</title>
+  <meta name="description" content="OneFlow gives any pretrained flow-based robot policy one-pass action generation without retraining. With its execution engine, OneFlow+ delivers up to 30.3× end-to-end action-generation speedups over native implementations." />
+  <meta name="theme-color" content="#0a0c12" />
+  <link rel="icon" href="assets/img/logo.svg?v=20261112-blue-gray" type="image/svg+xml" />
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/manrope-latin-wght.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-latin-wght.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/jetbrains-mono-latin-wght.woff2" crossorigin />
+  <link rel="preload" as="font" type="font/woff2" href="assets/fonts/stix-two-text-latin-500-italic.woff2" crossorigin />
+  <link rel="preload" as="image" href="assets/video/hero-reel.webp?v=20261128hd" fetchpriority="high" />
+  <link rel="stylesheet" href="styles.css?v=20261128j" />
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"><span></span></div>
+
+  <!-- Floating top navigation. Over the hero it is transparent with white links only. Once the hero
+       has scrolled away it turns into a frosted white pill and the brand fades in. Below 860 px the
+       links fold into a rounded drawer behind the menu button. -->
+  <header class="topnav" id="topnav">
+    <div class="nav-inner">
+      <a class="brand" href="#top"><img class="spin" src="assets/img/logo.svg?v=20261112-blue-gray" width="26" height="26" alt="" />OneFlow</a>
+      <nav class="nav-links" id="navLinks" aria-label="Sections">
+        <a href="#highlights" data-text="Highlights">Highlights</a>
+        <a href="#real-world" data-text="Real world">Real world</a>
+        <a href="#method" data-text="Method">Method</a>
+        <a href="#engine" data-text="Speed">Speed</a>
+        <a href="#results" data-text="Results">Results</a>
+        <a href="#film" data-text="Overview">Overview</a>
+        <a href="#cite" data-text="BibTeX">BibTeX</a>
+      </nav>
+      <button class="nav-toggle" type="button" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Open the section menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path class="l1" d="M4.5 9h15" /><path class="l2" d="M4.5 15h15" /></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- 1. Hero: the five-task real-robot reel as a full-bleed cover under a dark editorial scrim, with
+         the name, title, authors and actions at the bottom left. -->
+    <header class="hero" id="top" data-video="paused">
+      <video class="hero-video" id="heroVideo" autoplay muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback width="2560" height="1440" poster="assets/video/hero-reel.webp?v=20261128hd" data-src="assets/video/hero-reel.mp4?v=20261128hd" aria-label="Five dynamic real-robot tasks played sequentially with OneFlow+: air hockey, rolling bottle, bowl stacking, car following and block following"></video>
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-head">
+        <h1 class="h1">
+          <span class="h1-name"><img class="h1-logo spin" src="assets/img/logo.svg?v=20261112-blue-gray" width="72" height="72" alt="" /><span class="h1-word">OneFlow</span></span><span class="sr-only">: </span>
+          <span class="h1-title">Parallelizing Flows for <span class="nowrap">One-Pass</span> Action Generation</span>
+        </h1>
+        <p class="subtitle">Full multi-step precision at one-pass speed, with zero retraining.</p>
+        <p class="authors">Kangye&nbsp;Ji, Yanze&nbsp;Zou, Hanyun&nbsp;Cui, Zhijian&nbsp;Fang, Yuzhi&nbsp;Huang, Jingyan&nbsp;Jiang, Chenglei&nbsp;Wu, Yuan&nbsp;Meng, Zhi&nbsp;Wang</p>
+        <div class="cta-row">
+          <a class="cta cta-solid" href="#" aria-disabled="true" title="Coming soon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7.2L19 8.3V19a1.5 1.5 0 0 1-1.5 1.5h-10.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5Z M14 3.7V8.5h4.8 M8.8 12.5h6.4 M8.8 16h6.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>Paper<span class="soon">soon</span></a>
+          <a class="cta" href="https://github.com/ky-ji/OneFlow" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7 3.5 12l5 5M15.5 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Code</a>
+          <a class="cta" href="#film"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg>Overview</a>
+          <a class="cta" href="#cite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5H7.5A2 2 0 0 0 5.5 6.5V10a2 2 0 0 1-2 2 2 2 0 0 1 2 2v3.5a2 2 0 0 0 2 2H9M15 4.5h1.5a2 2 0 0 1 2 2V10a2 2 0 0 0 2 2 2 2 0 0 0-2 2v3.5a2 2 0 0 1-2 2H15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>BibTeX</a>
+        </div>
+      </div>
+      <button class="hero-toggle" type="button" id="heroToggle" aria-label="Play the background video">
+        <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg>
+        <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.8" height="14" rx="1" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" rx="1" fill="currentColor"/></svg>
+      </button>
+      <a class="scroll-cue" href="#highlights" aria-label="Scroll to highlights"><span aria-hidden="true"></span></a>
+    </header>
+
+    <!-- 2. Highlights: six core advantages bridging the video cover and real-world showcase. -->
+    <section class="sec hl-sec" id="highlights" aria-labelledby="hl-title">
+      <div class="wide">
+        <header class="head">
+          <h2 class="h2" id="hl-title">One pass. Any policy.<br /> Zero compromises.</h2>
+        </header>
+        <ul class="hl-grid" aria-label="Key highlights of OneFlow">
+          <li>
+            <p class="hl-num"><em class="num-val" data-count="30.3">30.3</em><span>×</span></p>
+            <p class="hl-name">End-to-end speedup</p>
+            <p class="hl-sub"><span class="nowrap">9.77&nbsp;ms GR00T&nbsp;N1.7</span> · <span class="nowrap">16.62&nbsp;ms Fast&#8209;WAM</span></p>
+          </li>
+          <li>
+            <p class="hl-num">1 <span class="hl-unit">pass</span></p>
+            <p class="hl-name">Lossless multi-step quality</p>
+            <p class="hl-sub">Matches or exceeds multi-step Native</p>
+          </li>
+          <li>
+            <p class="hl-num hl-sm">Zero <span class="hl-unit">retraining</span></p>
+            <p class="hl-name">Frozen pretrained weights</p>
+            <p class="hl-sub">Drop-in at inference, no fine-tuning</p>
+          </li>
+          <li>
+            <p class="hl-num hl-sm">Any <span class="hl-unit">policy</span></p>
+            <p class="hl-name">Cross-model generality</p>
+            <p class="hl-sub">Flow policies, VLAs, and WAMs</p>
+          </li>
+          <li>
+            <p class="hl-num hl-sm">3 <span class="hl-unit">benchmarks</span></p>
+            <p class="hl-name">Extensive evaluation</p>
+            <p class="hl-sub">RoboTwin50 · SimplerEnv · RoboMimic</p>
+          </li>
+          <li>
+            <p class="hl-num hl-sm">5 <span class="hl-unit">dynamic tasks</span></p>
+            <p class="hl-name">Real-world manipulation</p>
+            <p class="hl-sub">Closed&#8209;loop 7&#8209;DoF Franka control</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3. Real world: one Highlights gallery of the five tasks, Native versus OneFlow+. -->
+    <section class="sec band rw-sec" id="real-world" aria-labelledby="rw-title">
+      <div class="rw-scroll" id="rwScroll">
+        <div class="rw-sticky">
+          <header class="rw-head">
+            <h2 class="rw-h2" id="rw-title">Real-world dynamic manipulation.</h2>
+            <div class="rw-pills seg" role="group" aria-label="Real-world tasks">
+            <button class="rw-pill" type="button" data-i="0" aria-controls="rw-hockey" aria-current="true"><span class="rw-pill-n">01</span>Air hockey</button>
+            <button class="rw-pill" type="button" data-i="1" aria-controls="rw-rolling-bottle"><span class="rw-pill-n">02</span>Rolling bottle</button>
+            <button class="rw-pill" type="button" data-i="2" aria-controls="rw-bowl-stacking"><span class="rw-pill-n">03</span>Bowl stacking</button>
+            <button class="rw-pill" type="button" data-i="3" aria-controls="rw-car-following"><span class="rw-pill-n">04</span>Car following</button>
+            <button class="rw-pill" type="button" data-i="4" aria-controls="rw-block-following"><span class="rw-pill-n">05</span>Block following</button>
+            </div>
+            <div class="rw-progress" aria-hidden="true"><span id="rwProgressBar"></span></div>
+          </header>
+          <div class="rw-viewport">
+            <div class="rw-rail" id="rwRail" aria-roledescription="carousel" aria-label="Real-world tasks">
+            <article class="rw-card is-active" id="rw-hockey" data-i="0" aria-roledescription="slide" aria-label="1 of 5, Air hockey"
+              data-task="hockey" data-title="Air hockey" data-ratio="16 / 9" data-w="960" data-h="540"
+              data-native-src="assets/video/real-world/hockey-native.mp4" data-native-poster="assets/video/real-world/hockey-native.webp" data-native-dur="34.6"
+              data-plus-src="assets/video/real-world/hockey-oneflow.mp4?v=20261127c" data-plus-poster="assets/video/real-world/hockey-oneflow.webp?v=20261127c" data-plus-dur="29.333" style="--ratio: 16 / 9; --ar: 1.7778">
+              <header class="rw-card-head">
+                <h3 class="rw-title">Air hockey</h3>
+              </header>
+              <div class="rw-panes">
+                <div class="rw-pane" data-side="native">
+                  <span class="rw-badge native">Native</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="540" aria-label="Native run, Air hockey"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 34.6 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+                <div class="rw-pane" data-side="plus">
+                  <span class="rw-badge plus">OneFlow+</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="540" aria-label="OneFlow+ run, Air hockey"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 29.3 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rw-bar" role="group" aria-label="Controls for both Air hockey clips">
+                <button class="rw-btn rw-play" type="button" data-act="play" aria-label="Play both clips"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.8" height="14" rx="1" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" rx="1" fill="currentColor"/></svg></button>
+                <button class="rw-btn" type="button" data-act="restart" aria-label="Restart both clips"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.05-4.95" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M5.2 4.2v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="rw-btn rw-speed" type="button" data-act="speed" aria-label="Playback speed 1×">1×</button>
+                <div class="rw-scrub-wrap">
+                  <input class="rw-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek both clips" aria-valuetext="0:00" />
+                  <i class="rw-mark" aria-hidden="true"></i>
+                </div>
+                <span class="rw-time"><span class="rw-now">0:00</span> / <span class="rw-end">0:34</span></span>
+                <button class="rw-btn" type="button" data-act="fullscreen" aria-label="Full screen"><svg class="i-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="i-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </article>
+            <article class="rw-card" id="rw-rolling-bottle" data-i="1" aria-roledescription="slide" aria-label="2 of 5, Rolling-bottle grasping"
+              data-task="rolling-bottle" data-title="Rolling-bottle grasping" data-ratio="4 / 3" data-w="960" data-h="720"
+              data-native-src="assets/video/real-world/rolling-bottle-native.mp4?v=20261127f" data-native-poster="assets/video/real-world/rolling-bottle-native.webp?v=20261127f" data-native-dur="7.733"
+              data-plus-src="assets/video/real-world/rolling-bottle-oneflow.mp4?v=20261127f" data-plus-poster="assets/video/real-world/rolling-bottle-oneflow.webp?v=20261127f" data-plus-dur="12.967" style="--ratio: 4 / 3; --ar: 1.3333">
+              <header class="rw-card-head">
+                <h3 class="rw-title">Rolling-bottle grasping</h3>
+              </header>
+              <div class="rw-panes">
+                <div class="rw-pane" data-side="native">
+                  <span class="rw-badge native">Native</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="Native run, Rolling-bottle grasping"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 7.7 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+                <div class="rw-pane" data-side="plus">
+                  <span class="rw-badge plus">OneFlow+</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="OneFlow+ run, Rolling-bottle grasping"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 13.0 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rw-bar" role="group" aria-label="Controls for both Rolling-bottle grasping clips">
+                <button class="rw-btn rw-play" type="button" data-act="play" aria-label="Play both clips"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.8" height="14" rx="1" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" rx="1" fill="currentColor"/></svg></button>
+                <button class="rw-btn" type="button" data-act="restart" aria-label="Restart both clips"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.05-4.95" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M5.2 4.2v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="rw-btn rw-speed" type="button" data-act="speed" aria-label="Playback speed 1×">1×</button>
+                <div class="rw-scrub-wrap">
+                  <input class="rw-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek both clips" aria-valuetext="0:00" />
+                  <i class="rw-mark" aria-hidden="true"></i>
+                </div>
+                <span class="rw-time"><span class="rw-now">0:00</span> / <span class="rw-end">0:12</span></span>
+                <button class="rw-btn" type="button" data-act="fullscreen" aria-label="Full screen"><svg class="i-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="i-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </article>
+            <article class="rw-card" id="rw-bowl-stacking" data-i="2" aria-roledescription="slide" aria-label="3 of 5, Conveyor-belt bowl stacking"
+              data-task="bowl-stacking" data-title="Conveyor-belt bowl stacking" data-ratio="4 / 3" data-w="960" data-h="720"
+              data-native-src="assets/video/real-world/bowl-stacking-native.mp4?v=20261127f" data-native-poster="assets/video/real-world/bowl-stacking-native.webp?v=20261127f" data-native-dur="102.967"
+              data-plus-src="assets/video/real-world/bowl-stacking-oneflow.mp4?v=20261127f" data-plus-poster="assets/video/real-world/bowl-stacking-oneflow.webp?v=20261127f" data-plus-dur="70.9" style="--ratio: 4 / 3; --ar: 1.3333">
+              <header class="rw-card-head">
+                <h3 class="rw-title">Conveyor-belt bowl stacking</h3>
+              </header>
+              <div class="rw-panes">
+                <div class="rw-pane" data-side="native">
+                  <span class="rw-badge native">Native</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="Native run, Conveyor-belt bowl stacking"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 103.0 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+                <div class="rw-pane" data-side="plus">
+                  <span class="rw-badge plus">OneFlow+</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="OneFlow+ run, Conveyor-belt bowl stacking"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 70.9 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rw-bar" role="group" aria-label="Controls for both Conveyor-belt bowl stacking clips">
+                <button class="rw-btn rw-play" type="button" data-act="play" aria-label="Play both clips"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.8" height="14" rx="1" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" rx="1" fill="currentColor"/></svg></button>
+                <button class="rw-btn" type="button" data-act="restart" aria-label="Restart both clips"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.05-4.95" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M5.2 4.2v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="rw-btn rw-speed" type="button" data-act="speed" aria-label="Playback speed 1×">1×</button>
+                <div class="rw-scrub-wrap">
+                  <input class="rw-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek both clips" aria-valuetext="0:00" />
+                  <i class="rw-mark" aria-hidden="true"></i>
+                </div>
+                <span class="rw-time"><span class="rw-now">0:00</span> / <span class="rw-end">1:42</span></span>
+                <button class="rw-btn" type="button" data-act="fullscreen" aria-label="Full screen"><svg class="i-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="i-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </article>
+            <article class="rw-card" id="rw-car-following" data-i="3" aria-roledescription="slide" aria-label="4 of 5, Car following"
+              data-task="car-following" data-title="Car following" data-ratio="4 / 3" data-w="960" data-h="720"
+              data-native-src="assets/video/real-world/car-following-native.mp4?v=20261127f" data-native-poster="assets/video/real-world/car-following-native.webp?v=20261127f" data-native-dur="27.133"
+              data-plus-src="assets/video/real-world/car-following-oneflow.mp4?v=20261127f" data-plus-poster="assets/video/real-world/car-following-oneflow.webp?v=20261127f" data-plus-dur="55.8" style="--ratio: 4 / 3; --ar: 1.3333">
+              <header class="rw-card-head">
+                <h3 class="rw-title">Car following</h3>
+              </header>
+              <div class="rw-panes">
+                <div class="rw-pane" data-side="native">
+                  <span class="rw-badge native">Native</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="Native run, Car following"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 27.1 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+                <div class="rw-pane" data-side="plus">
+                  <span class="rw-badge plus">OneFlow+</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="OneFlow+ run, Car following"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 55.8 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rw-bar" role="group" aria-label="Controls for both Car following clips">
+                <button class="rw-btn rw-play" type="button" data-act="play" aria-label="Play both clips"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.8" height="14" rx="1" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" rx="1" fill="currentColor"/></svg></button>
+                <button class="rw-btn" type="button" data-act="restart" aria-label="Restart both clips"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.05-4.95" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M5.2 4.2v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="rw-btn rw-speed" type="button" data-act="speed" aria-label="Playback speed 1×">1×</button>
+                <div class="rw-scrub-wrap">
+                  <input class="rw-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek both clips" aria-valuetext="0:00" />
+                  <i class="rw-mark" aria-hidden="true"></i>
+                </div>
+                <span class="rw-time"><span class="rw-now">0:00</span> / <span class="rw-end">0:55</span></span>
+                <button class="rw-btn" type="button" data-act="fullscreen" aria-label="Full screen"><svg class="i-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="i-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </article>
+            <article class="rw-card" id="rw-block-following" data-i="4" aria-roledescription="slide" aria-label="5 of 5, Block following"
+              data-task="block-following" data-title="Block following" data-ratio="4 / 3" data-w="960" data-h="720"
+              data-native-src="assets/video/real-world/block-following-native.mp4?v=20261127f" data-native-poster="assets/video/real-world/block-following-native.webp?v=20261127f" data-native-dur="17.933"
+              data-plus-src="assets/video/real-world/block-following-oneflow.mp4?v=20261127f" data-plus-poster="assets/video/real-world/block-following-oneflow.webp?v=20261127f" data-plus-dur="20.033" style="--ratio: 4 / 3; --ar: 1.3333">
+              <header class="rw-card-head">
+                <h3 class="rw-title">Block following</h3>
+              </header>
+              <div class="rw-panes">
+                <div class="rw-pane" data-side="native">
+                  <span class="rw-badge native">Native</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="Native run, Block following"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 17.9 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+                <div class="rw-pane" data-side="plus">
+                  <span class="rw-badge plus">OneFlow+</span>
+                  <div class="rw-screen">
+                    <video muted playsinline preload="none" disablepictureinpicture disableremoteplayback width="960" height="720" aria-label="OneFlow+ run, Block following"></video>
+                    <span class="rw-done" aria-hidden="true">Finished · 20.0 s</span>
+                    <span class="rw-error">Clip unavailable</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rw-bar" role="group" aria-label="Controls for both Block following clips">
+                <button class="rw-btn rw-play" type="button" data-act="play" aria-label="Play both clips"><svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg><svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.8" height="14" rx="1" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" rx="1" fill="currentColor"/></svg></button>
+                <button class="rw-btn" type="button" data-act="restart" aria-label="Restart both clips"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.05-4.95" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M5.2 4.2v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button class="rw-btn rw-speed" type="button" data-act="speed" aria-label="Playback speed 1×">1×</button>
+                <div class="rw-scrub-wrap">
+                  <input class="rw-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek both clips" aria-valuetext="0:00" />
+                  <i class="rw-mark" aria-hidden="true"></i>
+                </div>
+                <span class="rw-time"><span class="rw-now">0:00</span> / <span class="rw-end">0:20</span></span>
+                <button class="rw-btn" type="button" data-act="fullscreen" aria-label="Full screen"><svg class="i-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="i-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </div>
+            </article>
+            </div>
+          </div>
+        </div>
+      </div>
+      <noscript><p class="caption">Video playback on this page needs JavaScript.</p></noscript>
+    </section>
+
+    <!-- 4. Method: four sequential visual acts. -->
+    <section class="sec method" id="method" aria-labelledby="method-title">
+      <header class="head">
+        <h2 class="h2" id="method-title">How OneFlow works.</h2>
+      </header>
+
+      <ol class="acts wide">
+        <li class="act">
+          <div class="act-head">
+            <span class="act-n">01</span>
+            <h3 class="act-title">Sequential denoising stalls the robot.</h3>
+          </div>
+          <figure class="figure" id="fig-race">
+            <div class="fig-bar">
+              <span class="fig-title">Forward passes to finish one task</span>
+              <button class="fig-ctrl" type="button">Pause</button>
+            </div>
+            <div class="fig-canvas"></div>
+          </figure>
+        </li>
+
+        <li class="act">
+          <div class="act-head">
+            <span class="act-n">02</span>
+            <h3 class="act-title">Vertical chains to a diagonal path.</h3>
+          </div>
+          <figure class="figure" id="fig-dependency">
+            <div class="fig-bar">
+              <span class="fig-title">Where each forward pass gets its inputs</span>
+              <button class="fig-ctrl" type="button">Pause</button>
+            </div>
+            <div class="fig-canvas"></div>
+          </figure>
+        </li>
+
+        <li class="act">
+          <div class="act-head">
+            <span class="act-n">03</span>
+            <h3 class="act-title">One continuous stream.</h3>
+          </div>
+          <figure class="figure" id="fig-stream">
+            <div class="fig-bar">
+              <span class="fig-title">Observe, align, generate, execute</span>
+              <button class="fig-ctrl" type="button">Pause</button>
+            </div>
+            <div class="fig-canvas"></div>
+          </figure>
+        </li>
+
+        <li class="act">
+          <div class="act-head">
+            <span class="act-n">04</span>
+            <h3 class="act-title">Four samplers. One clock.</h3>
+          </div>
+          <figure class="figure" id="fig-approaches">
+            <div class="fig-bar">
+              <span class="fig-title">Policy query schedules on one clock</span>
+              <button class="fig-ctrl" type="button">Pause</button>
+            </div>
+            <div class="fig-canvas"></div>
+          </figure>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 5. Speed: five speedups, then the cumulative latency animation and Table 5 in one card. -->
+    <section class="sec engine-sec" id="engine" aria-labelledby="engine-title">
+      <div class="wide">
+        <header class="head">
+          <h2 class="h2" id="engine-title">Up to 30.3× faster.<br /> Same pretrained weights.</h2>
+        </header>
+
+        <ul class="xcards" aria-label="End-to-end speedup of OneFlow+ over Native">
+          <li><p class="x-val"><em class="num-val" data-count="30.3">30.3</em><span>×</span></p><p class="x-name">Fast-WAM</p><p class="x-ms">503.53 → 16.62&nbsp;ms</p></li>
+          <li><p class="x-val"><em class="num-val" data-count="25.3">25.3</em><span>×</span></p><p class="x-name">FM Policy RGB</p><p class="x-ms">25.05 → 0.99&nbsp;ms</p></li>
+          <li><p class="x-val"><em class="num-val" data-count="23.0">23.0</em><span>×</span></p><p class="x-name">OpenWAM</p><p class="x-ms">447.08 → 19.40&nbsp;ms</p></li>
+          <li><p class="x-val"><em class="num-val" data-count="11.4">11.4</em><span>×</span></p><p class="x-name">GR00T N1.7</p><p class="x-ms">111.73 → 9.77&nbsp;ms</p></li>
+          <li><p class="x-val"><em class="num-val" data-count="10.3">10.3</em><span>×</span></p><p class="x-name">Xiaomi Robotics 0</p><p class="x-ms">131.12 → 12.68&nbsp;ms</p></li>
+        </ul>
+
+        <div class="panel">
+        <figure class="figure latency-figure" id="fig-latency" aria-labelledby="latency-title">
+          <div class="fig-bar">
+            <span class="fig-title" id="latency-title">Native versus OneFlow across optimizations</span>
+            <button class="latency-replay fig-ctrl" type="button"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.2 6a3.8 3.8 0 1 0 1.1-2.7" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M2.6 1.4v2.4h2.4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Replay</button>
+          </div>
+          <ol class="latency-stages" aria-label="Cumulative configurations in Table 5"></ol>
+          <p class="latency-stage-current" aria-hidden="true"></p>
+          <div class="latency-legend"><span><i class="native-key"></i>Native</span><span><i class="parallel-key"></i><span>OneFlow</span></span></div>
+          <div class="latency-rows"></div>
+          <noscript><p>Open Table 5 below for all latency and speedup values.</p></noscript>
+        </figure>
+        <details class="ablation">
+          <summary>Table 5 <span>All five policies · seven cumulative configurations</span></summary>
+          <div class="table-wrap" role="region" aria-label="Table 5 cumulative latency optimizations" tabindex="0">
+            <table class="latency-table">
+              <caption>Table 5 reports median action-generation latency in ms, with speedup over Native beneath each value.</caption>
+              <thead><tr><th scope="col" class="l">Configuration</th><th scope="col" data-n="8">FM Policy (RGB)</th><th scope="col" data-n="5">Xiaomi Robotics 0</th><th scope="col" data-n="4">GR00T N1.7</th><th scope="col" data-n="10">OpenWAM</th><th scope="col" data-n="10">Fast-WAM</th></tr></thead>
+              <tbody>
+                <tr><th scope="row" class="l">Native</th><td data-latency-ms="25.0487665"><span>25.05</span><small>1.0×</small></td><td data-latency-ms="131.119089"><span>131.12</span><small>1.0×</small></td><td data-latency-ms="111.728211"><span>111.73</span><small>1.0×</small></td><td data-latency-ms="447.0768865"><span>447.08</span><small>1.0×</small></td><td data-latency-ms="503.5291385"><span>503.53</span><small>1.0×</small></td></tr>
+                <tr><th scope="row" class="l">OneFlow</th><td data-latency-ms="12.169776500000001"><span>12.17</span><small>2.1×</small></td><td data-latency-ms="69.8042085"><span>69.80</span><small>1.9×</small></td><td data-latency-ms="57.9494505"><span>57.95</span><small>1.9×</small></td><td data-latency-ms="110.624094"><span>110.62</span><small>4.0×</small></td><td data-latency-ms="103.2030825"><span>103.20</span><small>4.9×</small></td></tr>
+                <tr><th scope="row" class="l">+ CUDA graphs</th><td data-latency-ms="3.663709"><span>3.66</span><small>6.8×</small></td><td data-latency-ms="28.9063935"><span>28.91</span><small>4.5×</small></td><td data-latency-ms="20.6343515"><span>20.63</span><small>5.4×</small></td><td data-latency-ms="74.8251595"><span>74.83</span><small>6.0×</small></td><td data-latency-ms="52.1489975"><span>52.15</span><small>9.7×</small></td></tr>
+                <tr><th scope="row" class="l">+ Invariant precomputation</th><td data-latency-ms="3.6103435"><span>3.61</span><small>6.9×</small></td><td data-latency-ms="28.937417500000002"><span>28.94</span><small>4.5×</small></td><td data-latency-ms="19.906814"><span>19.91</span><small>5.6×</small></td><td data-latency-ms="50.143628500000005"><span>50.14</span><small>8.9×</small></td><td data-latency-ms="42.2517445"><span>42.25</span><small>11.9×</small></td></tr>
+                <tr><th scope="row" class="l">+ I/O optimization</th><td data-latency-ms="2.0230775000000003"><span>2.02</span><small>12.4×</small></td><td data-latency-ms="24.8864395"><span>24.89</span><small>5.3×</small></td><td data-latency-ms="16.80457"><span>16.80</span><small>6.6×</small></td><td data-latency-ms="38.5967775"><span>38.60</span><small>11.6×</small></td><td data-latency-ms="34.839681"><span>34.84</span><small>14.5×</small></td></tr>
+                <tr><th scope="row" class="l">+ Operator fusion</th><td data-latency-ms="1.2244045"><span>1.22</span><small>20.5×</small></td><td data-latency-ms="13.227380499999999"><span>13.23</span><small>9.9×</small></td><td data-latency-ms="10.1199795"><span>10.12</span><small>11.0×</small></td><td data-latency-ms="19.616328000000003"><span>19.62</span><small>22.8×</small></td><td data-latency-ms="16.810276"><span>16.81</span><small>30.0×</small></td></tr>
+                <tr class="ours optimized"><th scope="row" class="l">+ Kernel autotuning (OneFlow+)</th><td data-latency-ms="0.989649"><span>0.99</span><small>25.3×</small></td><td data-latency-ms="12.683854499999999"><span>12.68</span><small>10.3×</small></td><td data-latency-ms="9.769201500000001"><span>9.77</span><small>11.4×</small></td><td data-latency-ms="19.397095"><span>19.40</span><small>23.0×</small></td><td data-latency-ms="16.620406"><span>16.62</span><small>30.3×</small></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="table-note">Cumulative optimizations on one A100 80 GB GPU at batch size 1, with speedups computed from unrounded medians.</p>
+        </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Benchmarks: the success chart reads every value from the static tables below it. -->
+    <section class="sec band" id="results" aria-labelledby="results-title">
+      <div class="wide">
+        <header class="head">
+          <h2 class="h2" id="results-title">One forward pass.<br /> Multi-step performance.</h2>
+        </header>
+
+        <figure class="figure chart" id="fig-success" aria-labelledby="success-title">
+          <div class="fig-bar">
+            <span class="fig-title" id="success-title">Success rate across benchmarks</span>
+          </div>
+          <ul class="chart-legend" aria-label="Series">
+            <li><i class="k-native1"></i>Native <small>1 pass</small></li>
+            <li><i class="k-native"></i>Native <small>N passes</small></li>
+            <li><i class="k-ours"></i>OneFlow <small>1 pass</small></li>
+            <li><i class="k-plus"></i>OneFlow+ <small>1 pass</small></li>
+          </ul>
+          <div class="chart-body"></div>
+          <noscript><p>The success rates are listed in the tables below.</p></noscript>
+        </figure>
+
+        <div class="card tables" id="tables">
+          <h3 class="h3">Full tables</h3>
+          <div class="seg tabs" role="tablist" aria-label="Benchmark family">
+            <button type="button" role="tab" id="tab-wam" aria-controls="panel-wam" aria-selected="true">World action models</button>
+            <button type="button" role="tab" id="tab-vla" aria-controls="panel-vla" aria-selected="false">Vision–language–action</button>
+            <button type="button" role="tab" id="tab-fm" aria-controls="panel-fm" aria-selected="false">Flow-matching policies</button>
+          </div>
+
+        <div class="tab-panel" role="tabpanel" id="panel-wam" aria-labelledby="tab-wam">
+          <h4>World action models on RoboTwin50</h4>
+          <div class="table-wrap" role="region" aria-label="World action model success rates from Table 4" tabindex="0">
+            <table>
+            <caption class="sr-only">World action model success rates from Table 4</caption>
+            <thead><tr><th scope="col" class="l">Method</th><th scope="col">N</th><th scope="col">NFE</th><th scope="col">Clean ↑</th><th scope="col">Randomized ↑</th><th scope="col">Average ↑</th></tr></thead>
+            <tbody>
+              <tr class="group"><th colspan="6" scope="rowgroup">Fast-WAM</th></tr>
+              <tr><th scope="row" class="l method">Native</th><td>1</td><td>1</td><td>41.24</td><td>40.38</td><td>40.81</td></tr>
+              <tr><th scope="row" class="l method">Native</th><td>10</td><td>10</td><td>89.68</td><td>89.10</td><td>89.39</td></tr>
+              <tr class="ours"><th scope="row" class="l method">OneFlow</th><td>10</td><td>1</td><td>91.14</td><td>90.82</td><td>90.98</td></tr>
+              <tr class="ours optimized"><th scope="row" class="l method">OneFlow+</th><td>10</td><td>1</td><td class="best">91.32</td><td class="best">90.88</td><td class="best">91.10</td></tr>
+            </tbody>
+            <tbody>
+              <tr class="group"><th colspan="6" scope="rowgroup">OpenWAM</th></tr>
+              <tr><th scope="row" class="l method">Native</th><td>1</td><td>1</td><td>49.50</td><td>47.26</td><td>48.38</td></tr>
+              <tr><th scope="row" class="l method">Native</th><td>10</td><td>10</td><td>83.28</td><td>80.98</td><td>82.13</td></tr>
+              <tr class="ours"><th scope="row" class="l method">OneFlow</th><td>10</td><td>1</td><td class="best">88.84</td><td class="best">87.82</td><td class="best">88.33</td></tr>
+              <tr class="ours optimized"><th scope="row" class="l method">OneFlow+</th><td>10</td><td>1</td><td>87.66</td><td>87.24</td><td>87.45</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <p class="table-note"><span class="m">H</span> = 32, <span class="m">E</span> = 8, 50 tasks × 100 episodes per setting, totaling 10,000 episodes per configuration.</p>
+        </div>
+
+        <div class="tab-panel" role="tabpanel" id="panel-vla" aria-labelledby="tab-vla">
+          <h4>Vision–language–action models on SimplerEnv</h4>
+          <div class="table-wrap" role="region" aria-label="Vision–language–action success rates from Tables 2 and 3" tabindex="0">
+            <table>
+            <caption class="sr-only">Vision–language–action success rates from Tables 2 and 3</caption>
+            <thead><tr><th scope="col" class="l">Method</th><th scope="col">N</th><th scope="col">NFE</th><th scope="col">WidowX ↑</th><th scope="col">Google VM ↑</th><th scope="col">Google VA ↑</th></tr></thead>
+            <tbody>
+              <tr class="group"><th colspan="6" scope="rowgroup">Xiaomi Robotics 0</th></tr>
+              <tr><th scope="row" class="l method">Native</th><td>1</td><td>1</td><td>61.98</td><td>84.19</td><td>69.93</td></tr>
+              <tr><th scope="row" class="l method">Native</th><td>5</td><td>5</td><td>60.76</td><td>88.65</td><td>72.62</td></tr>
+              <tr><th scope="row" class="l method">ParaSolver</th><td>5</td><td>7</td><td>61.98</td><td>87.56</td><td>72.48</td></tr>
+              <tr><th scope="row" class="l method">ParaSolver</th><td>5</td><td>1</td><td>64.24</td><td>81.32</td><td>69.39</td></tr>
+              <tr><th scope="row" class="l method">ParaDiGMS</th><td>5</td><td>6</td><td>62.15</td><td>86.70</td><td>72.48</td></tr>
+              <tr><th scope="row" class="l method">ParaDiGMS</th><td>5</td><td>1</td><td>63.54</td><td>82.58</td><td>69.94</td></tr>
+              <tr><th scope="row" class="l method">RTI-DP</th><td>1</td><td>1</td><td>73.61</td><td>13.30</td><td>14.07</td></tr>
+              <tr class="ours"><th scope="row" class="l method">OneFlow</th><td>5</td><td>1</td><td class="best">78.65</td><td class="best">89.24</td><td class="best">75.87</td></tr>
+              <tr class="ours optimized"><th scope="row" class="l method">OneFlow+</th><td>5</td><td>1</td><td>73.44</td><td>88.63</td><td>75.50</td></tr>
+            </tbody>
+            <tbody>
+              <tr class="group"><th colspan="6" scope="rowgroup">GR00T N1.7</th></tr>
+              <tr><th scope="row" class="l method">Native</th><td>1</td><td>1</td><td>34.55</td><td>73.01</td><td>56.85</td></tr>
+              <tr><th scope="row" class="l method">Native</th><td>4</td><td>4</td><td>39.24</td><td>77.33</td><td>63.03</td></tr>
+              <tr><th scope="row" class="l method">ParaSolver</th><td>4</td><td>5</td><td>36.98</td><td>76.28</td><td>63.15</td></tr>
+              <tr><th scope="row" class="l method">ParaSolver</th><td>4</td><td>1</td><td>15.80</td><td>31.09</td><td>23.16</td></tr>
+              <tr><th scope="row" class="l method">ParaDiGMS</th><td>4</td><td>5</td><td>38.54</td><td>76.68</td><td>64.14</td></tr>
+              <tr><th scope="row" class="l method">ParaDiGMS</th><td>4</td><td>1</td><td>15.80</td><td>31.09</td><td>23.16</td></tr>
+              <tr><th scope="row" class="l method">RTI-DP</th><td>1</td><td>1</td><td>15.10</td><td>23.48</td><td>21.99</td></tr>
+              <tr class="ours"><th scope="row" class="l method">OneFlow</th><td>4</td><td>1</td><td class="best">42.88</td><td>77.19</td><td class="best">67.34</td></tr>
+              <tr class="ours optimized"><th scope="row" class="l method">OneFlow+</th><td>4</td><td>1</td><td>42.71</td><td class="best">78.17</td><td>65.54</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <p class="table-note"><span class="m">H</span> = 8, <span class="m">E</span> = 1. WidowX covers 576 episodes per configuration, and Google Robot covers 756 VM and 1,803 VA episodes.</p>
+        </div>
+
+        <div class="tab-panel" role="tabpanel" id="panel-fm" aria-labelledby="tab-fm">
+          <h4>Flow-matching policies on RoboMimic</h4>
+          <div class="table-wrap" role="region" aria-label="Flow-matching policy average success rates from Table 1" tabindex="0">
+            <table>
+            <caption class="sr-only">Flow-matching policy average success rates from Table 1</caption>
+            <thead><tr><th scope="col" class="l">Method</th><th scope="col">N</th><th scope="col">NFE (State)</th><th scope="col">NFE (RGB)</th><th scope="col">State avg. ↑</th><th scope="col">RGB avg. ↑</th></tr></thead>
+            <tbody>
+              <tr><th scope="row" class="l method">Native</th><td>1</td><td>1</td><td>1</td><td>25.20</td><td>41.60</td></tr>
+              <tr><th scope="row" class="l method">Native</th><td>10</td><td>10</td><td>10</td><td>54.40</td><td class="best">65.20</td></tr>
+              <tr><th scope="row" class="l method">ParaSolver</th><td>10</td><td>11</td><td>12</td><td>53.20</td><td>60.80</td></tr>
+              <tr><th scope="row" class="l method">ParaDiGMS</th><td>10</td><td>8</td><td>9</td><td>52.40</td><td>60.80</td></tr>
+              <tr><th scope="row" class="l method">RTI-DP</th><td>3</td><td>3</td><td>3</td><td>52.00</td><td>64.40</td></tr>
+              <tr><th scope="row" class="l method">A2A</th><td>1</td><td>1</td><td>1</td><td>45.20</td><td>62.80</td></tr>
+              <tr><th scope="row" class="l method">SFP</th><td>1</td><td>4</td><td>4</td><td>24.40</td><td>54.00</td></tr>
+              <tr class="ours"><th scope="row" class="l method">OneFlow</th><td>8</td><td>1</td><td>1</td><td>61.60</td><td class="best">65.20</td></tr>
+              <tr class="ours optimized"><th scope="row" class="l method">OneFlow+</th><td>8</td><td>1</td><td>1</td><td class="best">62.40</td><td>62.00</td></tr>
+            </tbody>
+          </table>
+          </div>
+          <p class="table-note"><span class="m">H</span> = 16, <span class="m">E</span> = 4 across Lift, Can, Square, Hang, and Transport with 50 episodes per task.</p>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Overview film: an inline cinema card with docked controls. Nothing is fetched until Play. -->
+    <section class="sec" id="film" aria-labelledby="film-title">
+      <div class="wide">
+        <header class="head">
+          <h2 class="h2" id="film-title">The OneFlow film.</h2>
+        </header>
+        <figure class="cinema" id="cinema" data-state="paused" aria-label="OneFlow overview film">
+          <div class="cinema-frame">
+            <video class="cinema-video" playsinline loop preload="none" disablepictureinpicture disableremoteplayback width="1920" height="1080" data-src="assets/video/overview.mp4?v=20261128k" data-poster="assets/video/overview-poster.webp?v=20261128i" aria-label="OneFlow overview film"></video>
+            <img class="cinema-poster" width="1280" height="720" alt="" aria-hidden="true" />
+            <span class="cinema-big" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg></span>
+            <p class="cinema-note" hidden>The overview film could not be loaded.</p>
+          </div>
+          <div class="rw-bar cinema-bar" role="group" aria-label="Film controls">
+            <button class="rw-btn rw-play" type="button" data-act="play" aria-label="Play the film">
+              <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 5.8v12.4a.8.8 0 0 0 1.2.7l9.8-6.2a.8.8 0 0 0 0-1.4L9.7 5.1a.8.8 0 0 0-1.2.7Z" fill="currentColor"/></svg>
+              <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="5" width="3.8" height="14" rx="1" fill="currentColor"/><rect x="13.7" y="5" width="3.8" height="14" rx="1" fill="currentColor"/></svg>
+            </button>
+            <button class="rw-btn rw-speed" type="button" data-act="speed" aria-label="Playback speed 1×">1×</button>
+            <div class="rw-scrub-wrap">
+              <input class="rw-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="Seek the film" aria-valuetext="0:00" />
+            </div>
+            <span class="rw-time"><span class="rw-now">0:00</span> / <span class="rw-end">2:20</span></span>
+            <button class="rw-btn" type="button" data-act="mute" aria-label="Mute">
+              <svg class="i-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3Z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <svg class="i-muted" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3Z" fill="currentColor"/><path d="m15.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </button>
+            <button class="rw-btn" type="button" data-act="fullscreen" aria-label="Full screen">
+              <svg class="i-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 9V4.5H9M15 4.5h4.5V9M19.5 15v4.5H15M9 19.5H4.5V15" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="i-collapse" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5V9H4.5M19.5 9H15V4.5M15 19.5V15h4.5M4.5 15H9v4.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </figure>
+        <noscript><p class="caption"><a href="assets/video/overview.mp4?v=20261128k">Open the overview film</a></p></noscript>
+      </div>
+    </section>
+
+    <!-- 8. BibTeX citation. -->
+    <section class="sec band cite-sec" id="cite" aria-labelledby="cite-title">
+      <div class="paper">
+        <h2 class="h3 cite-heading" id="cite-title">BibTeX</h2>
+        <div class="bib">
+          <div class="bib-head"><span>Citation</span><button class="copy" type="button" id="copyBib">Copy</button></div>
+          <pre id="bibText">@article{ji2026oneflow,
+  title   = {Parallelizing Flows for One-Pass Action Generation},
+  author  = {Kangye Ji and Yanze Zou and Hanyun Cui and Zhijian Fang and Yuzhi Huang and Jingyan Jiang and Chenglei Wu and Yuan Meng and Zhi Wang},
+  year    = {2026}
+}</pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wide">
+      <span>© 2026 OneFlow authors</span>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </footer>
+
+  <!-- three.js and the robot meshes load on demand from robot-scene.js when the first robot view nears the screen. -->
+  <script src="js/robot-scene.js?v=20261127g"></script>
+  <script src="js/common.js?v=20261127g"></script>
+  <script src="js/fig-race.js?v=20261111h"></script>
+  <script src="js/fig-dependency.js?v=20261127g"></script>
+  <script src="js/fig-stream.js?v=20261127c"></script>
+  <script src="js/fig-approaches.js?v=20261127g"></script>
+  <script src="js/fig-latency.js?v=20261111h"></script>
+  <script src="js/fig-success.js?v=20261111h"></script>
+  <script src="js/real-world.js?v=20261128j"></script>
+  <script src="js/main.js?v=20261128d"></script>
+</body>
+</html>
