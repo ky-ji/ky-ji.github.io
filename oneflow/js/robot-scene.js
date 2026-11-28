@@ -1,9 +1,9 @@
-// A shared, locally hosted Panda studio. Visual meshes retain their upstream license.
-// Players own time; this module only poses and renders. No inference is simulated here.
+// A shared, locally hosted 3D Panda studio running a real-time conveyor-belt bowl-stacking duel.
+// The conveyor belt and incoming bowls advance continuously on the shared world clock `t` — they
+// never pause when a policy stalls computing. A bowl is only caught if the closing gripper arrives
+// while the bowl is physically within the grasp window; otherwise it glides past and drops off the belt.
 (function () {
   "use strict";
-  // three.js (670 KB) and the meshes are fetched only when a robot view first nears the screen;
-  // until then the WebP posters stand in. A page that already provides THREE uses it directly.
   let T = window.THREE;
   const SCRIPT = document.currentScript.src;
   const ASSETS = new URL("../assets/robot/", SCRIPT);
@@ -28,39 +28,89 @@
       document.head.appendChild(s);
     });
   }
+
+  // 15 keyframes (14 chunks) matching scripts/project-page/solve_robot_motion.py exactly.
+  // Panda [px, py, pz, grip] maps to Three.js (px, pz, -py).
   const frames = [
-    [42, 32, 0],
-    [48, 38, 0],
-    [48, 54, 0],
-    [48, 54, 1],
-    [48, 38, 1],
-    [62, 28, 1],
-    [76, 38, 1],
-    [76, 54, 1],
-    [76, 54, 0],
-    [76, 38, 0],
-    [58, 28, 0],
-    [42, 32, 0],
+    [0.42, -0.02, 0.34, 0.0],
+    [0.53, -0.14, 0.17, 0.0],
+    [0.53, -0.10, 0.060, 0.0],
+    [0.53, -0.10, 0.060, 1.0],
+    [0.43, 0.04, 0.27, 1.0],
+    [0.32, 0.20, 0.038, 1.0],
+    [0.32, 0.20, 0.19, 0.0],
+    [0.53, -0.06, 0.17, 0.0],
+    [0.53, -0.02, 0.060, 0.0],
+    [0.53, -0.02, 0.060, 1.0],
+    [0.43, 0.09, 0.28, 1.0],
+    [0.32, 0.20, 0.056, 1.0],
+    [0.32, 0.20, 0.22, 0.0],
+    [0.38, 0.08, 0.31, 0.0],
+    [0.42, -0.02, 0.34, 0.0],
   ];
+  const MAX_P = frames.length - 1;
+  const BELT_X = 0.53;
+  const BELT_TOP = 0.042;
+  const BELT_HALF_LEN = 0.30;
+  const BELT_SPEED = 0.028;       // constant conveyor speed in metres per forward pass (never pauses!)
+  const PAD_X = 0.32;
+  const PAD_Z = -0.20;
+  const BOWL_GRIP_Y = 0.018;
+
+  // Shared-clock bowl arrival trajectories along the conveyor (identical on both lanes).
+  const BOWL1_PICK_Z = 0.10, BOWL1_PICK_T = 7.35;
+  const BOWL2_PICK_Z = 0.02, BOWL2_PICK_T = 13.35;
+  const GRASP_TOL = 0.032;        // 3.2 cm physical capture half-window
+
+  const smoothstep = (u) => {
+    u = Math.max(0, Math.min(1, u));
+    return u * u * (3 - 2 * u);
+  };
+  const minJerk = (u) => u * u * u * (10 - 15 * u + 6 * u * u);
+
   function task(p) {
-    p = Math.max(0, Math.min(11, p));
-    const k = Math.min(10, Math.floor(p)),
+    p = Math.max(0, Math.min(MAX_P, p));
+    const k = Math.min(MAX_P - 1, Math.floor(p)),
       u = p - k,
-      f = u * u * u * (10 - 15 * u + 6 * u * u);
+      f = minJerk(u);
     const a = frames[k],
       b = frames[k + 1];
-    const x = a[0] + (b[0] - a[0]) * f,
-      y = a[1] + (b[1] - a[1]) * f;
+    const px = a[0] + (b[0] - a[0]) * f,
+      py = a[1] + (b[1] - a[1]) * f,
+      pz = a[2] + (b[2] - a[2]) * f;
     return {
       p,
-      position: new T.Vector3(
-        0.46,
-        0.02 + (54 - y) * 0.012,
-        0.16 - ((x - 48) / 28) * 0.32,
-      ),
-      grip: a[2] + (b[2] - a[2]) * f,
+      position: new T.Vector3(px, pz, -py),
+      grip: a[3] + (b[3] - a[3]) * f,
     };
   }
+
+  // Place a bowl riding freely on the moving conveyor at Three.js z, including smooth entry at +0.30
+  // and gravity tip-off over the far roller past -0.30.
+  function placeOnBelt(bowl, z) {
+    if (z > BELT_HALF_LEN + 0.01 || z < -BELT_HALF_LEN - 0.11) {
+      bowl.visible = false;
+      return;
+    }
+    bowl.visible = true;
+    const enter = smoothstep((BELT_HALF_LEN + 0.01 - z) / 0.055);
+    if (z >= -BELT_HALF_LEN) {
+      bowl.scale.setScalar(0.01 + 0.99 * enter);
+      bowl.rotation.set(0, 0, 0);
+      bowl.position.set(BELT_X, BELT_TOP, z);
+    } else {
+      const over = -BELT_HALF_LEN - z; // 0 .. 0.11 m past far roller
+      const drop = Math.min(1, over / 0.10);
+      bowl.scale.setScalar(Math.max(0.01, 1 - Math.max(0, (drop - 0.65) / 0.35)));
+      bowl.rotation.set(-drop * 1.35, 0, 0);
+      bowl.position.set(
+        BELT_X,
+        BELT_TOP - 0.085 * drop * drop,
+        -BELT_HALF_LEN - over * 0.72,
+      );
+    }
+  }
+
   function createStudio() {
     if (!T) return null;
     const renderer = new T.WebGLRenderer({
@@ -72,13 +122,12 @@
     renderer.setSize(1000, 700);
     renderer.outputColorSpace = T.SRGBColorSpace;
     renderer.toneMapping = T.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.92;
+    renderer.toneMappingExposure = 0.94;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.VSMShadowMap;
     const world = new T.Scene();
-    // Transparent surroundings let the same studio sit naturally in every figure.
     renderer.setClearColor(0x000000, 0);
-    const camera = new T.PerspectiveCamera(32, 10 / 7, 0.01, 30);
+    const camera = new T.PerspectiveCamera(33, 10 / 7, 0.01, 30);
     const materials = {
       white: new T.MeshPhysicalMaterial({
         color: "#d8d9d4",
@@ -108,20 +157,20 @@
         emissiveIntensity: 0.3,
       }),
     };
-    // Broad reflection cards provide a continuous highlight across the real shell surfaces.
+
     const env = new T.Scene();
     env.background = new T.Color("#a3a8ae");
     function card(x, y, z, w, h, power) {
-      const mesh = new T.Mesh(
+      const m = new T.Mesh(
         new T.PlaneGeometry(w, h),
         new T.MeshBasicMaterial({
           color: new T.Color(power, power, power),
           side: T.DoubleSide,
         }),
       );
-      mesh.position.set(x, y, z);
-      mesh.lookAt(0, 0, 0);
-      env.add(mesh);
+      m.position.set(x, y, z);
+      m.lookAt(0, 0, 0);
+      env.add(m);
     }
     card(-3, 4, 3, 4, 6, 5);
     card(4, 2, -2, 2, 5, 3);
@@ -137,8 +186,9 @@
       o.geometry?.dispose();
       o.material?.dispose();
     });
-    world.add(new T.HemisphereLight("#eef1f4", "#74797f", 0.65));
-    const key = new T.DirectionalLight("#fff7e9", 2.5);
+
+    world.add(new T.HemisphereLight("#eef1f4", "#74797f", 0.68));
+    const key = new T.DirectionalLight("#fff7e9", 2.45);
     key.position.set(-1.5, 3, 1.5);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -154,11 +204,12 @@
     key.shadow.normalBias = 0.001;
     key.shadow.radius = 16;
     key.shadow.blurSamples = 16;
-    key.target.position.set(0.2, 0.3, 0);
+    key.target.position.set(0.25, 0.25, 0);
     world.add(key, key.target);
-    const fill = new T.DirectionalLight("#d5e5ed", 0.65);
+    const fill = new T.DirectionalLight("#d5e5ed", 0.68);
     fill.position.set(2, 1, -2);
     world.add(fill);
+
     function mesh(geo, mat, parent = world) {
       const m = new T.Mesh(geo, mat);
       m.castShadow = true;
@@ -166,6 +217,7 @@
       parent.add(m);
       return m;
     }
+
     const floor = mesh(
       new T.PlaneGeometry(200, 200),
       new T.ShadowMaterial({ color: "#3a3a3c", opacity: 0.14 }),
@@ -173,63 +225,128 @@
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = 0;
     floor.castShadow = false;
+
     const base = mesh(
       new T.CylinderGeometry(0.115, 0.12, 0.012, 80),
       materials.off_white,
     );
     base.position.y = -0.002;
-    // Rounded target block: beveled edges catch light without a painted outline.
-    const shape = new T.Shape();
-    const r = 0.003,
-      half = 0.017;
-    shape.moveTo(-half + r, -half);
-    shape.lineTo(half - r, -half);
-    shape.quadraticCurveTo(half, -half, half, -half + r);
-    shape.lineTo(half, half - r);
-    shape.quadraticCurveTo(half, half, half - r, half);
-    shape.lineTo(-half + r, half);
-    shape.quadraticCurveTo(-half, half, -half, half - r);
-    shape.lineTo(-half, -half + r);
-    shape.quadraticCurveTo(-half, -half, -half + r, -half);
-    const cubeGeo = new T.ExtrudeGeometry(shape, {
-      depth: 0.034,
-      bevelEnabled: true,
-      bevelSize: 0.003,
-      bevelThickness: 0.003,
-      bevelSegments: 4,
-      steps: 1,
-      curveSegments: 8,
+
+    // ---------- Conveyor belt assembly ----------
+    const beltGroup = new T.Group();
+    beltGroup.position.set(BELT_X, 0, 0);
+    world.add(beltGroup);
+
+    const railMat = new T.MeshStandardMaterial({
+      color: "#c8cdd2",
+      metalness: 0.56,
+      roughness: 0.28,
     });
-    cubeGeo.translate(0, 0, -0.017);
-    const cube = mesh(
-      cubeGeo,
-      new T.MeshPhysicalMaterial({
-        color: "#d8a632",
-        metalness: 0.32,
-        roughness: 0.27,
-        clearcoat: 0.22,
-      }),
+    railMat.envMapIntensity = 0.7;
+    const rollerMat = new T.MeshStandardMaterial({
+      color: "#383c42",
+      metalness: 0.35,
+      roughness: 0.42,
+    });
+    const beltSurfaceMat = new T.MeshStandardMaterial({
+      color: "#235347",
+      metalness: 0.05,
+      roughness: 0.68,
+    });
+    const slatMat = new T.MeshStandardMaterial({
+      color: "#357867",
+      metalness: 0.08,
+      roughness: 0.52,
+    });
+
+    const beltBody = mesh(
+      new T.BoxGeometry(0.126, BELT_TOP - 0.004, BELT_HALF_LEN * 2),
+      beltSurfaceMat,
+      beltGroup,
     );
+    beltBody.position.y = (BELT_TOP + 0.004) / 2;
+
+    [-0.071, 0.071].forEach((rx) => {
+      const rail = mesh(
+        new T.BoxGeometry(0.014, BELT_TOP + 0.003, BELT_HALF_LEN * 2 + 0.022),
+        railMat,
+        beltGroup,
+      );
+      rail.position.set(rx, (BELT_TOP + 0.003) / 2, 0);
+    });
+
+    [-BELT_HALF_LEN, BELT_HALF_LEN].forEach((rz) => {
+      const roller = mesh(
+        new T.CylinderGeometry(0.019, 0.019, 0.132, 28),
+        rollerMat,
+        beltGroup,
+      );
+      roller.rotation.z = Math.PI / 2;
+      roller.position.set(0, BELT_TOP - 0.019, rz);
+    });
+
+    const SLAT_COUNT = 12;
+    const SLAT_SPAN = BELT_HALF_LEN * 2 - 0.02;
+    const slats = Array.from({ length: SLAT_COUNT }, () => {
+      const s = mesh(new T.BoxGeometry(0.118, 0.0016, 0.0065), slatMat, beltGroup);
+      s.position.y = BELT_TOP + 0.0006;
+      s.castShadow = false;
+      return s;
+    });
+
+    // ---------- Staging pad for the 3-tier nested bowl stack ----------
     const pad = mesh(
-      new T.CylinderGeometry(0.052, 0.052, 0.002, 64),
-      new T.MeshStandardMaterial({ color: "#8a95a2", roughness: 0.8 }),
+      new T.CylinderGeometry(0.056, 0.059, 0.004, 64),
+      railMat,
     );
-    pad.position.set(0.46, -0.001, -0.16);
-    const ring = mesh(
-      new T.TorusGeometry(0.046, 0.0006, 6, 80),
-      new T.MeshStandardMaterial({ color: "#dde3ea", roughness: 0.6 }),
+    pad.position.set(PAD_X, 0.002, PAD_Z);
+    const padRing = mesh(
+      new T.TorusGeometry(0.044, 0.0008, 6, 80),
+      new T.MeshStandardMaterial({ color: "#e8ecf0", roughness: 0.55 }),
     );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.set(0.46, 0.0003, -0.16);
-    ring.castShadow = false;
-    // A faint ground contact layer complements the broad dynamic shadows.
+    padRing.rotation.x = Math.PI / 2;
+    padRing.position.set(PAD_X, 0.0044, PAD_Z);
+    padRing.castShadow = false;
+
+    // ---------- Hollow tapered studio nesting bowls ----------
+    const bowlProfile = [
+      new T.Vector2(0.0001, 0.0),
+      new T.Vector2(0.022, 0.0),
+      new T.Vector2(0.024, 0.0025),
+      new T.Vector2(0.0318, 0.0315),
+      new T.Vector2(0.0322, 0.035),
+      new T.Vector2(0.0304, 0.036),
+      new T.Vector2(0.0288, 0.0345),
+      new T.Vector2(0.0205, 0.0045),
+      new T.Vector2(0.0001, 0.0045),
+    ];
+    const bowlGeo = new T.LatheGeometry(bowlProfile, 48);
+    bowlGeo.computeVertexNormals();
+
+    function makeBowl(color, accentClearcoat = 0.28) {
+      const mat = new T.MeshPhysicalMaterial({
+        color,
+        metalness: 0.08,
+        roughness: 0.28,
+        clearcoat: accentClearcoat,
+        clearcoatRoughness: 0.25,
+      });
+      mat.envMapIntensity = 0.72;
+      return mesh(bowlGeo, mat);
+    }
+
+    const bowl0 = makeBowl("#74a592"); // Sage base bowl on staging pad
+    bowl0.position.set(PAD_X, 0.004, PAD_Z);
+    const bowl1 = makeBowl("#0071e3"); // Cobalt Bowl 1
+    const bowl2 = makeBowl("#d8a632"); // Amber Bowl 2
+
     const shadowCanvas = document.createElement("canvas");
     shadowCanvas.width = 128;
     shadowCanvas.height = 128;
     const sc = shadowCanvas.getContext("2d"),
       radial = sc.createRadialGradient(64, 64, 8, 64, 64, 64);
-    radial.addColorStop(0, "rgba(20,26,34,.26)");
-    radial.addColorStop(0.4, "rgba(20,26,34,.12)");
+    radial.addColorStop(0, "rgba(20,26,34,.24)");
+    radial.addColorStop(0.4, "rgba(20,26,34,.11)");
     radial.addColorStop(1, "rgba(20,26,34,0)");
     sc.fillStyle = radial;
     sc.fillRect(0, 0, 128, 128);
@@ -244,6 +361,7 @@
     contact.rotation.x = -Math.PI / 2;
     contact.position.y = 0.0002;
     contact.castShadow = false;
+
     const robot = new T.Group();
     robot.rotation.x = -Math.PI / 2;
     world.add(robot);
@@ -253,15 +371,9 @@
     let motion,
       ready = false,
       failed = false;
+
     const pathGeometry = new T.BufferGeometry().setFromPoints(
-      frames.map(
-        ([x, y]) =>
-          new T.Vector3(
-            0.46,
-            0.02 + (54 - y) * 0.012,
-            0.16 - ((x - 48) / 28) * 0.32,
-          ),
-      ),
+      frames.map(([px, py, pz]) => new T.Vector3(px, pz, -py)),
     );
     const pathLine = new T.Line(
       pathGeometry,
@@ -289,12 +401,11 @@
       m.castShadow = false;
       return m;
     });
+
     const fetchAsset = async (name) => {
       const response = await fetch(new URL(name, ASSETS));
       if (!response.ok) throw Error(`Robot asset ${name}: ${response.status}`);
       if (name.endsWith(".json")) return response.json();
-      // The quantized mesh buffer is stored gzip-compressed and inflated here, so its transfer
-      // size does not depend on how the server compresses binary files.
       return new Response(
         response.body.pipeThrough(new DecompressionStream("gzip")),
       ).arrayBuffer();
@@ -309,8 +420,6 @@
         const geometries = {};
         for (const [name, entry] of Object.entries(model.meshes)) {
           const geometry = new T.BufferGeometry();
-          // Positions: uint16 per axis over the mesh bounding box, decoded once to metres.
-          // Normals: normalized int8, used directly by the shader.
           const q = new Uint16Array(buffer, ...entry.position),
             position = new Float32Array(q.length),
             [ox, oy, oz] = entry.offset,
@@ -365,20 +474,23 @@
         console.warn("Robot model could not load.", error);
         clients.forEach((c) => c.fail());
       });
+
     function pathAt(p) {
-      p = Math.max(0, Math.min(11, p));
-      const k = Math.min(10, Math.floor(p)),
+      p = Math.max(0, Math.min(MAX_P, p));
+      const k = Math.min(MAX_P - 1, Math.floor(p)),
         u = p - k;
+      const a = frames[k],
+        b = frames[k + 1];
       return new T.Vector3(
-        0.46,
-        0.02 +
-          (54 - frames[k][1] - (frames[k + 1][1] - frames[k][1]) * u) * 0.012,
-        0.16 -
-          ((frames[k][0] + (frames[k + 1][0] - frames[k][0]) * u - 48) / 28) *
-            0.32,
+        a[0] + (b[0] - a[0]) * u,
+        a[2] + (b[2] - a[2]) * u,
+        -(a[1] + (b[1] - a[1]) * u),
       );
     }
-    function render(p, hl, view, options, width, height) {
+
+    // `world`: { clock, catch1, catch2 } where `clock` is the shared world time `t` (in passes)
+    // driving the conveyor belt continuously, independent of whether this robot arm is stalled.
+    function render(p, hl, view, options, width, height, worldState) {
       if (!ready) return false;
       const s = task(p),
         at = s.p / motion.step,
@@ -390,13 +502,70 @@
             motion.q[k][i] + (motion.q[k + 1][i] - motion.q[k][i]) * u),
       );
       fingers.forEach(
-        (finger) => (finger.position.y = 0.04 - (0.04 - 0.0204) * s.grip),
+        (finger) => (finger.position.y = 0.04 - (0.04 - 0.0315) * s.grip),
       );
-      cube.position.copy(
-        s.p >= 3 && s.p < 8
-          ? s.position
-          : new T.Vector3(0.46, 0.02, s.p < 3 ? 0.16 : -0.16),
-      );
+
+      // Shared world clock `t` drives the conveyor slats continuously — never pauses on stall!
+      const wt = worldState && Number.isFinite(worldState.clock) ? worldState.clock : s.p;
+      const pitch = SLAT_SPAN / SLAT_COUNT;
+      const beltShift = ((wt * BELT_SPEED) % pitch + pitch) % pitch;
+      for (let i = 0; i < SLAT_COUNT; i++) {
+        let z = (i / SLAT_COUNT) * SLAT_SPAN - SLAT_SPAN / 2 - beltShift;
+        if (z < -SLAT_SPAN / 2) z += SLAT_SPAN;
+        slats[i].position.z = z;
+      }
+
+      // Free-riding belt positions for both bowls at shared world clock `wt`.
+      const z1Free = BOWL1_PICK_Z + (BOWL1_PICK_T - wt) * BELT_SPEED;
+      const z2Free = BOWL2_PICK_Z + (BOWL2_PICK_T - wt) * BELT_SPEED;
+      const canCatch1 = worldState ? !!worldState.catch1 : true;
+      const canCatch2 = worldState ? !!worldState.catch2 : true;
+
+      // Bowl 1 (Cobalt): caught only if this robot closes on it within physical tolerance.
+      if (canCatch1 && s.p >= 2.45) {
+        bowl1.visible = true;
+        bowl1.scale.setScalar(1);
+        bowl1.rotation.set(0, 0, 0);
+        if (s.p < 3.0) {
+          // Smoothly settle the ~4 mm offset into the closing fingers as grip reaches 1.
+          const settle = smoothstep((s.p - 2.45) / 0.55);
+          const zAtLatch = BOWL1_PICK_Z + (BOWL1_PICK_T - (wt - (s.p - 2.45) * 0.85)) * BELT_SPEED;
+          bowl1.position.set(BELT_X, BELT_TOP, zAtLatch + (BOWL1_PICK_Z - zAtLatch) * settle);
+        } else if (s.p < 5.15) {
+          bowl1.position.set(
+            s.position.x,
+            Math.max(0.020, s.position.y - BOWL_GRIP_Y),
+            s.position.z,
+          );
+        } else {
+          bowl1.position.set(PAD_X, 0.020, PAD_Z);
+        }
+      } else {
+        placeOnBelt(bowl1, z1Free);
+      }
+
+      // Bowl 2 (Amber): rides freely on the belt unless caught cleanly within tolerance.
+      if (canCatch2 && s.p >= 8.45) {
+        bowl2.visible = true;
+        bowl2.scale.setScalar(1);
+        bowl2.rotation.set(0, 0, 0);
+        if (s.p < 9.0) {
+          const settle = smoothstep((s.p - 8.45) / 0.55);
+          const zAtLatch = BOWL2_PICK_Z + (BOWL2_PICK_T - (wt - (s.p - 8.45) * 0.85)) * BELT_SPEED;
+          bowl2.position.set(BELT_X, BELT_TOP, zAtLatch + (BOWL2_PICK_Z - zAtLatch) * settle);
+        } else if (s.p < 11.15) {
+          bowl2.position.set(
+            s.position.x,
+            Math.max(0.038, s.position.y - BOWL_GRIP_Y),
+            s.position.z,
+          );
+        } else {
+          bowl2.position.set(PAD_X, 0.038, PAD_Z);
+        }
+      } else {
+        placeOnBelt(bowl2, z2Free);
+      }
+
       pathLine.visible = !!options.plan;
       active.visible = !!hl && hl.prog > 0 && !!options.plan;
       if (active.visible) {
@@ -413,16 +582,11 @@
         if (dot.visible)
           dot.position.copy(pathAt(hl.a + ((hl.b - hl.a) * (i + 1)) / hl.E));
       });
+
       camera.aspect = width / height;
-      if (view === "detail") {
-        camera.position.copy(s.position).add(new T.Vector3(0.42, 0.25, 0.49));
-        camera.lookAt(s.position.clone().add(new T.Vector3(0, 0.065, 0)));
-        camera.fov = 31;
-      } else {
-        camera.position.set(1.25, 0.85, 1.45);
-        camera.lookAt(0.21, 0.34, 0);
-        camera.fov = 32;
-      }
+      camera.position.set(1.18, 0.86, 1.32);
+      camera.lookAt(0.26, 0.30, -0.01);
+      camera.fov = 33;
       camera.updateProjectionMatrix();
       if (
         renderer.domElement.width !== width ||
@@ -432,6 +596,7 @@
       renderer.render(world, camera);
       return true;
     }
+
     renderer.domElement.addEventListener("webglcontextlost", (event) => {
       event.preventDefault();
       ready = false;
@@ -450,9 +615,9 @@
       },
     };
   }
+
   function loadStudio() {
     if (!studioLoad) studioLoad = new Promise((resolve) => {
-      // Paint the lightweight posters before compiling shaders or uploading meshes.
       requestAnimationFrame(() => setTimeout(() => {
         loadThree()
           .then(() => { studio = createStudio(); })
@@ -462,13 +627,14 @@
     });
     return studioLoad;
   }
+
   function mount(container, options = {}) {
     if (!canWebGL || studio === null || studio?.failed) return null;
     const poster = document.createElementNS("http://www.w3.org/1999/xhtml", "img");
     poster.setAttribute("aria-hidden", "true");
     poster.className = "robot-poster";
     poster.alt = "";
-    poster.src = new URL("preview-0.webp", ASSETS).href;
+    poster.src = new URL("preview-0.webp?v=20261128o", ASSETS).href;
     container.appendChild(poster);
     const canvas = document.createElementNS(
       "http://www.w3.org/1999/xhtml",
@@ -481,6 +647,7 @@
     const ctx = canvas.getContext("2d");
     let p = 0,
       hl = null,
+      worldState = null,
       view = options.view || "studio",
       previous = "",
       width = options.width || 1000,
@@ -490,25 +657,29 @@
       posterFrame = 0;
     canvas.width = width;
     canvas.height = height;
+
     function draw() {
       if (!rendered) {
-        const next = Math.max(0, Math.min(11, Math.round(p)));
+        const next = Math.max(0, Math.min(MAX_P, Math.round(p)));
         if (next !== posterFrame) {
           posterFrame = next;
-          poster.src = new URL(`preview-${next}.webp`, ASSETS).href;
+          poster.src = new URL(`preview-${next}.webp?v=20261128o`, ASSETS).href;
         }
       }
       const shared = studio;
       if (!visible || !shared?.ready || shared.failed) return;
+      const ck = worldState ? Math.round(worldState.clock * 1000) : Math.round(p * 1000);
       const key = JSON.stringify([
         Math.round(p * 10000),
+        ck,
+        worldState ? [!!worldState.catch1, !!worldState.catch2] : null,
         hl,
         view,
         width,
         height,
       ]);
       if (previous === key && shared.ready) return;
-      if (shared.render(p, hl, view, options, width, height)) {
+      if (shared.render(p, hl, view, options, width, height, worldState)) {
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(shared.renderer.domElement, 0, 0);
         previous = key;
@@ -518,9 +689,10 @@
       }
     }
     const client = {
-      set(progress, highlight) {
+      set(progress, highlight, world) {
         p = progress;
-        hl = highlight;
+        hl = highlight || null;
+        worldState = world || null;
         draw();
       },
       setView(value) {
@@ -536,7 +708,6 @@
         options.onFail?.();
       },
     };
-    // Start the shared studio the first time any robot view comes within ~1.5 screens.
     let resolveReady;
     client.ready = new Promise((resolve) => { resolveReady = resolve; });
     const start = () => {
@@ -550,8 +721,6 @@
     };
     clients.add(client);
     if (typeof IntersectionObserver === "function") {
-      // Figure 1 sits right below the full-height hero, so a large margin would load the 3D
-      // assets with the hero. Half a screen of lead time is enough for the posters to cover it.
       new IntersectionObserver((entries, io) => {
         if (entries[0].isIntersecting) { start(); io.disconnect(); }
       }, { rootMargin: "50% 0px" }).observe(container);
@@ -563,7 +732,17 @@
     draw();
     return client;
   }
-  window.PFRobotStudio = { mount };
+
+  // Expose physics constants so fig-race.js evaluates bowl catches from the exact same kinematics.
+  window.PFRobotStudio = {
+    mount,
+    BELT_SPEED,
+    BOWL1_PICK_Z,
+    BOWL1_PICK_T,
+    BOWL2_PICK_Z,
+    BOWL2_PICK_T,
+    GRASP_TOL,
+  };
   window.PFRobotScene = function (PF, parent, x, y, w, options = {}) {
     if (!canWebGL || studio === null || studio?.failed) return null;
     const g = PF.el("g", { transform: `translate(${x} ${y})` }, parent),
@@ -585,9 +764,9 @@
     return {
       g,
       h,
-      set(p, hl) {
+      set(p, hl, world) {
         if (fallback) fallback.set(p, hl);
-        else client.set(p, hl);
+        else client.set(p, hl, world);
       },
     };
   };

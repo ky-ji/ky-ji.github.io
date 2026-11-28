@@ -921,6 +921,7 @@ html:not(.js) .topnav { position: absolute; }
 .race-status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .race-status[data-state="moving"] { color: var(--blue); background: var(--tint); }
 .race-status[data-state="done"] { background: var(--ink); color: #fff; }
+.race-status[data-state="missed"] { background: #fdf2f2; color: #b42318; }
 .race-workspace { display: grid; grid-template-columns: 1fr 1.1fr; align-items: center; gap: 10px; padding: 4px 14px 0; }
 .race-compute { min-width: 0; }
 .race-compute-title { font-size: 11px; color: var(--muted); margin: 0 0 6px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -956,13 +957,13 @@ html:not(.js) .topnav { position: absolute; }
 .race-timeline-heading { font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .race-ticks { position: relative; margin: 8px 40px 4px 140px; height: 14px; font: 400 11px/14px var(--font-mono); color: var(--faint); font-variant-numeric: tabular-nums; }
 .race-ticks span { position: absolute; transform: translateX(-50%); }
-.race-ticks span:nth-child(1) { left: 0; }.race-ticks span:nth-child(2) { left: 18.18%; }.race-ticks span:nth-child(3) { left: 36.36%; }.race-ticks span:nth-child(4) { left: 54.55%; }.race-ticks span:nth-child(5) { left: 72.73%; }.race-ticks span:nth-child(6) { display: none; }.race-ticks span:nth-child(7) { left: 100%; }
 .race-tape { display: grid; grid-template-columns: 140px 1fr 40px; align-items: center; min-height: 26px; }
 .race-tape-label { font-size: 12px; color: var(--muted); }
 .race-tape-ours .race-tape-label, .race-tape-ours strong { color: var(--blue); }
 .race-tape strong { font-size: 13px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .race-tape-track { position: relative; height: 14px; border-radius: 4px; background: var(--bg-soft); }
-.race-tape-cell { position: absolute; top: 0; height: 100%; border-right: 1px solid #fff; background: #a1a1a6; transform: scaleX(var(--fill,0)); transform-origin: left; }
+.race-tape-cell { position: absolute; top: 0; height: 100%; border-right: 1px solid #fff; background: #c7c7cc; transform: scaleX(var(--fill,0)); transform-origin: left; }
+.race-tape-cell.is-deliver { background: #7c7c82; }
 .race-tape-ours .race-tape-cell { background: var(--blue); }
 .race-tape-ours .race-tape-cell.is-init { background: var(--line-2); }
 .race-tape-head { position: absolute; width: 1.5px; height: 20px; top: -3px; background: var(--ink); }

@@ -166,11 +166,11 @@
   // arm's progress shows how many action chunks the policy has delivered.
   const SW = 100, SH = 66, TABLE_Y = 58, BL = 8, PICK_X = 48, PLACE_X = 76;
   const DOWN = TABLE_Y - BL / 2, HOVER = 38, HIGH = 28, SX = 18, SY = 36, L1 = 32, L2 = 30;
-  // Keyframes: grasp point [x, y] and gripper closure (0 open, 1 closed). The gripper closes on
-  // segment 2 -> 3 and opens on segment 7 -> 8.
+  // Keyframes (14 chunks): fallback 2D arm mirrors the 14-chunk two-bowl conveyor stacking sequence.
   const TASK = [
-    [42, 32, 0], [PICK_X, HOVER, 0], [PICK_X, DOWN, 0], [PICK_X, DOWN, 1], [PICK_X, HOVER, 1], [62, HIGH, 1],
-    [PLACE_X, HOVER, 1], [PLACE_X, DOWN, 1], [PLACE_X, DOWN, 0], [PLACE_X, HOVER, 0], [58, HIGH, 0], [42, 32, 0],
+    [42, 30, 0], [PICK_X, HOVER, 0], [PICK_X, DOWN, 0], [PICK_X, DOWN, 1], [60, HIGH, 1],
+    [PLACE_X, DOWN, 1], [PLACE_X, HOVER, 0], [54, HOVER, 0], [54, DOWN, 0], [54, DOWN, 1],
+    [64, HIGH, 1], [PLACE_X, DOWN - 4, 1], [PLACE_X, HOVER, 0], [56, HIGH, 0], [42, 30, 0],
   ];
   const TASK_END = TASK.length - 1;
   // Position along the task path at progress q, linear within a segment.

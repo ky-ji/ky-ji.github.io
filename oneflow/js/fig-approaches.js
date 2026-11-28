@@ -8,7 +8,7 @@
 //   OneFlow: N + 1 complete chunks, each at a single noise level. Each step shifts them by E,
 //     advances every chunk one denoising timestep in one batched pass of
 //     the frozen policy, and executes the first E actions of the clean chunk.
-// Durations are schematic: a batched pass is drawn 1.4x as long as a single pass.
+// Durations are schematic: OneFlow runs one batched pass per step aligned with streaming policies.
 (function () {
   const { C, mix, level, el, attr, rich, text, sym, defs, play, mount, clamp, ease, fadeIO, passRing, march } = PF;
   const root = document.getElementById('fig-approaches');
@@ -45,7 +45,7 @@
     { key: 'seq', title: 'Sequential', sub: 'native ODE solver', steps: steps(N, 'seq'), marks: [0, 0, 1], note: [sym('N'), ' serial passes per step'] },
     { key: 'par', title: 'Parallel samplers', sub: 'ParaDiGMS, ParaSolver', steps: steps(K * BATCH, 'par'), marks: [0, 0, 1], note: [sym('K'), ' batched rounds per step'] },
     { key: 'str', title: 'Streaming policies', sub: 'SDP, Diffusion Forcing', steps: steps(1, 'one'), marks: [1, 1, 0], note: ['1 pass, retrained policy'] },
-    { key: 'pf', title: 'OneFlow', sub: 'ours, training-free', steps: steps(BATCH, 'one'), marks: [1, 1, 1], note: ['1 batched pass per step'] },
+    { key: 'pf', title: 'OneFlow', sub: '', steps: steps(1, 'one'), marks: [1, 1, 1], note: ['1 batched pass per step'] },
   ];
 
   function check(g, x, y, ok) {
@@ -58,8 +58,8 @@
     const y0 = TOP + r * ROW, g = el('g', {}, svg);
     if (m.key === 'pf') el('rect', { x: 6, y: y0 + 4, width: W - 12, height: ROW - 8, rx: 12, fill: C.tint, stroke: C.line }, g);
     else if (r) el('line', { x1: 12, y1: y0, x2: W - 12, y2: y0, stroke: C.line }, g);
-    text(g, LX, y0 + 44, m.title, { class: 't-title', fill: m.key === 'pf' ? C.blue : C.ink });
-    text(g, LX, y0 + 64, m.sub, { class: 't-sub' });
+    text(g, LX, m.sub ? y0 + 44 : y0 + ROW / 2, m.title, { class: 't-title', fill: m.key === 'pf' ? C.blue : C.ink });
+    if (m.sub) text(g, LX, y0 + 64, m.sub, { class: 't-sub' });
     m.marks.forEach((ok, j) => check(g, PX[j], y0 + ROW / 2, ok));
 
     // The state: rows -1..N of HZ + E cells inside a clip of rows 0..N and positions 0..HZ-1, so that
